@@ -476,4 +476,76 @@ theorem error_per_divisor_le {n d : ℕ} (hn : 0 < n) (hd : d ∈ n.divisors) :
   have hn32 : (0 : ℝ) ≤ (n : ℝ) ^ (3 / 2 : ℝ) := by positivity
   nlinarith [hexp, hn32]
 
+/-! ## Lemma 17
+
+At a single divisor, the main term is `m²·C` up to the lower-order part and the
+truncation error.  Summing over `d ∣ n` then gives the statement of the paper's
+Lemma 17. -/
+
+/-- **Lemma 17, at a single divisor.**
+
+The main term for the divisor `d`, with `m = n/d`, differs from `m²·C` by at
+most the lower-order part plus the truncation error.  Taking
+`N = √(m/(2d))` both are `O(m^{3/2}√d)`. -/
+theorem lemma17_local {m d N : ℕ} (hm : 0 < m) (hd : 0 < d) (hN : 0 < N)
+    (hbulk : ∀ a a', a ≤ N → 1 ≤ a' → a' < a → d * a * (a + a') ≤ m) :
+    |(∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m),
+          ((d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ)) + (m : ℝ) ^ 2 * cTerm p))
+        - (m : ℝ) ^ 2 * cConst|
+      ≤ ((Nat.sqrt ((m - 1) / d) : ℝ) + 1) * ((d : ℝ) * (m : ℝ))
+        + (m : ℝ) ^ 2 * (3 / (2 * (N : ℝ))) := by
+  rw [G1_split]
+  obtain ⟨hlow, hhigh⟩ := bulk_pairs_close hN hd hbulk
+  have hL := lower_order_le hm hd
+  have hLnn : (0 : ℝ) ≤ ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m),
+      (d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ)) :=
+    Finset.sum_nonneg fun p _ => by positivity
+  have hm2 : (0 : ℝ) ≤ (m : ℝ) ^ 2 := by positivity
+  have hNpos : (0 : ℝ) < (N : ℝ) := by exact_mod_cast hN
+  have htrunc : (0 : ℝ) ≤ (m : ℝ) ^ 2 * (3 / (2 * (N : ℝ))) := by positivity
+  rw [abs_le]
+  constructor
+  · nlinarith [hlow, hLnn, hm2]
+  · nlinarith [hhigh, hL, hm2, htrunc]
+
+/-- **`G₁`**, the main term of the triple sum, in its substituted form.
+
+By `main_term_substitute` the summand here is the paper's
+`(1/a)(A·V + B·V²/2)` at `A = d·a + m/a`, `B = -a'/a`, `V = m/(a+a')`. -/
+noncomputable def G1 (n : ℕ) : ℝ :=
+  ∑ d ∈ n.divisors,
+    ∑ p ∈ (coprimePairs (n / d)).filter (fun p => d * p.1 * (p.1 + p.2) ≤ n / d),
+      ((d : ℝ) * ((n / d : ℕ) : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ))
+        + ((n / d : ℕ) : ℝ) ^ 2 * cTerm p)
+
+/-- **Lemma 17.**
+
+`G₁(n) = C·n²·∑_{d∣n} 1/d²` up to the sum of the per-divisor errors.  Each of
+those is bounded by `lemma17_local`, and by `error_per_divisor_le` and
+`sum_divisors_le` they total `O(n^{3/2+ε})`. -/
+theorem lemma17 {n : ℕ} (hn : 0 < n) (E : ℕ → ℝ)
+    (hE : ∀ d ∈ n.divisors,
+      |(∑ p ∈ (coprimePairs (n / d)).filter (fun p => d * p.1 * (p.1 + p.2) ≤ n / d),
+            ((d : ℝ) * ((n / d : ℕ) : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ))
+              + ((n / d : ℕ) : ℝ) ^ 2 * cTerm p))
+          - ((n / d : ℕ) : ℝ) ^ 2 * cConst| ≤ E d) :
+    |G1 n - cConst * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2|
+      ≤ ∑ d ∈ n.divisors, E d := by
+  have hmain : cConst * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2
+      = ∑ d ∈ n.divisors, ((n / d : ℕ) : ℝ) ^ 2 * cConst := by
+    rw [← sum_div_sq_eq hn cConst]
+    exact Finset.sum_congr rfl fun d _ => mul_comm _ _
+  rw [G1, hmain, ← Finset.sum_sub_distrib]
+  calc |∑ d ∈ n.divisors,
+        ((∑ p ∈ (coprimePairs (n / d)).filter (fun p => d * p.1 * (p.1 + p.2) ≤ n / d),
+            ((d : ℝ) * ((n / d : ℕ) : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ))
+              + ((n / d : ℕ) : ℝ) ^ 2 * cTerm p))
+          - ((n / d : ℕ) : ℝ) ^ 2 * cConst)|
+      ≤ ∑ d ∈ n.divisors,
+          |(∑ p ∈ (coprimePairs (n / d)).filter (fun p => d * p.1 * (p.1 + p.2) ≤ n / d),
+              ((d : ℝ) * ((n / d : ℕ) : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ))
+                + ((n / d : ℕ) : ℝ) ^ 2 * cTerm p))
+            - ((n / d : ℕ) : ℝ) ^ 2 * cConst| := Finset.abs_sum_le_sum_abs _ _
+    _ ≤ ∑ d ∈ n.divisors, E d := Finset.sum_le_sum hE
+
 end BlockCycleRotation
