@@ -1,2 +1,4 @@
 import BlockCycleRotation.Basic
 import BlockCycleRotation.Euclid
+import BlockCycleRotation.Algorithm
+import BlockCycleRotation.Rotate

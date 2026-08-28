@@ -28,7 +28,14 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Master inequality | (new, see below) | `remSum_add_gcd_le` | ✅ proved |
 | Worst case `≤ 3(n − gcd)` | Thm A / Obs. 5 | `moveCount_add_gcd_le` | ✅ proved |
 | Worst case `≤ 3n` | Thm A | `moveCount_le_three_mul` | ✅ proved |
-| Algorithm + correctness | §2 | — | 🚧 planned |
+| Algorithm's cost recursion | §2 | `BlockCycleRotation.cost` | ✅ defined |
+| Lemma 12(1): stops at `gcd` | Lemma 12 | `finalSeg_eq_gcd` | ✅ proved |
+| Lemma 12: algorithm ↔ Euclid | Lemma 12 | `remSum_congr_mod` | ✅ proved |
+| Eq. (12): move count | Eq. (12) | `cost_add_gcd` | ✅ proved |
+| Worst case, for the algorithm | Thm A | `cost_le_three_mul` | ✅ proved |
+| Block cycle step is correct | §2, Fig. 1 | `rotate_block_step` | ✅ proved |
+| Algorithm on lists | §2 | `BlockCycleRotation.bcRotate` | ✅ defined |
+| It computes the rotation | §2 | `bcRotate_eq_rotate` | ✅ proved |
 | Continuous cost `Ψ`, scaling | §3 | — | 🚧 planned |
 | Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |
 | Error term `O(n^(1/2+ε))` | Thm 13 | — | 🚧 planned |
@@ -47,6 +54,14 @@ remSum n k + gcd n k ≤ 2k + n mod k
 
 which does propagate through the recursion, and which collapses to the desired
 bound exactly when `2k ≤ n` (since then the first quotient is at least 2).
+
+### The mirrored step
+
+The block cycle step is degenerate when `⌊n/k⌋ = 1`, i.e. `k > n/2`: it moves
+nothing and recurses on the whole list. This is the case the paper handles
+"using symmetry", swapping the roles of the two segments. `bcRotate` implements
+it by reversal, and terminates by a lexicographic measure on `(k, length)`: the
+left step keeps `k` and shortens the list, the mirrored step decreases `k`.
 
 ## Verification against the paper
 
