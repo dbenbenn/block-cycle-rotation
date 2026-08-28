@@ -88,7 +88,10 @@ algorithm's recursion and the Euclidean algorithm keep different first
 components, but congruent ones, and so produce the same remainders. -/
 theorem remSum_congr_mod {n m k : ℕ} (h : n % k = m % k) : remSum n k = remSum m k := by
   rcases Nat.eq_zero_or_pos k with hk | hk
-  · subst hk; simpa using congrArg (remSum · 0) (by simpa using h)
+  · subst hk
+    simp only [Nat.mod_zero] at h
+    subst h
+    rfl
   · rw [remSum_of_pos n hk.ne', remSum_of_pos m hk.ne', h]
 
 /-- The step of the algorithm's recursion agrees with the Euclidean step. -/

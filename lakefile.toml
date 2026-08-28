@@ -8,6 +8,10 @@ pp.unicode.fun = true # pretty-prints `fun a ↦ b`
 relaxedAutoImplicit = false
 weak.linter.mathlibStandardSet = true
 maxSynthPendingDepth = 3
+# This project is not Mathlib: its file-header and `#`-command house rules
+# do not apply, and `#guard` is used deliberately for sanity checks.
+weak.linter.style.header = false
+weak.linter.hashCommand = false
 
 [[require]]
 name = "mathlib"
