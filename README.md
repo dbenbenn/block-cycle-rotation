@@ -106,7 +106,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Constant `C` of eq. (const-c) | Eq. (const-c) | `cTerm`, `cTerm_row_le` | ✅ defined, bounded |
 | Convergence of the series for `C` | Eq. (const-c) | `cTerm_summable` | ✅ proved |
 | The constants `C` and `D = 1 + 4C` | Eq. (const-c) | `cConst`, `dConst` | ✅ defined |
-| Lemma g-one: the main term `G₁` | Lemma 17 | — | 🚧 remaining |
+| Summand identity for Lemma 17 | Lemma 17 | `cTerm_summand_eq` | ✅ proved |
+| `C` as iterated / finite-row sums | Eq. (const-c) | `cConst_eq_tsum_finRows` | ✅ proved |
+| Lemma 17: the main term `G₁` | Lemma 17 | — | 🚧 remaining |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |

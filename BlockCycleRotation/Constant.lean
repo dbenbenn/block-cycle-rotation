@@ -110,4 +110,49 @@ Numerically, truncating the series for `C` at `a ≤ 20000` gives
 (The tail is `O(1/N)`, so the truncation converges slowly.) -/
 noncomputable def dConst : ℝ := 1 + 4 * cConst
 
+/-! ## The summand of Lemma 17
+
+The bulk part of `G₁` in the paper's proof of Lemma 17 has summand
+
+```
+n²/(d²a²(a+a'))  -  n²a'/(2a²d²(a+a')²)  =  (n²/d²) · (2a + a')/(2a²(a+a')²),
+```
+
+so the coefficient is exactly `cTerm`.  This is the algebraic identity that
+makes `C` appear. -/
+
+/-- **The summand identity.**  `1/(a²(a+a')) - a'/(2a²(a+a')²) = (2a+a')/(2a²(a+a')²)`. -/
+theorem cTerm_summand_eq {a a' : ℝ} (ha : a ≠ 0) (haa : a + a' ≠ 0) :
+    1 / (a ^ 2 * (a + a')) - a' / (2 * a ^ 2 * (a + a') ^ 2)
+      = (2 * a + a') / (2 * a ^ 2 * (a + a') ^ 2) := by
+  field_simp
+  ring
+
+/-- The value of `cTerm` on an admissible pair, in the paper's split form. -/
+theorem cTerm_eq_of_mem {a a' : ℕ} (h1 : 1 ≤ a') (h2 : a' < a) (h3 : Nat.gcd a a' = 1) :
+    cTerm (a, a')
+      = 1 / ((a : ℝ) ^ 2 * ((a : ℝ) + a')) - (a' : ℝ) / (2 * (a : ℝ) ^ 2 * ((a : ℝ) + a') ^ 2) := by
+  have ha : (a : ℝ) ≠ 0 := by
+    have : 0 < a := by omega
+    positivity
+  have haa : (a : ℝ) + (a' : ℝ) ≠ 0 := by
+    have : (0 : ℝ) < (a : ℝ) := by
+      have : 0 < a := by omega
+      exact_mod_cast this
+    have : (0 : ℝ) ≤ (a' : ℝ) := by positivity
+    positivity
+  rw [cTerm_summand_eq ha haa]
+  unfold cTerm
+  rw [if_pos ⟨h1, h2, h3⟩]
+
+/-- `C` as an iterated sum: first over `a'`, then over `a`. -/
+theorem cConst_eq_tsum_rows : cConst = ∑' a : ℕ, ∑' a' : ℕ, cTerm (a, a') :=
+  cTerm_summable.tsum_prod
+
+/-- `C` as a sum of finite rows. -/
+theorem cConst_eq_tsum_finRows : cConst = ∑' a : ℕ, ∑ a' ∈ Finset.range a, cTerm (a, a') := by
+  rw [cConst_eq_tsum_rows]
+  refine tsum_congr fun a => ?_
+  exact tsum_eq_sum (s := Finset.range a) (cTerm_row_support a)
+
 end BlockCycleRotation
