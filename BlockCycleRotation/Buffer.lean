@@ -448,6 +448,99 @@ theorem buffer_helps :
   · rw [fCost_eq_of_le_half (by norm_num) (by norm_num), psi_two_fifths]
     norm_num
 
+/-! ## The paper's `μ(N,ℓ,β)`
+
+The paper works with the three-variable cost `μ(N,ℓ,β)` and reduces to the
+relative function by homogeneity.  Here the reduction is the definition, and
+the paper's recursion (def-mu-nu), its homogeneity, the bound `μ ≤ 3N` and the
+monotonicity in `β` are recovered from it. -/
+
+/-- **`μ(N,ℓ,β)`**, the idealised move count for rotating `N` items by `ℓ`
+with a buffer of size `β`. -/
+noncomputable def muCost (N l b : ℝ) : ℝ := N * (1 + psiBuf (b / N) (l / N))
+
+/-- **Corollary, item 2: homogeneity.**  `μ(λN, λℓ, λβ) = λ·μ(N,ℓ,β)`. -/
+theorem muCost_homogeneous {lam N l b : ℝ} (hlam : 0 < lam) (hN : 0 < N) :
+    muCost (lam * N) (lam * l) (lam * b) = lam * muCost N l b := by
+  unfold muCost
+  have h1 : lam * b / (lam * N) = b / N := by
+    rw [mul_div_mul_left _ _ (ne_of_gt hlam)]
+  have h2 : lam * l / (lam * N) = l / N := by
+    rw [mul_div_mul_left _ _ (ne_of_gt hlam)]
+  rw [h1, h2]
+  ring
+
+/-- **Equation (def-mu-nu).**  `μ(N,ℓ,β) - N = ℓ` when `ℓ ≤ β`, and otherwise
+`2ℓ + μ(N',ℓ',β) - N'` for the subproblem `N' = N·Out(ℓ/N)`,
+`ℓ' = N'·In(ℓ/N)`. -/
+theorem muCost_rec_of_le {N l b : ℝ} (hN : 0 < N) (h : l ≤ b) :
+    muCost N l b - N = l := by
+  unfold muCost
+  rw [psiBuf_of_le (by
+    rw [div_le_div_iff_of_pos_right hN]
+    exact h)]
+  field_simp
+  ring
+
+theorem muCost_rec_of_gt {N l b : ℝ} (hN : 0 < N) (hb : 0 < b) (h : b < l)
+    (hl : 2 * l ≤ N) :
+    muCost N l b - N
+      = 2 * l + (muCost (N * Outt (l / N)) (N * Outt (l / N) * Inn (l / N)) b
+          - N * Outt (l / N)) := by
+  have hx0 : 0 < l / N := by
+    have : 0 < l := lt_trans hb h
+    positivity
+  have hx : l / N ≤ 1 / 2 := by
+    rw [div_le_div_iff₀ hN (by norm_num)]
+    linarith
+  have hbx : b / N < l / N := by gcongr
+  have hbN : 0 < b / N := by positivity
+  have hOut : 0 < Outt (l / N) := Outt_pos hx0
+  have hN' : 0 < N * Outt (l / N) := by positivity
+  unfold muCost
+  rw [psiBuf_rec hbN hbx hx]
+  have h1 : N * Outt (l / N) * Inn (l / N) / (N * Outt (l / N)) = Inn (l / N) := by
+    field_simp
+  have h2 : b / (N * Outt (l / N)) = b / N / Outt (l / N) := by
+    field_simp
+  rw [h1, h2]
+  field_simp
+  ring
+
+/-- **The Observation `μ(N,ℓ,β) ≤ 3N`.** -/
+theorem muCost_le_three_mul {N l b : ℝ} (hN : 0 < N) (hb : 0 < b) (hl0 : 0 ≤ l)
+    (hl : 2 * l ≤ N) : muCost N l b ≤ 3 * N := by
+  have hx0 : 0 ≤ l / N := by positivity
+  have hx : l / N ≤ 1 / 2 := by
+    rw [div_le_div_iff₀ hN (by norm_num)]
+    linarith
+  have hbN : 0 < b / N := by positivity
+  have h1 : psiBuf (b / N) (l / N) ≤ psi (l / N) := psiBuf_le_psi hbN hx0 hx
+  have h2 : psi (l / N) ≤ 2 := psi_le_two hx0 hx
+  unfold muCost
+  nlinarith
+
+/-- **Corollary, item 1: `μ` decreases in the buffer size.** -/
+theorem muCost_antitone {N l b₁ b₂ : ℝ} (hN : 0 < N) (hb : 0 < b₁) (h12 : b₁ ≤ b₂)
+    (hl0 : 0 ≤ l) (hl : 2 * l ≤ N) : muCost N l b₂ ≤ muCost N l b₁ := by
+  have hx0 : 0 ≤ l / N := by positivity
+  have hx : l / N ≤ 1 / 2 := by
+    rw [div_le_div_iff₀ hN (by norm_num)]
+    linarith
+  have hbN : 0 < b₁ / N := by positivity
+  have h12' : b₁ / N ≤ b₂ / N := by gcongr
+  unfold muCost
+  have := psiBuf_antitone h12' hbN hx0 hx
+  nlinarith
+
+/-- **Corollary, item 3, unbuffered case.**  The actual move count is at most
+`μ(N,ℓ,0⁺) = N·f(ℓ/N)`; this is equation (relation). -/
+theorem cost_le_muCost {n k : ℕ} (hn : 0 < n) (hk : k ≤ n) :
+    ((algCost n k : ℕ) : ℝ) ≤ (n : ℝ) * fCost ((k : ℝ) / (n : ℝ)) := by
+  have h := relation hn hk
+  have hg : (0 : ℝ) ≤ ((Nat.gcd n k : ℕ) : ℝ) := by positivity
+  linarith
+
 /-! ## The 50% buffer
 
 The figure's caption records that at a buffer size of `50%` the expected cost
