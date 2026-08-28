@@ -86,7 +86,10 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | `b`-elimination to triples | §4 | `sum_snd_quadruplesQ_eq_triples` | ✅ proved |
 | Coprime `b`-elimination | §4 | `sum_snd_quadruplesAll_eq` | ✅ proved |
 | **The triple sum** | §4 | `Q_eq_tripleSum` | ✅ **proved** |
-| Symmetrisation `b > a` | §4 | — | 🚧 remaining |
+| Congruence → arithmetic progression | §4 | `exists_residue` | ✅ proved |
+| Inner sum as an AP sum | §4 | `inner_sum_nat_eq` | ✅ proved |
+| Triple sum decomposed by pairs | §4 | `Q_eq_tripleSum_decomposed` | ✅ proved |
+| Symmetrisation `b > a` (needed for the error bound) | §4 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` estimates | Lemmas 17–19 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
