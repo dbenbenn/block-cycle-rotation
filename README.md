@@ -165,6 +165,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Figure's `1.25` at a 50% buffer | Fig. 6 caption | `expected_cost_half_buffer` | ✅ proved |
 | **Segments halve every two steps** | §3 | `seg_add_two_le` | ✅ **proved** |
 | **`ψ = lim_{β→0⁺} ψ_β`, with `ψ − ψ_β ≤ 8β`** | §3 | `tendsto_psiBuf` | ✅ **proved** |
+| **Reflection `remSum n k = k + remSum n (n−k)`** | Rem. (all shifts) | `remSum_reflect` | ✅ **proved** |
+| `∑_{k>n/2} k = 3n²/8 + O(n)` | Rem. (all shifts) | `sum_bigShifts_id_close` | ✅ proved |
+| **Average over `1 ≤ k ≤ n` is `(3/8+2C)n + O(n^{1/2+ε})`** | Rem. (all shifts) | `remark_all_shifts` | ✅ **proved** |
 | Summand rewriting | Remark 21 | `gTerm_eq` | ✅ proved |
 | `ζ(3)` removes the coprimality | Remark 21 | `tsum_gTerm_eq`, `zeta3_mul_cConst` | ✅ proved |
 | Telescoping `∑_k [1/k − 1/(n+k)] = H_n` | Remark 21 | `tsum_telescope` | ✅ proved |
@@ -282,7 +285,12 @@ correspondence, and the coprime form of the Heilbronn identity follow the
 paper's statements and proof structure.  Equation (eq. heilbron) itself, the
 aggregate of that identity over the gcd, is `heilbron`.
 
-**Deviations, all documented in the sources.** The worst-case bound needed a
+**Deviations, all documented in the sources.** The remark on averaging over all
+shifts states the reflection for `n > k ≥ n/2`; the hypothesis must be strict,
+since at `2k = n` it would read `k = k + k` (there `remSum n (n/2) = n/2` while
+`k + remSum n (n−k) = n`). `remSum_reflect` assumes `n < 2k`, and the
+conclusion is unaffected — that one term contributes `O(n)` to a sum of size
+`Θ(n²)`. The worst-case bound needed a
 strengthening — `remSum n k + gcd n k ≤ 2k + n mod k` — because the paper's
 hypothesis `2k ≤ n` is not inherited by the recursion. `norm_sum_twisted_le`
 is proved for arbitrary unit-modulus weights and specialised afterwards, and
@@ -295,8 +303,7 @@ bound `d(n) = O(n^ε)` (cited as standard, absent from Mathlib), Bernoulli's
 inequality, and the correctness of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
-**Not attempted.** The remark on averaging over all `1 ≤ k ≤ n` and the
-benchmarks of §5. The bound proved
+**Not attempted.** The benchmarks of §5. The bound proved
 for `f` is `f ≤ 4`, from the crude `∑ (2/3)^i = 3` for the series; the paper's
 sharp maximum `f = 3`, attained at `1 - φ`, is not formalised (nothing needs
 it).
