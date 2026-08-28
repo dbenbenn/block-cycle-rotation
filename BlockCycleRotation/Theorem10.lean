@@ -570,6 +570,7 @@ theorem continuousAt_fCost {x : ℝ} (hirr : Irrational x) (hx0 : 0 < x) (hx : x
 `f` is bounded and continuous off a countable set, so it is integrable. -/
 
 open MeasureTheory
+open scoped ENNReal
 
 /-- `f` cut down to `[0,1]`, so that it is globally bounded. -/
 noncomputable def fBar (x : ℝ) : ℝ := if 0 ≤ x ∧ x ≤ 1 then fCost x else 1
@@ -997,5 +998,88 @@ theorem theorem10 :
   rw [integral_fBar_eq_fCost (by norm_num) (by norm_num) (by norm_num) (by norm_num),
     integral_fCost_split] at h
   exact h
+
+/-! ## Higher moments
+
+The corollary after Theorem 8: if `X` is uniform on `[0,1/2]` then the `j`-th
+moment of `f(X)` is `(∫₀^{1/2} f^j)/(1/2)`, and moments of all orders exist.
+
+Existence is Theorem 8 again: `f^j` is bounded by `4^j` and continuous wherever
+`f` is, so it is Riemann integrable by the same criterion.  The formula is the
+normalisation of the uniform measure, which here is `2 • volume` restricted to
+`(0,1/2]` — the measure with constant density `2` on `[0,1/2]`. -/
+
+theorem abs_fBar_pow_le (j : ℕ) (x : ℝ) : |fBar x ^ j| ≤ 4 ^ j := by
+  rw [abs_pow]
+  exact pow_le_pow_left₀ (abs_nonneg _) (abs_fBar_le x) j
+
+theorem ae_continuousAt_FBar_pow (j : ℕ) :
+    ∀ᵐ v : Fin 1 → ℝ, ContinuousAt (fun w : Fin 1 → ℝ => FBar w ^ j) v :=
+  ae_continuousAt_FBar.mono fun v hv => hv.pow j
+
+set_option maxHeartbeats 1000000 in
+-- The Riemann-Lebesgue criterion carries a large elaboration burden.
+/-- **`f^j` is Riemann integrable**, so the `j`-th moment exists. -/
+theorem fBar_pow_hasBoxIntegral (j : ℕ) :
+    HasIntegral unitBox IntegrationParams.Riemann (fun v : Fin 1 → ℝ => FBar v ^ j)
+      (BoxAdditiveMap.toSMul (MeasureTheory.Measure.toBoxAdditive volume))
+      (∫ v in (unitBox : Set (Fin 1 → ℝ)), FBar v ^ j) := by
+  refine AEContinuous.hasBoxIntegral (volume : MeasureTheory.Measure (Fin 1 → ℝ))
+    ⟨4 ^ j, fun x _ => ?_⟩ (ae_continuousAt_FBar_pow j) IntegrationParams.Riemann
+  rw [Real.norm_eq_abs, FBar]
+  exact abs_fBar_pow_le j _
+
+/-- **The uniform distribution on `[0,1/2]`**: density `2` there, zero elsewhere. -/
+noncomputable def unifHalf : Measure ℝ := (2 : ℝ≥0∞) • volume.restrict (Set.Ioc 0 (1 / 2))
+
+instance isProbabilityMeasure_unifHalf : IsProbabilityMeasure unifHalf := by
+  constructor
+  rw [unifHalf, Measure.smul_apply, Measure.restrict_apply MeasurableSet.univ,
+    Set.univ_inter, Real.volume_Ioc, smul_eq_mul]
+  rw [show (1 : ℝ) / 2 - 0 = 1 / 2 by ring]
+  rw [show ENNReal.ofReal (1 / 2 : ℝ) = 1 / 2 by
+    rw [ENNReal.ofReal_div_of_pos (by norm_num), ENNReal.ofReal_one, ENNReal.ofReal_ofNat]]
+  rw [ENNReal.mul_div_cancel'] <;> norm_num
+
+theorem ae_mem_unifHalf : ∀ᵐ x ∂unifHalf, x ∈ Set.Ioc (0 : ℝ) (1 / 2) := by
+  rw [unifHalf]
+  exact Measure.ae_smul_measure (MeasureTheory.ae_restrict_mem measurableSet_Ioc) 2
+
+/-- Integration against the uniform measure is `2·∫₀^{1/2}`. -/
+theorem integral_unifHalf (g : ℝ → ℝ) :
+    ∫ x, g x ∂unifHalf = 2 * ∫ x in (0 : ℝ)..(1 / 2), g x := by
+  rw [unifHalf, MeasureTheory.integral_smul_measure,
+    intervalIntegral.integral_of_le (by norm_num : (0 : ℝ) ≤ 1 / 2)]
+  simp
+
+theorem fCost_pow_ae_eq (j : ℕ) :
+    (fun x => fCost x ^ j) =ᵐ[unifHalf] (fun x => fBar x ^ j) := by
+  filter_upwards [ae_mem_unifHalf] with x hx
+  rw [fBar_eq_fCost (le_of_lt hx.1) (by linarith [hx.2])]
+
+/-- **Moments of all orders exist.** -/
+theorem integrable_fCost_pow (j : ℕ) : Integrable (fun x => fCost x ^ j) unifHalf := by
+  refine Integrable.congr ?_ (fCost_pow_ae_eq j).symm
+  have hmble : AEStronglyMeasurable (fun x => fBar x ^ j) unifHalf := by
+    rw [unifHalf]
+    exact AEStronglyMeasurable.smul_measure
+      (AEStronglyMeasurable.pow (AEStronglyMeasurable.restrict fBar_aestronglyMeasurable) j) 2
+  rw [← MeasureTheory.integrableOn_univ]
+  refine Measure.integrableOn_of_bounded ?_ hmble (M := 4 ^ j) ?_
+  · exact measure_ne_top unifHalf Set.univ
+  · exact Filter.Eventually.of_forall fun x => by
+      rw [Real.norm_eq_abs]; exact abs_fBar_pow_le j x
+
+/-- **The corollary.**  For `X` uniform on `[0,1/2]`, the `j`-th moment of
+`f(X)` is `(∫₀^{1/2} f^j)/(1/2)`. -/
+theorem moment_fCost (j : ℕ) :
+    ∫ x, fCost x ^ j ∂unifHalf = (∫ x in (0 : ℝ)..(1 / 2), fCost x ^ j) / (1 / 2) := by
+  rw [integral_unifHalf]
+  ring
+
+/-- The first moment is the constant of Theorem 10. -/
+theorem moment_one : ∫ x, fCost x ^ 1 ∂unifHalf = 2 * ∫ x in (0 : ℝ)..(1 / 2), fCost x := by
+  rw [integral_unifHalf]
+  simp
 
 end BlockCycleRotation

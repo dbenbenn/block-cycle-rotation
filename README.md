@@ -153,6 +153,10 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | `∑_{k<n} gcd(n,k) = o(n²)` | Thm 10 | `sum_gcd_range_le` | ✅ proved |
 | `f(1−x) = f(x)`, `∫₀¹ = 2∫₀^{1/2}` | Thm 10 | `fCost_symm`, `integral_fCost_split` | ✅ proved |
 | **Theorem 10** | Thm 10 | `theorem10` | ✅ **proved** |
+| `f^j` Riemann integrable | Cor. to Thm 8 | `fBar_pow_hasBoxIntegral` | ✅ proved |
+| Uniform distribution on `[0,1/2]` | Cor. to Thm 8 | `unifHalf` | ✅ defined |
+| Moments of all orders exist | Cor. to Thm 8 | `integrable_fCost_pow` | ✅ proved |
+| **`E[f(X)^j] = (∫₀^{1/2} f^j)/(1/2)`** | Cor. to Thm 8 | `moment_fCost` | ✅ **proved** |
 | Summand rewriting | Remark 21 | `gTerm_eq` | ✅ proved |
 | `ζ(3)` removes the coprimality | Remark 21 | `tsum_gTerm_eq`, `zeta3_mul_cConst` | ✅ proved |
 | Telescoping `∑_k [1/k − 1/(n+k)] = H_n` | Remark 21 | `tsum_telescope` | ✅ proved |
@@ -283,9 +287,11 @@ bound `d(n) = O(n^ε)` (cited as standard, absent from Mathlib), Bernoulli's
 inequality, and the correctness of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
-**Not attempted.** The corollary on higher moments, the remark on averaging
-over all `1 ≤ k ≤ n`, the buffered variant `f_β` of the closing remark, and the
-benchmarks of §5.
+**Not attempted.** The remark on averaging over all `1 ≤ k ≤ n`, the buffered
+variant `f_β` of the closing remark, and the benchmarks of §5. The bound proved
+for `f` is `f ≤ 4`, from the crude `∑ (2/3)^i = 3` for the series; the paper's
+sharp maximum `f = 3`, attained at `1 - φ`, is not formalised (nothing needs
+it).
 
 **Theorem 10 is proved independently of Theorem 13**, as the paper has it: from
 eq. (relation), the `O(n^{1+ε})` bound on `∑ gcd(n,k)`, and Riemann
