@@ -392,6 +392,36 @@ theorem heilbronn_bijection :
           ∧ K (cf a a') = a ∧ K (cf a a').dropLast = a') :=
   ⟨cf_K, fun a a' h1 h2 h3 => ⟨cf_spec a' a h1 h2 h3, K_cf a' a h1 h2 h3⟩⟩
 
+/-- Mirror of the earlier reversal identity. -/
+theorem reverse_tail_eq (l : List ℕ) : (l.reverse).tail = (l.dropLast).reverse := by
+  have h : ((l.reverse).reverse).dropLast = ((l.reverse).tail).reverse := by
+    rcases hl : l.reverse with _ | ⟨a, t⟩ <;> simp
+  rw [List.reverse_reverse] at h
+  rw [h, List.reverse_reverse]
+
+/-- **Heilbronn's correspondence, surjectivity at the level of quadruples.**
+
+Every quadruple `(a, b, a', b')` with `a > a' ≥ 1`, `b > b' ≥ 1` and both
+coprimality conditions arises from a split expansion, and its continuant
+identity `n = a·b + a'·b'` holds.  The suffix is obtained by reversing, which is
+legitimate by `K_reverse`. -/
+theorem heilbronn_surjective {a b a' b' : ℕ}
+    (ha : 1 ≤ a') (hab : a' < a) (hga : Nat.gcd a a' = 1)
+    (hb : 1 ≤ b') (hbb : b' < b) (hgb : Nat.gcd b b' = 1) :
+    ∃ l₁ l₂ : List ℕ, l₁ ≠ [] ∧ l₂ ≠ [] ∧
+      K l₁ = a ∧ K l₁.dropLast = a' ∧ K l₂ = b ∧ K l₂.tail = b' ∧
+      K (l₁ ++ l₂) = a * b + a' * b' := by
+  obtain ⟨hK₁, hKd₁⟩ := K_cf a' a ha hab hga
+  obtain ⟨hne₁, -, -⟩ := cf_spec a' a ha hab hga
+  obtain ⟨hK₂, hKd₂⟩ := K_cf b' b hb hbb hgb
+  obtain ⟨hne₂, -, -⟩ := cf_spec b' b hb hbb hgb
+  have hne₂' : (cf b b').reverse ≠ [] := by simpa using hne₂
+  have hb₂ : K (cf b b').reverse = b := by rw [K_reverse]; exact hK₂
+  have hb₂' : K ((cf b b').reverse).tail = b' := by
+    rw [reverse_tail_eq, K_reverse]; exact hKd₂
+  refine ⟨cf a a', (cf b b').reverse, hne₁, hne₂', hK₁, hKd₁, hb₂, hb₂', ?_⟩
+  rw [K_append _ _ hne₁ hne₂', hK₁, hKd₁, hb₂, hb₂']
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
