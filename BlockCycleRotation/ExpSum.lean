@@ -144,6 +144,26 @@ theorem norm_geom_sum_le {θ : ℝ} (h0 : θ ≠ 0) (h : |θ| ≤ π) (B T : ℕ
       _ ≤ π * ‖e θ - 1‖ := hmul
   linarith
 
+/-- The weighted sum bound in terms of the chord length, with no restriction on
+`θ`.  Proved by the paper's double-counting argument: write `j` as the number of
+`B` with `1 ≤ B ≤ j`, swap the order of summation, and apply the geometric
+bound to each inner sum. -/
+theorem norm_weighted_geom_sum_le' {θ : ℝ} (hne : e θ ≠ 1) (T : ℕ) :
+    ‖∑ j ∈ Finset.Ico 1 T, (j : ℂ) * e θ ^ j‖ ≤ (T - 1 : ℕ) * (2 / ‖e θ - 1‖) := by
+  have key : ∑ j ∈ Finset.Ico 1 T, (j : ℂ) * e θ ^ j
+      = ∑ i ∈ Finset.Ico 1 T, ∑ j ∈ Finset.Ico i T, e θ ^ j := by
+    rw [Finset.sum_Ico_Ico_comm 1 T (fun _ j => e θ ^ j)]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul]
+    simp
+  rw [key]
+  calc ‖∑ i ∈ Finset.Ico 1 T, ∑ j ∈ Finset.Ico i T, e θ ^ j‖
+      ≤ ∑ i ∈ Finset.Ico 1 T, ‖∑ j ∈ Finset.Ico i T, e θ ^ j‖ := norm_sum_le _ _
+    _ ≤ ∑ _i ∈ Finset.Ico 1 T, (2 / ‖e θ - 1‖) :=
+        Finset.sum_le_sum fun i _ => norm_geom_sum_le' hne i T
+    _ = (T - 1 : ℕ) * (2 / ‖e θ - 1‖) := by
+        rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul]
+
 /-- **Observation 15, weighted sum.**  For `0 < |θ| ≤ π`,
 `‖∑_{1 ≤ j < T} j · e(jθ)‖ ≤ (T - 1) · π / |θ|`.
 

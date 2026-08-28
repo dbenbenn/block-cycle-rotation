@@ -79,11 +79,9 @@ theorem four_mul_min_div_le_norm {a m : ℕ} (h0 : 0 < m) (hma : m < a) :
       = 2 * (2 * ((min m (a - m) : ℕ) : ℝ) / (a : ℝ)) := by ring
     _ ≤ 2 * Real.sin (π * (m : ℝ) / a) := by linarith
 
-/-- **The bound §4 uses.**  For `0 < m < a`,
-`‖∑_{B ≤ j < T} e(2πmj/a)‖ ≤ a / (2 · min(m, a-m))`. -/
-theorem norm_geom_sum_root_le {a m : ℕ} (h0 : 0 < m) (hma : m < a) (B T : ℕ) :
-    ‖∑ j ∈ Finset.Ico B T, e (2 * π * m / a) ^ j‖
-      ≤ (a : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ)) := by
+/-- A nontrivial `a`-th root of unity is not `1`. -/
+theorem e_root_ne_one {a m : ℕ} (h0 : 0 < m) (hma : m < a) :
+    e (2 * π * (m : ℝ) / a) ≠ 1 := by
   have hapos : 0 < a := lt_trans h0 hma
   have ha : (0 : ℝ) < a := by exact_mod_cast hapos
   have hminpos : 0 < min m (a - m) := by omega
@@ -92,11 +90,21 @@ theorem norm_geom_sum_root_le {a m : ℕ} (h0 : 0 < m) (hma : m < a) (B T : ℕ)
   have hden : 0 < ‖e (2 * π * (m : ℝ) / a) - 1‖ := by
     have hp : (0 : ℝ) < 4 * ((min m (a - m) : ℕ) : ℝ) / a := by positivity
     linarith
-  have hne : e (2 * π * (m : ℝ) / a) ≠ 1 := by
-    intro hc
-    rw [hc, sub_self, norm_zero] at hden
-    exact lt_irrefl 0 hden
-  refine (norm_geom_sum_le' hne B T).trans ?_
+  intro hc
+  rw [hc, sub_self, norm_zero] at hden
+  exact lt_irrefl 0 hden
+
+/-- The chord bound in the form the sum estimates use. -/
+theorem two_div_norm_le {a m : ℕ} (h0 : 0 < m) (hma : m < a) :
+    2 / ‖e (2 * π * (m : ℝ) / a) - 1‖ ≤ (a : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ)) := by
+  have hapos : 0 < a := lt_trans h0 hma
+  have ha : (0 : ℝ) < a := by exact_mod_cast hapos
+  have hminpos : 0 < min m (a - m) := by omega
+  have hmr : (0 : ℝ) < ((min m (a - m) : ℕ) : ℝ) := by exact_mod_cast hminpos
+  have hlow := four_mul_min_div_le_norm h0 hma
+  have hden : 0 < ‖e (2 * π * (m : ℝ) / a) - 1‖ := by
+    have hp : (0 : ℝ) < 4 * ((min m (a - m) : ℕ) : ℝ) / a := by positivity
+    linarith
   rw [div_le_div_iff₀ hden (by positivity)]
   have hmul : 4 * ((min m (a - m) : ℕ) : ℝ) ≤ (a : ℝ) * ‖e (2 * π * (m : ℝ) / a) - 1‖ := by
     have hstep := mul_le_mul_of_nonneg_left hlow ha.le
@@ -104,6 +112,13 @@ theorem norm_geom_sum_root_le {a m : ℕ} (h0 : 0 < m) (hma : m < a) (B T : ℕ)
         = (a : ℝ) * (4 * ((min m (a - m) : ℕ) : ℝ) / a) := by field_simp
       _ ≤ (a : ℝ) * ‖e (2 * π * (m : ℝ) / a) - 1‖ := hstep
   linarith
+
+/-- **The bound §4 uses.**  For `0 < m < a`,
+`‖∑_{B ≤ j < T} e(2πmj/a)‖ ≤ a / (2 · min(m, a-m))`. -/
+theorem norm_geom_sum_root_le {a m : ℕ} (h0 : 0 < m) (hma : m < a) (B T : ℕ) :
+    ‖∑ j ∈ Finset.Ico B T, e (2 * π * m / a) ^ j‖
+      ≤ (a : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ)) :=
+  (norm_geom_sum_le' (e_root_ne_one h0 hma) B T).trans (two_div_norm_le h0 hma)
 
 /-! ## Summing the bounds over `m`
 

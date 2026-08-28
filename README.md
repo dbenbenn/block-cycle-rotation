@@ -47,6 +47,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Sums at roots of unity | §4 | `norm_geom_sum_root_le` | ✅ proved |
 | `log a` factor, `∑ 1/min(m,a−m)` | Lemma 18 | `sum_inv_min_le` | ✅ proved |
 | Character orthogonality | §4 | `sum_e_root` | ✅ proved |
+| Inner sum `∑(A+Bb)e(2πmb/a)` | §4 | `norm_linear_geom_sum_root_le` | ✅ proved |
+| Error term over all `m ≠ 0` | Lemma 18 | `norm_sum_twisted_le` | ✅ proved |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | — | 🚧 not in Mathlib |
 | Möbius/character decomposition | §4 | — | 🚧 planned |
 | Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |
@@ -107,6 +109,19 @@ supplies the identity that justifies the character expansion in the first place:
 ```
 ∑_{m < a} e(2πmr/a) = a  if a ∣ r,  and 0 otherwise.
 ```
+
+`LinearSums.lean` then assembles these into the estimate §4 actually applies.
+The sums it must control are `∑_{1≤b<T, b≡c mod a} (A + B·b)`; expanding the
+congruence in characters turns the error into a weighted sum of
+`∑_b (A + B·b)·e(2πmb/a)` over nontrivial `m`, with phases of modulus one, and
+
+```
+‖∑_m w_m ∑_b (A + B·b) e(2πmb/a)‖ ≤ (‖A‖ + ‖B‖(T−1)) · a · ∑_{0<m<a} 1/m,
+```
+
+whose harmonic sum is the `log a` of Lemma 18. (The phases are currently
+abstracted as arbitrary weights of modulus ≤ 1; instantiating them from
+`sum_e_root` is the next step.)
 
 No square-root cancellation is used anywhere. What remains for Theorem 13 is
 long rather than deep — there is no missing theorem to invent, just a great many
