@@ -104,7 +104,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | **Outer estimation layer** | Lemmas 18–19 | `outer_layer` | ✅ **proved** |
 | **Aggregate error `O(n^{3/2+ε})`** | Lemmas 18–19 | `error_isBigO` | ✅ **proved** |
 | Constant `C` of eq. (const-c) | Eq. (const-c) | `cTerm`, `cTerm_row_le` | ✅ defined, bounded |
-| Convergence of the series for `C` | Eq. (const-c) | — | 🚧 in progress |
+| Convergence of the series for `C` | Eq. (const-c) | `cTerm_summable` | ✅ proved |
+| The constants `C` and `D = 1 + 4C` | Eq. (const-c) | `cConst`, `dConst` | ✅ defined |
 | Lemma g-one: the main term `G₁` | Lemma 17 | — | 🚧 remaining |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |

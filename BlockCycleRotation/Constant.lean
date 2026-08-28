@@ -66,4 +66,48 @@ theorem cTerm_row_le (a : ℕ) :
       _ = 3 / (2 * (a : ℝ) ^ 2) := by
           field_simp
 
+/-! ## Convergence -/
+
+/-- Each row is supported on `a' < a`. -/
+theorem cTerm_row_support (a a' : ℕ) (h : a' ∉ Finset.range a) : cTerm (a, a') = 0 := by
+  simp only [Finset.mem_range, not_lt] at h
+  unfold cTerm
+  rw [if_neg]
+  rintro ⟨-, h2, -⟩
+  exact absurd h2 (by omega)
+
+theorem cTerm_row_summable (a : ℕ) : Summable (fun a' => cTerm (a, a')) :=
+  summable_of_ne_finset_zero (s := Finset.range a) (cTerm_row_support a)
+
+theorem cTerm_row_tsum_le (a : ℕ) : ∑' a', cTerm (a, a') ≤ 3 / (2 * (a : ℝ) ^ 2) := by
+  rw [tsum_eq_sum (s := Finset.range a) (cTerm_row_support a)]
+  exact cTerm_row_le a
+
+/-- **The series for `C` converges.** -/
+theorem cTerm_summable : Summable cTerm := by
+  rw [summable_prod_of_nonneg (fun p => cTerm_nonneg p)]
+  refine ⟨cTerm_row_summable, ?_⟩
+  have hg : Summable (fun a : ℕ => 3 / (2 * (a : ℝ) ^ 2)) := by
+    have h : Summable (fun a : ℕ => 1 / (a : ℝ) ^ 2) := by
+      rw [Real.summable_one_div_nat_pow]
+      norm_num
+    refine (h.mul_left (3 / 2)).congr fun a => ?_
+    rw [div_mul_eq_mul_div, mul_one_div]
+    ring_nf
+  refine Summable.of_nonneg_of_le (fun a => ?_) cTerm_row_tsum_le hg
+  exact tsum_nonneg fun a' => cTerm_nonneg _
+
+/-- **The constant `C`** of equation (const-c). -/
+noncomputable def cConst : ℝ := ∑' p : ℕ × ℕ, cTerm p
+
+theorem cConst_nonneg : 0 ≤ cConst :=
+  tsum_nonneg fun p => cTerm_nonneg p
+
+/-- **The constant `D = 1 + 4C`** of Theorem A and Theorem 13.
+
+Numerically, truncating the series for `C` at `a ≤ 20000` gives
+`C ≈ 0.21138` and `D ≈ 1.8455`, consistent with the paper's `D ≈ 1.85`.
+(The tail is `O(1/N)`, so the truncation converges slowly.) -/
+noncomputable def dConst : ℝ := 1 + 4 * cConst
+
 end BlockCycleRotation
