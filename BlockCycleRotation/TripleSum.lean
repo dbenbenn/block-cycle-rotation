@@ -371,6 +371,102 @@ theorem Q_eq_tripleSum_decomposed {n : ℕ} (hn : 0 < n) :
   have hm : 0 < n / d := Nat.div_pos (Nat.le_of_dvd hn hdn) hd0
   exact coprimeTriples_decompose hm (fun a a' b' => (n / d - a' * b') / a)
 
+/-! ## Symmetrisation
+
+Following the paper: `Q(n) = ½ ∑ (b + a)`, and the involution swapping the two
+halves pairs the quadruples with `b > a` against those with `b < a`, leaving the
+diagonal `a = b`.  So
+
+  `Q(n) = ∑_{b > a} (a + b) + ∑_{a = b} a`,
+
+exactly (the diagonal term is what the paper discards as `O(n^{1+ε})`).  The
+restriction `b > a` is what will bound `a` by about `√n` in the estimates. -/
+
+/-- `quadruplesQ` is symmetric under swapping the two halves. -/
+theorem mem_quadruplesQ_swap {n a b a' b' : ℕ} (h : (a, b, a', b') ∈ quadruplesQ n) :
+    (b, a, b', a') ∈ quadruplesQ n := by
+  rw [mem_quadruplesQ] at h ⊢
+  obtain ⟨⟨h1, h2, h3, h4⟩, h5, h6, h7, h8, h9⟩ := h
+  exact ⟨⟨h2, h1, h4, h3⟩, h7, h8, h5, h6, by rw [h9]; ring⟩
+
+/-- Summing `a` over `quadruplesQ` equals summing `b`. -/
+theorem sum_fst_eq_sum_snd_Q (n : ℕ) :
+    ∑ q ∈ quadruplesQ n, q.1 = ∑ q ∈ quadruplesQ n, q.2.1 := by
+  refine Finset.sum_bij'
+    (i := fun q _ => (q.2.1, q.1, q.2.2.2, q.2.2.1))
+    (j := fun q _ => (q.2.1, q.1, q.2.2.2, q.2.2.1)) ?_ ?_ ?_ ?_ ?_ <;>
+    rintro ⟨a, b, a', b'⟩ hq
+  · exact mem_quadruplesQ_swap hq
+  · exact mem_quadruplesQ_swap hq
+  · rfl
+  · rfl
+  · rfl
+
+/-- The involution matches the quadruples with `b < a` against those with `b > a`. -/
+theorem sum_gt_eq_sum_lt (n : ℕ) :
+    ∑ q ∈ (quadruplesQ n).filter (fun q => q.2.1 < q.1), (q.1 + q.2.1)
+      = ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1) := by
+  refine Finset.sum_bij'
+    (i := fun q _ => (q.2.1, q.1, q.2.2.2, q.2.2.1))
+    (j := fun q _ => (q.2.1, q.1, q.2.2.2, q.2.2.1)) ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨a, b, a', b'⟩ hq
+    simp only [Finset.mem_filter] at hq ⊢
+    exact ⟨mem_quadruplesQ_swap hq.1, hq.2⟩
+  · rintro ⟨a, b, a', b'⟩ hq
+    simp only [Finset.mem_filter] at hq ⊢
+    exact ⟨mem_quadruplesQ_swap hq.1, hq.2⟩
+  · rintro ⟨a, b, a', b'⟩ _
+    rfl
+  · rintro ⟨a, b, a', b'⟩ _
+    rfl
+  · rintro ⟨a, b, a', b'⟩ _
+    exact Nat.add_comm _ _
+
+/-- **The symmetrisation.**  `Q(n)` splits into the part with `b > a` and the
+diagonal. -/
+theorem Q_symmetrise (n : ℕ) :
+    ∑ q ∈ quadruplesQ n, q.2.1
+      = (∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1))
+        + ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1 := by
+  classical
+  have e1 : ((quadruplesQ n).filter (fun q => ¬ q.1 < q.2.1)).filter (fun q => q.2.1 < q.1)
+      = (quadruplesQ n).filter (fun q => q.2.1 < q.1) := by
+    ext q
+    simp only [Finset.mem_filter]
+    constructor
+    · rintro ⟨⟨hq, -⟩, h⟩
+      exact ⟨hq, h⟩
+    · rintro ⟨hq, h⟩
+      exact ⟨⟨hq, by omega⟩, h⟩
+  have e2 : ((quadruplesQ n).filter (fun q => ¬ q.1 < q.2.1)).filter (fun q => ¬ q.2.1 < q.1)
+      = (quadruplesQ n).filter (fun q => q.1 = q.2.1) := by
+    ext q
+    simp only [Finset.mem_filter]
+    constructor
+    · rintro ⟨⟨hq, h1⟩, h2⟩
+      exact ⟨hq, by omega⟩
+    · rintro ⟨hq, h⟩
+      exact ⟨⟨hq, by omega⟩, by omega⟩
+  have hsplit : ∑ q ∈ quadruplesQ n, (q.1 + q.2.1)
+      = (∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1))
+        + ((∑ q ∈ (quadruplesQ n).filter (fun q => q.2.1 < q.1), (q.1 + q.2.1))
+          + ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), (q.1 + q.2.1)) := by
+    rw [← Finset.sum_filter_add_sum_filter_not (quadruplesQ n) (fun q => q.1 < q.2.1),
+      ← Finset.sum_filter_add_sum_filter_not
+        ((quadruplesQ n).filter (fun q => ¬ q.1 < q.2.1)) (fun q => q.2.1 < q.1),
+      e1, e2]
+  have hab : ∑ q ∈ quadruplesQ n, (q.1 + q.2.1) = 2 * ∑ q ∈ quadruplesQ n, q.2.1 := by
+    rw [Finset.sum_add_distrib, sum_fst_eq_sum_snd_Q]
+    ring
+  have hdiag : ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), (q.1 + q.2.1)
+      = 2 * ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1 := by
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl fun q hq => ?_
+    simp only [Finset.mem_filter] at hq
+    omega
+  rw [hab, hdiag, sum_gt_eq_sum_lt] at hsplit
+  omega
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.
@@ -386,6 +482,11 @@ theorem Q_eq_tripleSum_decomposed {n : ℕ} (hn : 0 < n) :
     = ∑ d ∈ n.divisors, ∑ p ∈ coprimePairs (n / d),
         ∑ b' ∈ (Finset.Ico 1 (bBound (n / d) p.1 p.2)).filter
           (fun b' => p.1 ∣ (n / d - p.2 * b')), (n / d - p.2 * b') / p.1)
+-- The symmetrisation, checked numerically.
+#guard (List.range 18).all (fun mm => let n := mm + 1
+  (∑ q ∈ quadruplesQ n, q.2.1)
+    = (∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1))
+      + ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1)
 -- `∑ gcd(n,k) ≤ n · d(n)`.
 #guard (List.range 30).all (fun m => let n := m + 1
   (∑ k ∈ allShifts n, Nat.gcd n k) ≤ n * n.divisors.card)
