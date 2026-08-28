@@ -91,6 +91,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Triple sum decomposed by pairs | §4 | `Q_eq_tripleSum_decomposed` | ✅ proved |
 | Symmetrisation `b > a` | §4 | `Q_symmetrise` | ✅ proved |
 | Diagonal is `O(n^{1+ε})` | §4 | `sum_diag_isBigO` | ✅ proved |
+| `b > a` through the classification | §4 | `sum_QGT_classify` | ✅ proved |
+| **The paper's triple sum** | §4 | `Q_gt_tripleSum` | ✅ **proved** |
+| Key restriction `d·a² < m` | §4 | `gtTriples_sq_lt` | ✅ proved |
 | `G₁ + G₂ + G₃` estimates | Lemmas 17–19 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |

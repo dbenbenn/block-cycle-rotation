@@ -592,6 +592,178 @@ theorem sum_diag_isBigO {ε : ℝ} (hε : 0 < ε) :
     mul_le_mul_of_nonneg_left hS hsqnn
   nlinarith [hcast, hmid, hsq1, hsq2, hnε, hC0.le]
 
+/-! ## Carrying `b > a` through the classification
+
+Classifying the symmetrised sum by `d = gcd(a,a')` turns the restriction
+`b > a` into the paper's `b > d·a`, since `a = d·a₁`. -/
+
+/-- The coprime quadruples of `m` with `b > d·a`. -/
+def quadGT (m d : ℕ) : Finset (ℕ × ℕ × ℕ × ℕ) :=
+  (quadruplesAll m).filter (fun q => d * q.1 < q.2.1)
+
+theorem mem_quadGT {m d a b a' b' : ℕ} :
+    (a, b, a', b') ∈ quadGT m d ↔
+      ((a ≤ m ∧ b ≤ m ∧ a' ≤ m ∧ b' ≤ m) ∧ 1 ≤ a' ∧ a' < a ∧ 1 ≤ b' ∧ b' < b
+        ∧ Nat.gcd a a' = 1 ∧ m = a * b + a' * b') ∧ d * a < b := by
+  simp [quadGT, Finset.mem_filter, mem_quadruplesAll]
+
+/-- **The symmetrised sum, classified by `gcd(a,a')`.** -/
+theorem sum_QGT_classify {n : ℕ} (hn : 0 < n) :
+    ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1)
+      = ∑ d ∈ n.divisors, ∑ q ∈ quadGT (n / d) d, (d * q.1 + q.2.1) := by
+  rw [Finset.sum_sigma']
+  refine Finset.sum_bij'
+    (i := fun q _ => (⟨Nat.gcd q.1 q.2.2.1,
+        (q.1 / Nat.gcd q.1 q.2.2.1, q.2.1, q.2.2.1 / Nat.gcd q.1 q.2.2.1,
+          q.2.2.2)⟩ : (_ : ℕ) × (ℕ × ℕ × ℕ × ℕ)))
+    (j := fun p _ => (p.1 * p.2.1, p.2.2.1, p.1 * p.2.2.2.1, p.2.2.2.2))
+    ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨a, b, a', b'⟩ hq
+    simp only [Finset.mem_filter] at hq
+    obtain ⟨hmem, hab⟩ := hq
+    obtain ⟨-, ha1, ha2, hb1, hb2, hsum⟩ := mem_quadruplesQ.1 hmem
+    have hd : 0 < Nat.gcd a a' := Nat.gcd_pos_of_pos_left _ (by omega)
+    have hda : Nat.gcd a a' ∣ a := Nat.gcd_dvd_left _ _
+    have hda' : Nat.gcd a a' ∣ a' := Nat.gcd_dvd_right _ _
+    have hdn : Nat.gcd a a' ∣ n := by
+      rw [hsum]
+      exact Dvd.dvd.add (Dvd.dvd.mul_right hda b) (Dvd.dvd.mul_right hda' b')
+    have hnd : n / Nat.gcd a a'
+        = a / Nat.gcd a a' * b + a' / Nat.gcd a a' * b' := by
+      rw [Nat.div_eq_iff_eq_mul_left hd hdn, hsum, Nat.add_mul, Nat.mul_right_comm,
+        Nat.mul_right_comm (a' / Nat.gcd a a'), Nat.div_mul_cancel hda,
+        Nat.div_mul_cancel hda']
+    have hq1 : 1 ≤ a' / Nat.gcd a a' :=
+      (Nat.one_le_div_iff hd).2 (Nat.le_of_dvd (by omega) hda')
+    have hq2 : a' / Nat.gcd a a' < a / Nat.gcd a a' :=
+      Nat.div_lt_div_of_lt_of_dvd hda ha2
+    have hgt : Nat.gcd a a' * (a / Nat.gcd a a') < b := by
+      rwa [Nat.mul_div_cancel' hda]
+    simp only [Finset.mem_sigma, Nat.mem_divisors]
+    exact ⟨⟨hdn, hn.ne'⟩, mem_quadGT.2
+      ⟨⟨quadruple_le hq1 hq2 hb1 hb2 hnd, hq1, hq2, hb1, hb2,
+        Nat.coprime_div_gcd_div_gcd hd, hnd⟩, hgt⟩⟩
+  · rintro ⟨d, a1, b, a1', b'⟩ hp
+    simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
+    obtain ⟨⟨hdn, -⟩, hq⟩ := hp
+    obtain ⟨⟨-, ha1, ha2, hb1, hb2, -, hsum⟩, hgt⟩ := mem_quadGT.1 hq
+    have hd : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+    have hmul : d * (n / d) = n := Nat.mul_div_cancel' hdn
+    have hsum' : n = d * a1 * b + d * a1' * b' := by
+      rw [← hmul, hsum]; ring
+    have hp1 : 1 ≤ d * a1' := Nat.mul_pos hd ha1
+    have hp2 : d * a1' < d * a1 := by nlinarith
+    simp only [Finset.mem_filter]
+    exact ⟨mem_quadruplesQ.2 ⟨quadruple_le hp1 hp2 hb1 hb2 hsum', hp1, hp2, hb1, hb2, hsum'⟩,
+      hgt⟩
+  · rintro ⟨a, b, a', b'⟩ hq
+    simp only [Finset.mem_filter] at hq
+    obtain ⟨hmem, -⟩ := hq
+    obtain ⟨-, ha1, ha2, -, -, -⟩ := mem_quadruplesQ.1 hmem
+    have hd : 0 < Nat.gcd a a' := Nat.gcd_pos_of_pos_left _ (by omega)
+    have e1 : Nat.gcd a a' * (a / Nat.gcd a a') = a :=
+      Nat.mul_div_cancel' (Nat.gcd_dvd_left _ _)
+    have e2 : Nat.gcd a a' * (a' / Nat.gcd a a') = a' :=
+      Nat.mul_div_cancel' (Nat.gcd_dvd_right _ _)
+    rw [e1, e2]
+  · rintro ⟨d, a1, b, a1', b'⟩ hp
+    simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
+    obtain ⟨⟨hdn, -⟩, hq⟩ := hp
+    obtain ⟨⟨-, -, -, -, -, hcop, -⟩, -⟩ := mem_quadGT.1 hq
+    have hd : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+    have hgcd : Nat.gcd (d * a1) (d * a1') = d := by
+      rw [Nat.gcd_mul_left, hcop, mul_one]
+    simp only [hgcd, Nat.mul_div_cancel_left _ hd]
+  · rintro ⟨a, b, a', b'⟩ hq
+    simp only [Finset.mem_filter] at hq
+    obtain ⟨hmem, -⟩ := hq
+    obtain ⟨-, ha1, ha2, -, -, -⟩ := mem_quadruplesQ.1 hmem
+    have e1 : Nat.gcd a a' * (a / Nat.gcd a a') = a :=
+      Nat.mul_div_cancel' (Nat.gcd_dvd_left _ _)
+    show a + b = Nat.gcd a a' * (a / Nat.gcd a a') + b
+    rw [e1]
+
+/-- The triples with the paper's condition `m - a'·b' > d·a²`, which is `b > d·a`
+after eliminating `b`. -/
+def gtTriples (m d : ℕ) : Finset (ℕ × ℕ × ℕ) :=
+  (coprimeTriples m).filter (fun t => d * t.1 * t.1 < m - t.2.1 * t.2.2)
+
+theorem mem_gtTriples {m d a a' b' : ℕ} :
+    (a, a', b') ∈ gtTriples m d ↔
+      (((a ≤ m ∧ a' ≤ m ∧ b' ≤ m) ∧ 1 ≤ a' ∧ a' < a ∧ 1 ≤ b'
+        ∧ (a + a') * b' < m ∧ a ∣ (m - a' * b')) ∧ Nat.gcd a a' = 1)
+        ∧ d * a * a < m - a' * b' := by
+  simp [gtTriples, Finset.mem_filter, mem_coprimeTriples]
+
+/-- **The `b`-elimination on the restricted set.** -/
+theorem sum_quadGT_eq {m d : ℕ} (hm : 0 < m) :
+    ∑ q ∈ quadGT m d, (d * q.1 + q.2.1)
+      = ∑ t ∈ gtTriples m d, (d * t.1 + (m - t.2.1 * t.2.2) / t.1) := by
+  refine Finset.sum_bij'
+    (i := fun q _ => (q.1, q.2.2.1, q.2.2.2))
+    (j := fun t _ => (t.1, (m - t.2.1 * t.2.2) / t.1, t.2.1, t.2.2)) ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨⟨⟨hab, hbb, ha'b, hb'b⟩, ha1, ha2, hb1, hb2, hgcd, hsum⟩, hgt⟩ := mem_quadGT.1 hq
+    have ha : 0 < a := by omega
+    have hdvd : a ∣ (m - a' * b') := ⟨b, by omega⟩
+    have hlt : (a + a') * b' < m := by nlinarith
+    have heq : m - a' * b' = a * b := by omega
+    have hgt' : d * a * a < m - a' * b' := by
+      rw [heq]
+      nlinarith
+    show (a, a', b') ∈ gtTriples m d
+    rw [mem_gtTriples]
+    exact ⟨⟨⟨⟨hab, ha'b, hb'b⟩, ha1, ha2, hb1, hlt, hdvd⟩, hgcd⟩, hgt'⟩
+  · rintro ⟨a, a', b'⟩ ht
+    obtain ⟨⟨⟨⟨han, ha'n, hb'n⟩, ha1, ha2, hb1, hlt, hdvd⟩, hgcd⟩, hgt⟩ := mem_gtTriples.1 ht
+    have ha : 0 < a := by omega
+    have hab : a * ((m - a' * b') / a) = m - a' * b' := Nat.mul_div_cancel' hdvd
+    have hle : a' * b' ≤ m := by nlinarith
+    have hsum : m = a * ((m - a' * b') / a) + a' * b' := by omega
+    have hbb : b' < (m - a' * b') / a := by
+      have h1 : a * b' < a * ((m - a' * b') / a) := by rw [hab]; nlinarith
+      exact Nat.lt_of_mul_lt_mul_left h1
+    have hgt' : d * a < (m - a' * b') / a := by
+      have h1 : a * (d * a) < a * ((m - a' * b') / a) := by rw [hab]; nlinarith
+      exact Nat.lt_of_mul_lt_mul_left h1
+    show (a, (m - a' * b') / a, a', b') ∈ quadGT m d
+    rw [mem_quadGT]
+    exact ⟨⟨quadruple_le ha1 ha2 hb1 hbb hsum, ha1, ha2, hb1, hbb, hgcd, hsum⟩, hgt'⟩
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨⟨-, ha1, ha2, hb1, hb2, -, hsum⟩, -⟩ := mem_quadGT.1 hq
+    have ha : 0 < a := by omega
+    have h : m - a' * b' = a * b := by omega
+    show (a, (m - a' * b') / a, a', b') = (a, b, a', b')
+    rw [h, Nat.mul_div_cancel_left _ ha]
+  · rintro ⟨a, a', b'⟩ _
+    rfl
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨⟨-, ha1, ha2, hb1, hb2, -, hsum⟩, -⟩ := mem_quadGT.1 hq
+    have ha : 0 < a := by omega
+    have h : m - a' * b' = a * b := by omega
+    show d * a + b = d * a + (m - a' * b') / a
+    rw [h, Nat.mul_div_cancel_left _ ha]
+
+/-- **The restricted triple sum.**  This is the paper's triple sum: over
+divisors `d ∣ n`, coprime pairs `a > a' ≥ 1`, and `b'` subject to
+`(a+a')b' < n/d`, `n/d ≡ a'b' (mod a)` and `n/d - a'b' > d·a²`. -/
+theorem Q_gt_tripleSum {n : ℕ} (hn : 0 < n) :
+    ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1)
+      = ∑ d ∈ n.divisors, ∑ t ∈ gtTriples (n / d) d,
+          (d * t.1 + (n / d - t.2.1 * t.2.2) / t.1) := by
+  rw [sum_QGT_classify hn]
+  refine Finset.sum_congr rfl fun d hd => ?_
+  obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
+  have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+  exact sum_quadGT_eq (Nat.div_pos (Nat.le_of_dvd hn hdn) hd0)
+
+/-- **The key restriction.**  On `gtTriples m d` we have `d·a² < m`, so
+`a ≤ √(m/d)`.  This is what makes the error sum converge. -/
+theorem gtTriples_sq_lt {m d a a' b' : ℕ} (h : (a, a', b') ∈ gtTriples m d) :
+    d * a * a < m := by
+  obtain ⟨⟨⟨-, -, -, hb1, hlt, -⟩, -⟩, hgt⟩ := mem_gtTriples.1 h
+  omega
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.
@@ -612,6 +784,11 @@ theorem sum_diag_isBigO {ε : ℝ} (hε : 0 < ε) :
   (∑ q ∈ quadruplesQ n, q.2.1)
     = (∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1))
       + ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1)
+-- The restricted triple sum, checked numerically.
+#guard (List.range 14).all (fun mm => let n := mm + 1
+  (∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1))
+    = ∑ d ∈ n.divisors, ∑ t ∈ gtTriples (n / d) d,
+        (d * t.1 + (n / d - t.2.1 * t.2.2) / t.1))
 -- `∑ gcd(n,k) ≤ n · d(n)`.
 #guard (List.range 30).all (fun m => let n := m + 1
   (∑ k ∈ allShifts n, Nat.gcd n k) ≤ n * n.divisors.card)
