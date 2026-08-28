@@ -903,7 +903,7 @@ The grouping matters: the `a` values of `a'` cancel the `1/a` in the
 coefficient `2m/a`, leaving `d·a² + 2m ≤ 3m` per value of `a`. -/
 
 /-- The pairs, decomposed by their first component. -/
-theorem sum_coprimePairs_filter {m d : ℕ} (g : ℕ → ℕ → ℝ) :
+theorem sum_coprimePairs_filter {M : Type*} [AddCommMonoid M] {m d : ℕ} (g : ℕ → ℕ → M) :
     ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m), g p.1 p.2
       = ∑ a ∈ (Finset.range (m + 1)).filter (fun a => d * a * a < m),
           ∑ a' ∈ (Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1), g a a' := by
@@ -1218,6 +1218,152 @@ theorem card_mod_filter_le {a U c : ℕ} (ha : 0 < a) :
       ≤ (Finset.range (U / a + 1)).card := Finset.card_le_card_of_injOn _ hmap hinj
     _ = U / a + 1 := Finset.card_range _
 
+/-- **The divisibility condition confines `b'` to one residue class.** -/
+theorem card_dvd_filter_le {m a a' U : ℕ} (ha : 0 < a) (hgcd : Nat.gcd a a' = 1)
+    (hU : ∀ b ∈ Finset.Ico 1 U, a' * b ≤ m) :
+    (((Finset.Ico 1 U).filter (fun b => a ∣ (m - a' * b))).card) ≤ U / a + 1 := by
+  classical
+  rcases Finset.eq_empty_or_nonempty
+      ((Finset.Ico 1 U).filter (fun b => a ∣ (m - a' * b))) with he | ⟨b₀, hb₀⟩
+  · rw [he]
+    simp
+  · refine le_trans (Finset.card_le_card ?_) (card_mod_filter_le (c := b₀ % a) ha)
+    intro b hb
+    simp only [Finset.mem_filter] at hb hb₀ ⊢
+    refine ⟨hb.1, ?_⟩
+    -- `a ∣ a' * (b₀ - b)` over `ℤ`, and `gcd a a' = 1`, so `b ≡ b₀ mod a`
+    have hle : a' * b ≤ m := hU b hb.1
+    have hle₀ : a' * b₀ ≤ m := hU b₀ hb₀.1
+    have hz : ((a : ℤ)) ∣ ((a' : ℤ) * ((b₀ : ℤ) - (b : ℤ))) := by
+      have h1 : ((a : ℤ)) ∣ ((m : ℤ) - (a' : ℤ) * (b : ℤ)) := by
+        have := Int.natCast_dvd_natCast.2 hb.2
+        rwa [Nat.cast_sub hle, Nat.cast_mul] at this
+      have h2 : ((a : ℤ)) ∣ ((m : ℤ) - (a' : ℤ) * (b₀ : ℤ)) := by
+        have := Int.natCast_dvd_natCast.2 hb₀.2
+        rwa [Nat.cast_sub hle₀, Nat.cast_mul] at this
+      have := dvd_sub h1 h2
+      have heq : ((m : ℤ) - (a' : ℤ) * (b : ℤ)) - ((m : ℤ) - (a' : ℤ) * (b₀ : ℤ))
+          = (a' : ℤ) * ((b₀ : ℤ) - (b : ℤ)) := by ring
+      rwa [heq] at this
+    have hco : IsCoprime (a : ℤ) (a' : ℤ) := by
+      rw [Int.isCoprime_iff_gcd_eq_one]
+      simpa using hgcd
+    have hdvd : ((a : ℤ)) ∣ ((b₀ : ℤ) - (b : ℤ)) := IsCoprime.dvd_of_dvd_mul_left hco hz
+    have : b ≡ b₀ [MOD a] := (Nat.modEq_iff_dvd).2 hdvd
+    exact this
+
+/-! ## The small-part bound
+
+On the small branch `d·a² > m/2`, so `m/a² < 2d` and the residue class meets the
+range in at most `2d+2` points; each summand is at most `2·(m/a)`.  Summing over
+`a' < a` the factor `a` cancels the `1/a`, leaving `O(d·m)` per value of `a`, and
+`a` ranges over at most `√(m/d)+1` values. -/
+
+/-- **The per-pair bound on the small branch.** -/
+theorem small_pair_le {m d a a' : ℕ} (ha : 0 < a) (ha' : 0 < a') (hgcd : Nat.gcd a a' = 1)
+    (hda : d * a * a < m) (haa : a' < a) (hsmall : ¬ (d * a * (a + a') ≤ m)) :
+    ∑ b' ∈ (Finset.Ico 1 (gtBound m d a a')).filter (fun b' => a ∣ (m - a' * b')),
+        (d * a + (m - a' * b') / a)
+      ≤ (2 * d + 2) * (2 * (m / a)) := by
+  have hm : 0 < m := by omega
+  have haa0 : 0 < a + a' := by omega
+  -- every `b'` in range has `a' * b' ≤ m`
+  have hU : ∀ b ∈ Finset.Ico 1 (gtBound m d a a'), a' * b ≤ m := by
+    intro b hb
+    obtain ⟨-, -, h3⟩ := (mem_gtRange hm haa0 ha' hda).1 hb
+    omega
+  -- the count is at most `2d + 2`
+  have hsq : m < 2 * (d * a * a) := by nlinarith
+  have hcard : (((Finset.Ico 1 (gtBound m d a a')).filter
+      (fun b' => a ∣ (m - a' * b'))).card) ≤ 2 * d + 2 := by
+    refine le_trans (card_dvd_filter_le ha hgcd hU) ?_
+    have hb1 : gtBound m d a a' ≤ (m - 1) / (a + a') + 1 := min_le_left _ _
+    have hb2 : gtBound m d a a' ≤ (m - 1) / a + 1 :=
+      le_trans hb1 (by
+        have : (m - 1) / (a + a') ≤ (m - 1) / a := Nat.div_le_div_left (by omega) ha
+        omega)
+    have hb3 : gtBound m d a a' / a ≤ ((m - 1) / a + 1) / a := Nat.div_le_div_right hb2
+    have hb4 : ((m - 1) / a + 1) / a ≤ (m - 1) / (a * a) + 1 := by
+      rw [← Nat.div_div_eq_div_mul]
+      have h2 : ((m - 1) / a + 1) / a ≤ ((m - 1) / a + a) / a :=
+        Nat.div_le_div_right (by omega)
+      have h3 : ((m - 1) / a + a) / a = (m - 1) / a / a + 1 := Nat.add_div_right _ ha
+      omega
+    have hb5 : (m - 1) / (a * a) ≤ 2 * d := by
+      have heq : 2 * (d * a * a) = 2 * d * (a * a) := by ring
+      have h1 : m - 1 ≤ 2 * d * (a * a) := by omega
+      calc (m - 1) / (a * a) ≤ (2 * d * (a * a)) / (a * a) := Nat.div_le_div_right h1
+        _ = 2 * d := Nat.mul_div_cancel _ (by positivity)
+    omega
+  -- every summand is at most `2 * (m / a)`
+  have hterm : ∀ b' ∈ (Finset.Ico 1 (gtBound m d a a')).filter (fun b' => a ∣ (m - a' * b')),
+      d * a + (m - a' * b') / a ≤ 2 * (m / a) := by
+    intro b' _
+    have h1 : d * a ≤ m / a := by
+      refine (Nat.le_div_iff_mul_le ha).2 ?_
+      nlinarith
+    have h2 : (m - a' * b') / a ≤ m / a := Nat.div_le_div_right (by omega)
+    omega
+  calc ∑ b' ∈ (Finset.Ico 1 (gtBound m d a a')).filter (fun b' => a ∣ (m - a' * b')),
+        (d * a + (m - a' * b') / a)
+      ≤ ∑ _b' ∈ (Finset.Ico 1 (gtBound m d a a')).filter (fun b' => a ∣ (m - a' * b')),
+          2 * (m / a) := Finset.sum_le_sum hterm
+    _ = (((Finset.Ico 1 (gtBound m d a a')).filter
+          (fun b' => a ∣ (m - a' * b'))).card) * (2 * (m / a)) := by
+        rw [Finset.sum_const, smul_eq_mul]
+    _ ≤ (2 * d + 2) * (2 * (m / a)) := Nat.mul_le_mul_right _ hcard
+
+/-- **The small part is `O(m^{3/2}·√d)`.** -/
+theorem small_part_le {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
+    ∑ t ∈ (gtTriples m d).filter (fun t => ¬ (d * t.1 * (t.1 + t.2.1) ≤ m)),
+        (d * t.1 + (m - t.2.1 * t.2.2) / t.1)
+      ≤ (Nat.sqrt ((m - 1) / d) + 1) * ((2 * d + 2) * (2 * m)) := by
+  classical
+  rw [Finset.sum_filter,
+    gtTriples_decompose hm (fun a a' b' =>
+      if ¬ (d * a * (a + a') ≤ m) then d * a + (m - a' * b') / a else 0)]
+  -- each pair contributes at most `(2d+2) · 2·(m/a)`
+  have hpair : ∀ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
+      (∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
+          if ¬ (d * p.1 * (p.1 + p.2) ≤ m) then d * p.1 + (m - p.2 * b') / p.1 else 0)
+        ≤ (2 * d + 2) * (2 * (m / p.1)) := by
+    rintro ⟨a, a'⟩ hp
+    simp only [Finset.mem_filter] at hp
+    obtain ⟨hpair', hda⟩ := hp
+    obtain ⟨-, ha1, ha2, hgcd⟩ := mem_coprimePairs.1 hpair'
+    by_cases hsmall : ¬ (d * a * (a + a') ≤ m)
+    · simp only [hsmall, if_true]
+      exact small_pair_le (by omega) ha1 hgcd hda ha2 hsmall
+    · simp only [hsmall, if_false]
+      simp
+  refine le_trans (Finset.sum_le_sum hpair) ?_
+  -- decompose the pairs by their first component
+  rw [sum_coprimePairs_filter (m := m) (d := d)
+    (g := fun a _ => (2 * d + 2) * (2 * (m / a)))]
+  calc ∑ a ∈ (Finset.range (m + 1)).filter (fun a => d * a * a < m),
+        ∑ _a' ∈ (Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1),
+          (2 * d + 2) * (2 * (m / a))
+      ≤ ∑ _a ∈ (Finset.range (m + 1)).filter (fun a => d * a * a < m),
+          (2 * d + 2) * (2 * m) := by
+        refine Finset.sum_le_sum fun a ha => ?_
+        rw [Finset.sum_const, smul_eq_mul]
+        have hc : ((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card ≤ a := by
+          calc ((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card
+              ≤ (Finset.Ico 1 a).card := Finset.card_filter_le _ _
+            _ = a - 1 := by simp
+            _ ≤ a := Nat.sub_le _ _
+        have hma : a * (m / a) ≤ m := Nat.mul_div_le m a
+        calc ((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card
+              * ((2 * d + 2) * (2 * (m / a)))
+            ≤ a * ((2 * d + 2) * (2 * (m / a))) := Nat.mul_le_mul_right _ hc
+          _ = (2 * d + 2) * (2 * (a * (m / a))) := by ring
+          _ ≤ (2 * d + 2) * (2 * m) := by
+              exact Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hma)
+    _ = (((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card)
+          * ((2 * d + 2) * (2 * m)) := by rw [Finset.sum_const, smul_eq_mul]
+    _ ≤ (Nat.sqrt ((m - 1) / d) + 1) * ((2 * d + 2) * (2 * m)) :=
+        Nat.mul_le_mul_right _ (card_a_le hd)
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.
@@ -1238,6 +1384,12 @@ theorem card_mod_filter_le {a U c : ℕ} (ha : 0 < a) :
   (∑ q ∈ quadruplesQ n, q.2.1)
     = (∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1))
       + ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1)
+-- The small-part bound, checked numerically.
+#guard (List.range 12).all (fun mm => let m := mm + 1
+  (List.range 3).all (fun dd => let d := dd + 1
+    (∑ t ∈ (gtTriples m d).filter (fun t => ¬ (d * t.1 * (t.1 + t.2.1) ≤ m)),
+        (d * t.1 + (m - t.2.1 * t.2.2) / t.1))
+      ≤ (Nat.sqrt ((m - 1) / d) + 1) * ((2 * d + 2) * (2 * m))))
 -- The restricted triple sum, checked numerically.
 #guard (List.range 14).all (fun mm => let n := mm + 1
   (∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1))

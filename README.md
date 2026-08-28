@@ -113,7 +113,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Bulk/small split condition | Lemma 17 | `gtBound_bulk`, `gtTriples_bulk_small` | ✅ proved |
 | Small branch: `2d·a² > m` | Lemma 17 | `small_two_mul_gt` | ✅ proved |
 | AP counting `≤ U/a + 1` | Lemma 17 | `card_mod_filter_le` | ✅ proved |
-| Lemma 17: small-part bound, truncation, assembly | Lemma 17 | — | 🚧 remaining |
+| **Small-part bound `O(m^{3/2}√d)`** | Lemma 17 | `small_part_le` | ✅ **proved** |
+| Lemma 17: truncation, assembly | Lemma 17 | — | 🚧 remaining |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
