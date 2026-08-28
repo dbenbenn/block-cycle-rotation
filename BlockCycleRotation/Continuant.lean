@@ -582,6 +582,89 @@ theorem sum_remSum_eq (n : ℕ) :
     Finset.sum_eq_sum_Ico_succ_bot hlen]
   simp
 
+/-- A one-element list has `K` equal to its entry, so a head condition gives a
+lower bound on `K`. -/
+theorem two_le_K_of_length_one {l : List ℕ} (h : l.length = 1)
+    (hhead : ∀ x ∈ l.head?, 2 ≤ x) : 2 ≤ K l := by
+  obtain ⟨c, hc⟩ := List.length_eq_one_iff.1 h
+  subst hc
+  simpa using hhead c (by simp)
+
+/-- The same from a last-entry condition. -/
+theorem two_le_K_of_length_one' {l : List ℕ} (h : l.length = 1)
+    (hlast : ∀ x ∈ l.getLast?, 2 ≤ x) : 2 ≤ K l := by
+  obtain ⟨c, hc⟩ := List.length_eq_one_iff.1 h
+  subst hc
+  simpa using hlast c (by simp)
+
+/-- A prefix inherits the head condition. -/
+theorem head?_take_of_head? {L : List ℕ} {j : ℕ} (hj : 1 ≤ j)
+    (hhead : ∀ x ∈ L.head?, 2 ≤ x) : ∀ x ∈ (L.take j).head?, 2 ≤ x := by
+  intro x hx
+  apply hhead
+  rcases L with _ | ⟨a, t⟩
+  · simp at hx
+  · rcases j with _ | j'
+    · omega
+    · simp at hx ⊢
+      omega
+
+/-- A suffix inherits the last-entry condition. -/
+theorem getLast?_drop_of_getLast? {L : List ℕ} {j : ℕ} (hj : j < L.length)
+    (hlast : ∀ x ∈ L.getLast?, 2 ≤ x) : ∀ x ∈ (L.drop j).getLast?, 2 ≤ x := by
+  have hdropne : L.drop j ≠ [] := by
+    intro hc
+    have hl : (L.drop j).length = 0 := by rw [hc]; simp
+    rw [List.length_drop] at hl
+    omega
+  have hgl : L.getLast? = (L.drop j).getLast? := by
+    conv_lhs => rw [← List.take_append_drop j L]
+    exact List.getLast?_append_of_ne_nil _ hdropne
+  intro x hx
+  exact hlast x (hgl ▸ hx)
+
+/-- **The quadruple produced by a split.**  For a shift `k` the algorithm
+recurses on and an interior split point `j`, the four continuants satisfy every
+condition defining Heilbronn's target set. -/
+theorem split_quadruple {n k j : ℕ} (hk : k ∈ shifts n) (hj1 : 1 ≤ j)
+    (hj2 : j < (cf n k).length) :
+    n = K ((cf n k).take j) * K ((cf n k).drop j)
+        + K ((cf n k).take j).dropLast * K ((cf n k).drop j).tail
+      ∧ 1 ≤ K ((cf n k).take j).dropLast
+      ∧ K ((cf n k).take j).dropLast < K ((cf n k).take j)
+      ∧ 1 ≤ K ((cf n k).drop j).tail
+      ∧ K ((cf n k).drop j).tail < K ((cf n k).drop j)
+      ∧ Nat.gcd (K ((cf n k).take j)) (K ((cf n k).take j).dropLast) = 1
+      ∧ Nat.gcd (K ((cf n k).drop j)) (K ((cf n k).drop j).tail) = 1 := by
+  obtain ⟨-, hk1, hk2, hgcd⟩ := mem_shifts.1 hk
+  have hkn : k < n := by omega
+  have hkne : k ≠ 0 := by omega
+  obtain ⟨hne, hpos, hhead⟩ := cf_spec k n hk1 hkn hgcd
+  have hlast := two_le_cf_getLast hkne hk2
+  have hKn : K (cf n k) = n := (K_cf k n hk1 hkn hgcd).1
+  -- the two halves
+  have hne₁ : (cf n k).take j ≠ [] := by
+    intro hc
+    have hl : ((cf n k).take j).length = 0 := by rw [hc]; simp
+    rw [List.length_take] at hl
+    omega
+  have hne₂ : (cf n k).drop j ≠ [] := by
+    intro hc
+    have hl : ((cf n k).drop j).length = 0 := by rw [hc]; simp
+    rw [List.length_drop] at hl
+    omega
+  have hpos₁ : ∀ c ∈ (cf n k).take j, 1 ≤ c := fun c hc => hpos c (List.take_subset j _ hc)
+  have hpos₂ : ∀ c ∈ (cf n k).drop j, 1 ≤ c := fun c hc => hpos c (List.drop_subset j _ hc)
+  have hfirst : ((cf n k).take j).length = 1 → 2 ≤ K ((cf n k).take j) := fun h =>
+    two_le_K_of_length_one h (head?_take_of_head? hj1 hhead)
+  have hlast' : ((cf n k).drop j).length = 1 → 2 ≤ K ((cf n k).drop j) := fun h =>
+    two_le_K_of_length_one' h (getLast?_drop_of_getLast? hj2 hlast)
+  obtain ⟨hsum, h₁, h₂, h₃, h₄, h₅, h₆⟩ :=
+    heilbronn_forward hne₁ hne₂ hpos₁ hpos₂ hfirst hlast'
+  refine ⟨?_, h₂, h₁, h₄, h₃, h₅, h₆⟩
+  rw [List.take_append_drop, hKn] at hsum
+  exact hsum
+
 /-- **The round trip on a split.**  For a normalised expansion `L` and an
 interior split point, both halves are recovered from their continuants — the
 prefix directly, the suffix after reversing.  This is what makes the passage
@@ -602,15 +685,7 @@ theorem heilbronn_split_roundtrip {L : List ℕ} (hpos : ∀ c ∈ L, 1 ≤ c)
     rw [List.length_take] at this
     omega
   have hpos₁ : ∀ c ∈ L.take j, 1 ≤ c := fun c hc => hpos c (List.take_subset j L hc)
-  have hhead₁ : ∀ x ∈ (L.take j).head?, 2 ≤ x := by
-    intro x hx
-    apply hhead
-    rcases L with _ | ⟨a, t⟩
-    · simp at hL
-    · rcases j with _ | j'
-      · omega
-      · simp at hx ⊢
-        omega
+  have hhead₁ : ∀ x ∈ (L.take j).head?, 2 ≤ x := head?_take_of_head? hj1 hhead
   -- the reversed suffix inherits the last-entry condition as a head condition
   have hne₂ : (L.drop j).reverse ≠ [] := by
     intro hc
@@ -667,5 +742,12 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
 -- we get `30/7 = 4`.
 #guard (cf 30 13).getLast? = some 2
 #guard (cf 30 7).getLast? = some 4
+-- Splitting `cf 30 7 = [2,3,4]` at `j = 1` gives `a = K [2] = 2`,
+-- `b = K [3,4] = 13`, `a' = K [] = 1`, `b' = K [4] = 4`, and indeed
+-- `2 * 13 + 1 * 4 = 30`.
+#guard K ((cf 30 7).take 1) * K ((cf 30 7).drop 1)
+        + K ((cf 30 7).take 1).dropLast * K ((cf 30 7).drop 1).tail = 30
+#guard K ((cf 30 7).take 2) * K ((cf 30 7).drop 2)
+        + K ((cf 30 7).take 2).dropLast * K ((cf 30 7).drop 2).tail = 30
 
 end BlockCycleRotation
