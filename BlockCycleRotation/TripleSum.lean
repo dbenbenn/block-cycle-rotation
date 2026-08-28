@@ -1414,6 +1414,77 @@ theorem bulk_of_le_sqrt {m d a a' : ℕ} (ha' : 1 ≤ a') (haa : a' < a)
   calc 2 * d * (a * a) ≤ 2 * d * (m / (2 * d)) := Nat.mul_le_mul_left _ h1
     _ ≤ m := Nat.mul_div_le m (2 * d)
 
+/-! ## The floor analysis
+
+The main term is evaluated at the natural-number bound `U`, but the paper's
+computation substitutes the real value `V = m/(a+a')`.  The two differ, and the
+discrepancy must be bounded.  It has an exact algebraic form: for the quadratic
+`f(x) = A(x-1) + B(x-1)x/2`,
+
+```
+f(U) - f(V) = (U - V) · (A + (B/2)(U + V - 1)),
+```
+
+so with `|U - V| ≤ 1` — which is exactly the floor property — the discrepancy is
+controlled by the coefficients. -/
+
+/-- **The exact discrepancy of the quadratic main term.** -/
+theorem quadratic_diff (A B U V : ℝ) :
+    (A * (U - 1) + B * ((U - 1) * U / 2)) - (A * (V - 1) + B * ((V - 1) * V / 2))
+      = (U - V) * (A + (B / 2) * (U + V - 1)) := by ring
+
+/-- The floor is within `1` from below. -/
+theorem lt_natCast_div_add_one {x y : ℕ} (hy : 0 < y) :
+    (x : ℝ) / (y : ℝ) < ((x / y : ℕ) : ℝ) + 1 := by
+  have hy' : (0 : ℝ) < (y : ℝ) := by exact_mod_cast hy
+  rw [div_lt_iff₀ hy']
+  have h1 : x < y * (x / y + 1) := by
+    have h2 := Nat.div_add_mod x y
+    have h3 := Nat.mod_lt x hy
+    nlinarith
+  have h4 : (x : ℝ) < ((y * (x / y + 1) : ℕ) : ℝ) := by exact_mod_cast h1
+  push_cast at h4
+  linarith
+
+/-- **The floor is within `1` of the real quotient.** -/
+theorem abs_natCast_div_sub_le_one {x y : ℕ} (hy : 0 < y) :
+    |((x / y : ℕ) : ℝ) - (x : ℝ) / (y : ℝ)| ≤ 1 := by
+  have h1 : ((x / y : ℕ) : ℝ) ≤ (x : ℝ) / (y : ℝ) := Nat.cast_div_le
+  have h2 : (x : ℝ) / (y : ℝ) < ((x / y : ℕ) : ℝ) + 1 := lt_natCast_div_add_one hy
+  rw [abs_le]
+  constructor <;> linarith
+
+/-- **The rounding term, in the paper's form.**
+
+The paper compares the closed form at the *real* bound `V` — namely
+`A·V + B·V²/2` — with the actual sum `∑_{1 ≤ b' < V} (A + B·b')`, and bounds the
+difference by `|A| + |B·V|`.  Writing `K` for the largest admissible `b'`, so
+that `K ≤ V < K+1` and the sum is `A·K + B·K(K+1)/2`, that is what is proved
+here. -/
+theorem main_term_vs_sum (A B V : ℝ) (K : ℕ) (hK : (K : ℝ) ≤ V) (hK1 : V < (K : ℝ) + 1)
+    (hV : 1 ≤ V) :
+    |(A * V + B * V ^ 2 / 2) - (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2)|
+      ≤ |A| + |B| * V := by
+  have hKnn : (0 : ℝ) ≤ (K : ℝ) := by positivity
+  have hdiff : (A * V + B * V ^ 2 / 2) - (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
+      = A * (V - (K : ℝ)) + B / 2 * (V ^ 2 - (K : ℝ) ^ 2 - (K : ℝ)) := by ring
+  rw [hdiff]
+  have h1 : |V - (K : ℝ)| ≤ 1 := by
+    rw [abs_le]
+    constructor <;> linarith
+  have h2 : |V ^ 2 - (K : ℝ) ^ 2 - (K : ℝ)| ≤ 2 * V := by
+    rw [abs_le]
+    constructor <;> nlinarith
+  calc |A * (V - (K : ℝ)) + B / 2 * (V ^ 2 - (K : ℝ) ^ 2 - (K : ℝ))|
+      ≤ |A * (V - (K : ℝ))| + |B / 2 * (V ^ 2 - (K : ℝ) ^ 2 - (K : ℝ))| := abs_add_le _ _
+    _ = |A| * |V - (K : ℝ)| + |B| / 2 * |V ^ 2 - (K : ℝ) ^ 2 - (K : ℝ)| := by
+        rw [abs_mul, abs_mul, abs_div, abs_two]
+    _ ≤ |A| * 1 + |B| / 2 * (2 * V) := by
+        have ha := abs_nonneg A
+        have hb : (0 : ℝ) ≤ |B| / 2 := by positivity
+        nlinarith
+    _ = |A| + |B| * V := by ring
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.

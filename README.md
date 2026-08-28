@@ -116,6 +116,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | **Small-part bound `O(m^{3/2}√d)`** | Lemma 17 | `small_part_le` | ✅ **proved** |
 | Closed form of the main term | Lemma 17 | `sum_linear_Ico` | ✅ proved |
 | **Truncation of the series for `C`** | Lemma 17 | `cConst_le_bulk_add` | ✅ **proved** |
+| Rounding term (paper's `G₂` form) | Lemma 17 / §4 | `main_term_vs_sum` | ✅ proved |
 | Lemma 17: final assembly | Lemma 17 | — | 🚧 remaining |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
