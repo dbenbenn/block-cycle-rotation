@@ -175,7 +175,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Row bound `∑_{a'<a} gTerm ≤ 5/(8a²)` | §4 | `gTerm_row_le` | ✅ proved |
 | `ζ(3) ∈ [1.2018, 1.2023]` | Remark 21 | `zeta3_ge`, `zeta3_le` | ✅ proved |
 | **`D ≤ 1.85`**, the paper's value | Thm A / Thm 13 | `dConst_le_185` | ✅ **proved** |
-| **`1.81 ≤ D ≤ 1.85`** | Thm A / Thm 13 | `dConst_enclosure` | ✅ **proved** |
+| Row bound from below `≥ 5(a−1)/(9a³)` | §4 | `gTerm_row_ge` | ✅ proved |
+| **`1.84 ≤ D ≤ 1.85`** | Thm A / Thm 13 | `dConst_enclosure` | ✅ **proved** |
 | Summand rewriting | Remark 21 | `gTerm_eq` | ✅ proved |
 | `ζ(3)` removes the coprimality | Remark 21 | `tsum_gTerm_eq`, `zeta3_mul_cConst` | ✅ proved |
 | Telescoping `∑_k [1/k − 1/(n+k)] = H_n` | Remark 21 | `tsum_telescope` | ✅ proved |

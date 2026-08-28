@@ -273,6 +273,115 @@ theorem dConst_le_185 : dConst ≤ 1.85 := by
   norm_num
   linarith
 
+/-! ## Lower bounds for the row sums
+
+The same reflection `j ↦ a-j`, now bounding the products from *above*:
+`(a+j)(2a-j) ≤ (9/4)a²`, because the difference is `(j - a/2)²`.  That gives
+`1/(a+j) + 1/(2a-j) ≥ 4/(3a)` and, with `1/x² + 1/y² ≥ 2/(xy)`,
+`1/(a+j)² + 1/(2a-j)² ≥ 8/(9a²)`. -/
+
+theorem sum_shift_reflect (a : ℕ) (f : ℝ → ℝ) :
+    ∑ j ∈ Finset.Ico 1 a, f ((a : ℝ) + (j : ℝ))
+      = ∑ j ∈ Finset.Ico 1 a, f (2 * (a : ℝ) - (j : ℝ)) := by
+  refine Finset.sum_bij' (i := fun j _ => a - j) (j := fun j _ => a - j) ?_ ?_ ?_ ?_ ?_
+  · intro j h; rw [Finset.mem_Ico] at h ⊢; omega
+  · intro j h; rw [Finset.mem_Ico] at h ⊢; omega
+  · intro j h; rw [Finset.mem_Ico] at h; omega
+  · intro j h; rw [Finset.mem_Ico] at h; omega
+  · intro j h
+    rw [Finset.mem_Ico] at h
+    have hcast : ((a - j : ℕ) : ℝ) = (a : ℝ) - (j : ℝ) := by
+      push_cast [Nat.cast_sub (by omega : j ≤ a)]
+      ring
+    rw [hcast]
+    congr 1
+    ring
+
+theorem prod_shift_le {a : ℕ} {j : ℕ} :
+    ((a : ℝ) + (j : ℝ)) * (2 * (a : ℝ) - (j : ℝ)) ≤ 9 / 4 * (a : ℝ) ^ 2 := by
+  nlinarith [sq_nonneg ((j : ℝ) - (a : ℝ) / 2)]
+
+theorem sum_inv_shift_ge {a : ℕ} (ha : 1 ≤ a) :
+    2 * ((a : ℝ) - 1) / (3 * (a : ℝ)) ≤ ∑ j ∈ Finset.Ico 1 a, 1 / ((a : ℝ) + (j : ℝ)) := by
+  have haR : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast ha
+  have hpair : ∀ j ∈ Finset.Ico 1 a,
+      4 / (3 * (a : ℝ)) ≤ 1 / ((a : ℝ) + (j : ℝ)) + 1 / (2 * (a : ℝ) - (j : ℝ)) := by
+    intro j h
+    rw [Finset.mem_Ico] at h
+    have hj1 : (1 : ℝ) ≤ (j : ℝ) := by exact_mod_cast h.1
+    have hja : (j : ℝ) < (a : ℝ) := by exact_mod_cast h.2
+    have hd1 : (0 : ℝ) < (a : ℝ) + (j : ℝ) := by linarith
+    have hd2 : (0 : ℝ) < 2 * (a : ℝ) - (j : ℝ) := by linarith
+    rw [div_add_div _ _ (ne_of_gt hd1) (ne_of_gt hd2), div_le_div_iff₀ (by positivity)
+      (by positivity)]
+    nlinarith [prod_shift_le (a := a) (j := j), hd1, hd2]
+  have hdouble : (∑ j ∈ Finset.Ico 1 a, 1 / ((a : ℝ) + (j : ℝ)))
+      + ∑ j ∈ Finset.Ico 1 a, 1 / (2 * (a : ℝ) - (j : ℝ))
+      ≥ ((a : ℝ) - 1) * (4 / (3 * (a : ℝ))) := by
+    rw [← Finset.sum_add_distrib]
+    have hcard : ((a - 1 : ℕ) : ℝ) = (a : ℝ) - 1 := by
+      push_cast [Nat.cast_sub ha]
+      ring
+    calc ((a : ℝ) - 1) * (4 / (3 * (a : ℝ)))
+        = ∑ _j ∈ Finset.Ico 1 a, 4 / (3 * (a : ℝ)) := by
+          rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul, hcard]
+      _ ≤ ∑ j ∈ Finset.Ico 1 a, (1 / ((a : ℝ) + (j : ℝ)) + 1 / (2 * (a : ℝ) - (j : ℝ))) :=
+          Finset.sum_le_sum hpair
+  rw [← sum_shift_reflect a (fun x => 1 / x)] at hdouble
+  have ha0 : (0 : ℝ) < (a : ℝ) := by linarith
+  have hrw : ((a : ℝ) - 1) * (4 / (3 * (a : ℝ))) = 2 * (2 * ((a : ℝ) - 1) / (3 * (a : ℝ))) := by
+    field_simp
+    ring
+  rw [hrw] at hdouble
+  linarith
+
+theorem sum_inv_sq_shift_ge {a : ℕ} (ha : 1 ≤ a) :
+    4 * ((a : ℝ) - 1) / (9 * (a : ℝ) ^ 2)
+      ≤ ∑ j ∈ Finset.Ico 1 a, 1 / ((a : ℝ) + (j : ℝ)) ^ 2 := by
+  have haR : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast ha
+  have hpair : ∀ j ∈ Finset.Ico 1 a,
+      8 / (9 * (a : ℝ) ^ 2)
+        ≤ 1 / ((a : ℝ) + (j : ℝ)) ^ 2 + 1 / (2 * (a : ℝ) - (j : ℝ)) ^ 2 := by
+    intro j h
+    rw [Finset.mem_Ico] at h
+    have hj1 : (1 : ℝ) ≤ (j : ℝ) := by exact_mod_cast h.1
+    have hja : (j : ℝ) < (a : ℝ) := by exact_mod_cast h.2
+    have hd1 : (0 : ℝ) < (a : ℝ) + (j : ℝ) := by linarith
+    have hd2 : (0 : ℝ) < 2 * (a : ℝ) - (j : ℝ) := by linarith
+    have hprod := prod_shift_le (a := a) (j := j)
+    have hamgm : 2 / (((a : ℝ) + (j : ℝ)) * (2 * (a : ℝ) - (j : ℝ)))
+        ≤ 1 / ((a : ℝ) + (j : ℝ)) ^ 2 + 1 / (2 * (a : ℝ) - (j : ℝ)) ^ 2 := by
+      rw [div_add_div _ _ (by positivity) (by positivity), div_le_div_iff₀ (by positivity)
+        (by positivity)]
+      nlinarith [mul_nonneg (mul_pos hd1 hd2).le
+        (sq_nonneg (((a : ℝ) + (j : ℝ)) - (2 * (a : ℝ) - (j : ℝ))))]
+    have hstep : 8 / (9 * (a : ℝ) ^ 2)
+        ≤ 2 / (((a : ℝ) + (j : ℝ)) * (2 * (a : ℝ) - (j : ℝ))) := by
+      rw [div_le_div_iff₀ (by positivity) (by positivity)]
+      nlinarith [hprod]
+    linarith
+  have hdouble : (∑ j ∈ Finset.Ico 1 a, 1 / ((a : ℝ) + (j : ℝ)) ^ 2)
+      + ∑ j ∈ Finset.Ico 1 a, 1 / (2 * (a : ℝ) - (j : ℝ)) ^ 2
+      ≥ ((a : ℝ) - 1) * (8 / (9 * (a : ℝ) ^ 2)) := by
+    rw [← Finset.sum_add_distrib]
+    have hcard : ((a - 1 : ℕ) : ℝ) = (a : ℝ) - 1 := by
+      push_cast [Nat.cast_sub ha]
+      ring
+    calc ((a : ℝ) - 1) * (8 / (9 * (a : ℝ) ^ 2))
+        = ∑ _j ∈ Finset.Ico 1 a, 8 / (9 * (a : ℝ) ^ 2) := by
+          rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul, hcard]
+      _ ≤ ∑ j ∈ Finset.Ico 1 a,
+            (1 / ((a : ℝ) + (j : ℝ)) ^ 2 + 1 / (2 * (a : ℝ) - (j : ℝ)) ^ 2) :=
+          Finset.sum_le_sum hpair
+  rw [← sum_shift_reflect a (fun x => 1 / x ^ 2)] at hdouble
+  have ha0 : (0 : ℝ) < (a : ℝ) := by linarith
+  have hrw : ((a : ℝ) - 1) * (8 / (9 * (a : ℝ) ^ 2))
+      = 2 * (4 * ((a : ℝ) - 1) / (9 * (a : ℝ) ^ 2)) := by
+    field_simp
+    ring
+  rw [hrw] at hdouble
+  linarith
+
 /-! ## A matching lower bound
 
 `ζ(3) ≤ ∑_{d≤50} 1/d³ + 1/2550`, using `1/m³ ≤ (1/51)·1/m²` past `m = 50` and
@@ -346,15 +455,210 @@ theorem cConst_ge : (2025 : ℝ) / 10000 ≤ cConst := by
     mul_le_mul_of_nonneg_right zeta3_le cConst_nonneg
   nlinarith [hlow, hup]
 
-/-- **`1.81 ≤ D`.** -/
-theorem dConst_ge_181 : (1.81 : ℝ) ≤ dConst := by
+/-! ## Sharpening the lower bound to `1.84`
+
+Dropping the tail entirely costs `0.5966/N`; recovering most of it needs a row
+bound from below.  The reflection gives `∑_{a'<a} gTerm ≥ 5(a-1)/(9a³)`, which
+for `a ≥ 61` is at least `0.54/a²`, and `∑_{a>60} 1/a² ≥ 1/61` telescopes. -/
+
+theorem gTerm_row_ge {a : ℕ} (ha : 61 ≤ a) :
+    (54 / 100 : ℝ) / (a : ℝ) ^ 2 ≤ ∑ a' ∈ Finset.range a, gTerm (a, a') := by
+  have ha1 : 1 ≤ a := by omega
+  have haR : (61 : ℝ) ≤ (a : ℝ) := by exact_mod_cast ha
+  have ha0 : (0 : ℝ) < (a : ℝ) := by linarith
+  have hrange : Finset.range a = insert 0 (Finset.Ico 1 a) := by
+    ext k
+    rw [Finset.mem_range, Finset.mem_insert, Finset.mem_Ico]
+    omega
+  have h0 : gTerm (a, 0) = 0 := by simp [gTerm]
+  rw [hrange, Finset.sum_insert (by simp), h0, zero_add]
+  have hsplit : ∀ a' ∈ Finset.Ico 1 a, gTerm (a, a')
+      = 1 / (2 * (a : ℝ)) * (1 / ((a : ℝ) + (a' : ℝ)) ^ 2)
+        + 1 / (2 * (a : ℝ) ^ 2) * (1 / ((a : ℝ) + (a' : ℝ))) := by
+    intro a' h
+    rw [Finset.mem_Ico] at h
+    unfold gTerm
+    rw [if_pos ⟨h.1, h.2⟩]
+    have haa : (0 : ℝ) < (a : ℝ) + (a' : ℝ) := by positivity
+    field_simp
+    ring
+  rw [Finset.sum_congr rfl hsplit, Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum]
+  have hb1 : 1 / (2 * (a : ℝ)) * (4 * ((a : ℝ) - 1) / (9 * (a : ℝ) ^ 2))
+      ≤ 1 / (2 * (a : ℝ)) * (∑ a' ∈ Finset.Ico 1 a, 1 / ((a : ℝ) + (a' : ℝ)) ^ 2) :=
+    mul_le_mul_of_nonneg_left (sum_inv_sq_shift_ge ha1) (by positivity)
+  have hb2 : 1 / (2 * (a : ℝ) ^ 2) * (2 * ((a : ℝ) - 1) / (3 * (a : ℝ)))
+      ≤ 1 / (2 * (a : ℝ) ^ 2) * (∑ a' ∈ Finset.Ico 1 a, 1 / ((a : ℝ) + (a' : ℝ))) :=
+    mul_le_mul_of_nonneg_left (sum_inv_shift_ge ha1) (by positivity)
+  have harith : (54 / 100 : ℝ) / (a : ℝ) ^ 2
+      ≤ 1 / (2 * (a : ℝ)) * (4 * ((a : ℝ) - 1) / (9 * (a : ℝ) ^ 2))
+        + 1 / (2 * (a : ℝ) ^ 2) * (2 * ((a : ℝ) - 1) / (3 * (a : ℝ))) := by
+    rw [div_le_iff₀ (by positivity)]
+    have hexp : (1 / (2 * (a : ℝ)) * (4 * ((a : ℝ) - 1) / (9 * (a : ℝ) ^ 2))
+        + 1 / (2 * (a : ℝ) ^ 2) * (2 * ((a : ℝ) - 1) / (3 * (a : ℝ)))) * (a : ℝ) ^ 2
+        = 5 * ((a : ℝ) - 1) / (9 * (a : ℝ)) := by
+      field_simp
+      ring
+    rw [hexp, le_div_iff₀ (by positivity)]
+    linarith
+  linarith
+
+/-! ### The telescoping tail of `∑ 1/a²` -/
+
+theorem tsum_telescope_inv {K : ℕ} (hK : 0 < K) :
+    ∑' j : ℕ, (1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1)) = 1 / (K : ℝ) := by
+  have hKR : (0 : ℝ) < (K : ℝ) := by exact_mod_cast hK
+  have hnn : ∀ j : ℕ, 0 ≤ 1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1) := by
+    intro j
+    have h1 : (0 : ℝ) < (j : ℝ) + (K : ℝ) := by positivity
+    have := one_div_le_one_div_of_le h1 (by linarith : (j : ℝ) + (K : ℝ) ≤ (j : ℝ) + (K : ℝ) + 1)
+    linarith
+  have hle : ∀ j : ℕ, 1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1)
+      ≤ 1 / ((j : ℝ) + (K : ℝ)) ^ 2 := by
+    intro j
+    have h1 : (0 : ℝ) < (j : ℝ) + (K : ℝ) := by positivity
+    have hrw : 1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1)
+        = 1 / (((j : ℝ) + (K : ℝ)) * ((j : ℝ) + (K : ℝ) + 1)) := by
+      field_simp
+      ring
+    rw [hrw]
+    refine one_div_le_one_div_of_le (by positivity) ?_
+    nlinarith
+  have hgs : Summable (fun j : ℕ => 1 / ((j : ℝ) + (K : ℝ)) ^ 2) := by
+    have h0 : Summable (fun m : ℕ => 1 / (m : ℝ) ^ 2) := by
+      rw [Real.summable_one_div_nat_pow]; norm_num
+    refine ((summable_nat_add_iff K).2 h0).congr fun j => ?_
+    push_cast
+    ring_nf
+  have hs : Summable (fun j : ℕ => 1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1)) :=
+    Summable.of_nonneg_of_le hnn hle hgs
+  refine (hs.hasSum_iff_tendsto_nat.2 ?_).tsum_eq
+  have hpart : ∀ N : ℕ, ∑ j ∈ Finset.range N,
+      (1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1))
+      = 1 / (K : ℝ) - 1 / ((N : ℝ) + (K : ℝ)) := by
+    intro N
+    induction N with
+    | zero => simp
+    | succ M ih =>
+      rw [Finset.sum_range_succ, ih]
+      push_cast
+      ring
+  have hzero : Filter.Tendsto (fun N : ℕ => 1 / ((N : ℝ) + (K : ℝ))) Filter.atTop (nhds 0) := by
+    have hK1 : (1 : ℝ) ≤ (K : ℝ) := by exact_mod_cast hK
+    refine squeeze_zero (fun N => by positivity) (fun N => ?_)
+      tendsto_one_div_add_atTop_nhds_zero_nat
+    exact one_div_le_one_div_of_le (by positivity) (by linarith)
+  have hlim : Filter.Tendsto (fun N : ℕ => 1 / (K : ℝ) - 1 / ((N : ℝ) + (K : ℝ)))
+      Filter.atTop (nhds (1 / (K : ℝ))) := by
+    have h := Filter.Tendsto.sub (tendsto_const_nhds (x := 1 / (K : ℝ))) hzero
+    rw [sub_zero] at h
+    exact h
+  exact hlim.congr (fun N => (hpart N).symm)
+
+theorem tsum_inv_sq_ge {K : ℕ} (hK : 0 < K) :
+    (1 : ℝ) / (K : ℝ) ≤ ∑' j : ℕ, 1 / ((j : ℝ) + (K : ℝ)) ^ 2 := by
+  have hgs : Summable (fun j : ℕ => 1 / ((j : ℝ) + (K : ℝ)) ^ 2) := by
+    have h0 : Summable (fun m : ℕ => 1 / (m : ℝ) ^ 2) := by
+      rw [Real.summable_one_div_nat_pow]; norm_num
+    refine ((summable_nat_add_iff K).2 h0).congr fun j => ?_
+    push_cast
+    ring_nf
+  have hnn : ∀ j : ℕ, 0 ≤ 1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1) := by
+    intro j
+    have h1 : (0 : ℝ) < (j : ℝ) + (K : ℝ) := by
+      have : (0 : ℝ) < (K : ℝ) := by exact_mod_cast hK
+      positivity
+    have := one_div_le_one_div_of_le h1 (by linarith : (j : ℝ) + (K : ℝ) ≤ (j : ℝ) + (K : ℝ) + 1)
+    linarith
+  have hle : ∀ j : ℕ, 1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1)
+      ≤ 1 / ((j : ℝ) + (K : ℝ)) ^ 2 := by
+    intro j
+    have h1 : (0 : ℝ) < (j : ℝ) + (K : ℝ) := by
+      have : (0 : ℝ) < (K : ℝ) := by exact_mod_cast hK
+      positivity
+    have hrw : 1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1)
+        = 1 / (((j : ℝ) + (K : ℝ)) * ((j : ℝ) + (K : ℝ) + 1)) := by
+      field_simp
+      ring
+    rw [hrw]
+    refine one_div_le_one_div_of_le (by positivity) ?_
+    nlinarith
+  have hs : Summable (fun j : ℕ => 1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1)) :=
+    Summable.of_nonneg_of_le hnn hle hgs
+  calc (1 : ℝ) / (K : ℝ)
+      = ∑' j : ℕ, (1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1)) :=
+        (tsum_telescope_inv hK).symm
+    _ ≤ ∑' j : ℕ, 1 / ((j : ℝ) + (K : ℝ)) ^ 2 := hs.tsum_le_tsum hle hgs
+
+/-! ### The tail from below, and `D ≥ 1.84` -/
+
+set_option maxHeartbeats 800000 in
+-- Several tsum manipulations chained.
+theorem tsum_gTerm_ge :
+    (∑ a ∈ Finset.range 61, ∑ a' ∈ Finset.range a, gTerm (a, a')) + (54 / 100) * (1 / 61)
+      ≤ ∑' p, gTerm p := by
+  have hnn : (0 : ℕ × ℕ → ℝ) ≤ gTerm := fun p => gTerm_nonneg p
+  have hrows := (summable_prod_of_nonneg hnn).1 gTerm_summable
+  have hrowsum : Summable (fun a : ℕ => ∑ a' ∈ Finset.range a, gTerm (a, a')) := by
+    refine hrows.2.congr fun a => ?_
+    exact tsum_eq_sum (gTerm_row_support a)
+  have hshift : Summable (fun j : ℕ => ∑ a' ∈ Finset.range (j + 61), gTerm (j + 61, a')) :=
+    (summable_nat_add_iff (f := fun a : ℕ => ∑ a' ∈ Finset.range a, gTerm (a, a')) 61).2 hrowsum
+  have hgs : Summable (fun j : ℕ => (54 / 100 : ℝ) * (1 / ((j : ℝ) + 61) ^ 2)) := by
+    have h0 : Summable (fun m : ℕ => 1 / (m : ℝ) ^ 2) := by
+      rw [Real.summable_one_div_nat_pow]; norm_num
+    have h1 : Summable (fun j : ℕ => 1 / ((j : ℝ) + 61) ^ 2) := by
+      refine ((summable_nat_add_iff 61).2 h0).congr fun j => ?_
+      push_cast
+      ring_nf
+    exact h1.mul_left _
+  have hsplit : (∑ a ∈ Finset.range 61, ∑ a' ∈ Finset.range a, gTerm (a, a'))
+      + ∑' j : ℕ, (∑ a' ∈ Finset.range (j + 61), gTerm (j + 61, a'))
+      = ∑' p, gTerm p := by
+    rw [gTerm_eq_tsum_finRows]
+    exact hrowsum.sum_add_tsum_nat_add 61
+  have htail : (54 / 100 : ℝ) * (1 / 61)
+      ≤ ∑' j : ℕ, (∑ a' ∈ Finset.range (j + 61), gTerm (j + 61, a')) := by
+    have hterm : ∀ j : ℕ, (54 / 100 : ℝ) * (1 / ((j : ℝ) + 61) ^ 2)
+        ≤ ∑ a' ∈ Finset.range (j + 61), gTerm (j + 61, a') := by
+      intro j
+      have h := gTerm_row_ge (a := j + 61) (by omega)
+      have hcast : ((j + 61 : ℕ) : ℝ) = (j : ℝ) + 61 := by push_cast; ring
+      rw [hcast] at h
+      calc (54 / 100 : ℝ) * (1 / ((j : ℝ) + 61) ^ 2)
+          = (54 / 100 : ℝ) / ((j : ℝ) + 61) ^ 2 := by ring
+        _ ≤ _ := h
+    have hK := tsum_inv_sq_ge (K := 61) (by norm_num)
+    have hcast61 : ((61 : ℕ) : ℝ) = 61 := by norm_num
+    rw [hcast61] at hK
+    have h1 : (54 / 100 : ℝ) * (1 / 61) ≤ (54 / 100 : ℝ) * ∑' j : ℕ, 1 / ((j : ℝ) + 61) ^ 2 :=
+      mul_le_mul_of_nonneg_left hK (by norm_num)
+    have h2 : (54 / 100 : ℝ) * ∑' j : ℕ, 1 / ((j : ℝ) + 61) ^ 2
+        = ∑' j : ℕ, (54 / 100 : ℝ) * (1 / ((j : ℝ) + 61) ^ 2) := tsum_mul_left.symm
+    rw [h2] at h1
+    exact le_trans h1 (hgs.tsum_le_tsum hterm hshift)
+  rw [← hsplit]
+  exact add_le_add_right htail _
+
+/-- **`C ≥ 0.21`.** -/
+theorem cConst_ge_21_100 : (21 : ℝ) / 100 ≤ cConst := by
+  have hG : zeta3 * cConst = ∑' p, gTerm p := by
+    rw [zeta3_mul_cConst, tsum_gTerm]
+  have hlow : (2443 : ℝ) / 10000 + (54 / 100) * (1 / 61) ≤ zeta3 * cConst := by
+    rw [hG]
+    linarith [gTerm_partial_ge, tsum_gTerm_ge]
+  have hup : zeta3 * cConst ≤ (12023 / 10000 : ℝ) * cConst :=
+    mul_le_mul_of_nonneg_right zeta3_le cConst_nonneg
+  nlinarith [hlow, hup]
+
+/-- **`1.84 ≤ D`.** -/
+theorem dConst_ge_184 : (1.84 : ℝ) ≤ dConst := by
   rw [dConst]
-  have h := cConst_ge
+  have h := cConst_ge_21_100
   norm_num
   linarith
 
-/-- **The paper's `D ≈ 1.85`, certified:** `1.81 ≤ D ≤ 1.85`. -/
-theorem dConst_enclosure : (1.81 : ℝ) ≤ dConst ∧ dConst ≤ 1.85 :=
-  ⟨dConst_ge_181, dConst_le_185⟩
+/-- **The paper's `D ≈ 1.85`, certified:** `1.84 ≤ D ≤ 1.85`. -/
+theorem dConst_enclosure : (1.84 : ℝ) ≤ dConst ∧ dConst ≤ 1.85 :=
+  ⟨dConst_ge_184, dConst_le_185⟩
 
 end BlockCycleRotation
