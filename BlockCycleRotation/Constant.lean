@@ -155,4 +155,101 @@ theorem cConst_eq_tsum_finRows : cConst = ∑' a : ℕ, ∑ a' ∈ Finset.range 
   refine tsum_congr fun a => ?_
   exact tsum_eq_sum (s := Finset.range a) (cTerm_row_support a)
 
+/-! ## The tail bound
+
+`∑_{a > N} 1/a² ≤ 1/N`, by telescoping against `1/(a-1) - 1/a`.  Mathlib has the
+summability of the `p`-series but no tail estimate, so this is proved here. -/
+
+/-- Telescoping: `∑_{N < a ≤ M} 1/a² ≤ 1/N - 1/M`. -/
+theorem sum_inv_sq_Ioc_le {N : ℕ} (hN : 0 < N) :
+    ∀ M, N ≤ M → ∑ a ∈ Finset.Ioc N M, 1 / ((a : ℝ) ^ 2) ≤ 1 / (N : ℝ) - 1 / (M : ℝ) := by
+  intro M hNM
+  induction M, hNM using Nat.le_induction with
+  | base => simp
+  | succ M hNM ih =>
+    rw [Finset.sum_Ioc_succ_top hNM]
+    have hM : (1 : ℝ) ≤ (M : ℝ) := by
+      have h : 1 ≤ M := by omega
+      exact_mod_cast h
+    have hstep : 1 / (((M + 1 : ℕ) : ℝ)) ^ 2 ≤ 1 / (M : ℝ) - 1 / (((M + 1 : ℕ) : ℝ)) := by
+      push_cast
+      have h1 : 1 / (M : ℝ) - 1 / ((M : ℝ) + 1) = 1 / ((M : ℝ) * ((M : ℝ) + 1)) := by
+        field_simp
+        ring
+      rw [h1, div_le_div_iff₀ (by positivity) (by positivity)]
+      nlinarith
+    linarith
+
+/-- For any finite set of integers beyond `N`, the sum of `1/a²` is at most `1/N`. -/
+theorem sum_inv_sq_tail_le {N : ℕ} (hN : 0 < N) (s : Finset ℕ) (hs : ∀ a ∈ s, N < a) :
+    ∑ a ∈ s, 1 / ((a : ℝ) ^ 2) ≤ 1 / (N : ℝ) := by
+  rcases s.eq_empty_or_nonempty with rfl | hne
+  · simp
+  · have hM : N ≤ s.max' hne := le_of_lt (hs _ (s.max'_mem hne))
+    have hsub : s ⊆ Finset.Ioc N (s.max' hne) := by
+      intro a ha
+      simp only [Finset.mem_Ioc]
+      exact ⟨hs a ha, Finset.le_max' s a ha⟩
+    calc ∑ a ∈ s, 1 / ((a : ℝ) ^ 2)
+        ≤ ∑ a ∈ Finset.Ioc N (s.max' hne), 1 / ((a : ℝ) ^ 2) :=
+          Finset.sum_le_sum_of_subset_of_nonneg hsub (fun _ _ _ => by positivity)
+      _ ≤ 1 / (N : ℝ) - 1 / ((s.max' hne : ℕ) : ℝ) := sum_inv_sq_Ioc_le hN _ hM
+      _ ≤ 1 / (N : ℝ) := by
+          have : (0 : ℝ) ≤ 1 / ((s.max' hne : ℕ) : ℝ) := by positivity
+          linarith
+
+/-- The row sums are summable. -/
+theorem cRow_summable : Summable (fun a : ℕ => ∑ a' ∈ Finset.range a, cTerm (a, a')) := by
+  have hg : Summable (fun a : ℕ => 3 / (2 * (a : ℝ) ^ 2)) := by
+    have h : Summable (fun a : ℕ => 1 / (a : ℝ) ^ 2) := by
+      rw [Real.summable_one_div_nat_pow]
+      norm_num
+    refine (h.mul_left (3 / 2)).congr fun a => ?_
+    rw [div_mul_eq_mul_div, mul_one_div]
+    ring_nf
+  refine Summable.of_nonneg_of_le (fun a => ?_) cTerm_row_le hg
+  exact Finset.sum_nonneg fun a' _ => cTerm_nonneg _
+
+/-- **The tail bound for `C`.**  Truncating the series at `a ≤ N` loses at most
+`3/(2N)`. -/
+theorem cConst_le_partial_add {N : ℕ} (hN : 0 < N) :
+    cConst ≤ (∑ a ∈ Finset.range (N + 1), ∑ a' ∈ Finset.range a, cTerm (a, a'))
+      + 3 / (2 * (N : ℝ)) := by
+  rw [cConst_eq_tsum_finRows]
+  refine Real.tsum_le_of_sum_le
+    (fun a => Finset.sum_nonneg fun a' _ => cTerm_nonneg _) fun s => ?_
+  classical
+  have hsplit : ∑ a ∈ s, (∑ a' ∈ Finset.range a, cTerm (a, a'))
+      = (∑ a ∈ s.filter (fun a => a ≤ N), ∑ a' ∈ Finset.range a, cTerm (a, a'))
+        + ∑ a ∈ s.filter (fun a => ¬ a ≤ N), ∑ a' ∈ Finset.range a, cTerm (a, a') :=
+    (Finset.sum_filter_add_sum_filter_not _ _ _).symm
+  have hlow : (∑ a ∈ s.filter (fun a => a ≤ N), ∑ a' ∈ Finset.range a, cTerm (a, a'))
+      ≤ ∑ a ∈ Finset.range (N + 1), ∑ a' ∈ Finset.range a, cTerm (a, a') := by
+    refine Finset.sum_le_sum_of_subset_of_nonneg ?_
+      (fun a _ _ => Finset.sum_nonneg fun a' _ => cTerm_nonneg _)
+    intro a ha
+    simp only [Finset.mem_filter, Finset.mem_range] at ha ⊢
+    omega
+  have hhigh : (∑ a ∈ s.filter (fun a => ¬ a ≤ N), ∑ a' ∈ Finset.range a, cTerm (a, a'))
+      ≤ 3 / (2 * (N : ℝ)) := by
+    have h1 : (∑ a ∈ s.filter (fun a => ¬ a ≤ N), ∑ a' ∈ Finset.range a, cTerm (a, a'))
+        ≤ ∑ a ∈ s.filter (fun a => ¬ a ≤ N), 3 / (2 * (a : ℝ) ^ 2) :=
+      Finset.sum_le_sum fun a _ => cTerm_row_le a
+    have h2 : (∑ a ∈ s.filter (fun a => ¬ a ≤ N), 3 / (2 * (a : ℝ) ^ 2))
+        = (3 / 2) * ∑ a ∈ s.filter (fun a => ¬ a ≤ N), 1 / ((a : ℝ) ^ 2) := by
+      rw [Finset.mul_sum]
+      refine Finset.sum_congr rfl fun a _ => ?_
+      rw [div_mul_eq_mul_div, mul_one_div]
+      ring_nf
+    have h3 : (∑ a ∈ s.filter (fun a => ¬ a ≤ N), 1 / ((a : ℝ) ^ 2)) ≤ 1 / (N : ℝ) := by
+      refine sum_inv_sq_tail_le hN _ fun a ha => ?_
+      simp only [Finset.mem_filter] at ha
+      omega
+    have hNpos : (0 : ℝ) < (N : ℝ) := by exact_mod_cast hN
+    rw [h2] at h1
+    have : (3 / 2 : ℝ) * (1 / (N : ℝ)) = 3 / (2 * (N : ℝ)) := by field_simp
+    nlinarith [h1, h3]
+  rw [hsplit]
+  linarith
+
 end BlockCycleRotation
