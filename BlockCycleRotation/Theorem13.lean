@@ -167,4 +167,211 @@ theorem bulk_pair_estimate {m d a a' : ℕ} (hm : 0 < m) (hd : 0 < d)
         linarith [hstep1, hstep2]
     _ ≤ 2 * W * (1 + Real.log m) := by nlinarith
 
+/-! ## Aggregating over the pairs
+
+The bulk part of the triple sum decomposes by pairs, and `bulk_pair_estimate`
+applies to each.  The complementary part is bounded by `small_part_le`. -/
+
+/-- **The bulk part of the triple sum, decomposed by pairs.** -/
+theorem gtTriples_bulk_decompose {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
+    ∑ t ∈ (gtTriples m d).filter (fun t => d * t.1 * (t.1 + t.2.1) ≤ m),
+        (d * t.1 + (m - t.2.1 * t.2.2) / t.1)
+      = ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m),
+          ∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
+            (d * p.1 + (m - p.2 * b') / p.1) := by
+  classical
+  have h := gtTriples_decompose (m := m) (d := d) hm
+    (fun a a' b' => if d * a * (a + a') ≤ m then d * a + (m - a' * b') / a else 0)
+  calc ∑ t ∈ (gtTriples m d).filter (fun t => d * t.1 * (t.1 + t.2.1) ≤ m),
+          (d * t.1 + (m - t.2.1 * t.2.2) / t.1)
+      = ∑ t ∈ gtTriples m d,
+          (if d * t.1 * (t.1 + t.2.1) ≤ m then d * t.1 + (m - t.2.1 * t.2.2) / t.1 else 0) :=
+        Finset.sum_filter _ _
+    _ = ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
+          ∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
+            (if d * p.1 * (p.1 + p.2) ≤ m then d * p.1 + (m - p.2 * b') / p.1 else 0) := h
+    _ = ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
+          (if d * p.1 * (p.1 + p.2) ≤ m then
+            ∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
+              (d * p.1 + (m - p.2 * b') / p.1) else 0) := by
+        refine Finset.sum_congr rfl fun p _ => ?_
+        split_ifs with hb
+        · rfl
+        · simp
+    _ = ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m),
+          ∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
+            (d * p.1 + (m - p.2 * b') / p.1) := by
+        rw [← Finset.sum_filter, Finset.filter_filter]
+        refine Finset.sum_congr (Finset.filter_congr fun p hp => ?_) (fun _ _ => rfl)
+        obtain ⟨a, a'⟩ := p
+        obtain ⟨-, ha1, haa, -⟩ := mem_coprimePairs.1 hp
+        have ha : 0 < a := by omega
+        constructor
+        · rintro ⟨-, h2⟩; exact h2
+        · intro h2
+          refine ⟨?_, h2⟩
+          have hpos : 0 < d * a * a' := Nat.mul_pos (Nat.mul_pos hd ha) (by omega)
+          have hlt : d * a * a < d * a * (a + a') := by nlinarith
+          exact lt_of_lt_of_le hlt h2
+
+/-- **The estimate at a single divisor.**
+
+The triple sum at `d` differs from the `G₁` summand at `d` by at most twice the
+middle-layer bound plus the small part. -/
+theorem divisor_estimate {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
+    |((∑ t ∈ gtTriples m d, (d * t.1 + (m - t.2.1 * t.2.2) / t.1) : ℕ) : ℝ)
+        - ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m),
+            ((d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ)) + (m : ℝ) ^ 2 * cTerm p)|
+      ≤ 2 * (((Nat.sqrt ((m - 1) / d) : ℝ) + 1) * (3 * (m : ℝ) * (1 + Real.log m)))
+        + (((Nat.sqrt ((m - 1) / d) + 1) * ((2 * d + 2) * (2 * m)) : ℕ) : ℝ) := by
+  classical
+  have hmR : (1 : ℝ) ≤ (m : ℝ) := by exact_mod_cast hm
+  have hlogm : (0 : ℝ) ≤ Real.log m := Real.log_nonneg hmR
+  set Sb := (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m) with hSb
+  -- split the triple sum
+  have hsplit : (∑ t ∈ gtTriples m d, (d * t.1 + (m - t.2.1 * t.2.2) / t.1))
+      = (∑ t ∈ (gtTriples m d).filter (fun t => d * t.1 * (t.1 + t.2.1) ≤ m),
+          (d * t.1 + (m - t.2.1 * t.2.2) / t.1))
+        + ∑ t ∈ (gtTriples m d).filter (fun t => ¬ (d * t.1 * (t.1 + t.2.1) ≤ m)),
+            (d * t.1 + (m - t.2.1 * t.2.2) / t.1) :=
+    gtTriples_bulk_small m d (fun a a' b' => d * a + (m - a' * b') / a)
+  have hbd := gtTriples_bulk_decompose hm hd
+  -- the bulk part, pair by pair
+  have hpair : ∀ p ∈ Sb,
+      |((∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
+            (d * p.1 + (m - p.2 * b') / p.1) : ℕ) : ℝ)
+          - ((d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ)) + (m : ℝ) ^ 2 * cTerm p)|
+        ≤ 2 * (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / (p.1 : ℝ)) * (1 + Real.log m) := by
+    intro p hp
+    obtain ⟨a, a'⟩ := p
+    rw [hSb, Finset.mem_filter] at hp
+    obtain ⟨hpc, hpb⟩ := hp
+    obtain ⟨-, ha1, haa, hgcd⟩ := mem_coprimePairs.1 hpc
+    exact bulk_pair_estimate hm hd ha1 haa hgcd hpb
+  have hbulkest :
+      |(∑ p ∈ Sb, ((∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter
+              (fun b' => p.1 ∣ (m - p.2 * b')), (d * p.1 + (m - p.2 * b') / p.1) : ℕ) : ℝ))
+          - ∑ p ∈ Sb, ((d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ)) + (m : ℝ) ^ 2 * cTerm p)|
+        ≤ ∑ p ∈ Sb, 2 * (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / (p.1 : ℝ)) * (1 + Real.log m) := by
+    rw [← Finset.sum_sub_distrib]
+    exact (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum hpair)
+  -- the pair-error sum is at most twice the middle layer
+  have hmid : ∑ p ∈ Sb, 2 * (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / (p.1 : ℝ)) * (1 + Real.log m)
+      ≤ 2 * (((Nat.sqrt ((m - 1) / d) : ℝ) + 1) * (3 * (m : ℝ) * (1 + Real.log m))) := by
+    have hsub : Sb ⊆ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m) := by
+      intro p hp
+      rw [hSb, Finset.mem_filter] at hp
+      obtain ⟨hpc, hpb⟩ := hp
+      refine Finset.mem_filter.2 ⟨hpc, ?_⟩
+      obtain ⟨a, a'⟩ := p
+      obtain ⟨-, ha1, haa, -⟩ := mem_coprimePairs.1 hpc
+      have ha : 0 < a := by omega
+      have hpos : 0 < d * a * a' := Nat.mul_pos (Nat.mul_pos hd ha) (by omega)
+      have hlt : d * a * a < d * a * (a + a') := by nlinarith
+      exact lt_of_lt_of_le hlt hpb
+    have hstep : ∑ p ∈ Sb, 2 * (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / (p.1 : ℝ))
+            * (1 + Real.log m)
+        ≤ ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
+            2 * (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / (p.1 : ℝ)) * (1 + Real.log m) := by
+      refine Finset.sum_le_sum_of_subset_of_nonneg hsub fun p _ _ => by positivity
+    refine hstep.trans ?_
+    rw [show ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
+          2 * (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / (p.1 : ℝ)) * (1 + Real.log m)
+        = 2 * ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
+            ((((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / (p.1 : ℝ)) * (1 + Real.log m)) from by
+      rw [Finset.mul_sum]; exact Finset.sum_congr rfl fun p _ => by ring]
+    exact mul_le_mul_of_nonneg_left (middle_layer (m := m) (d := d) hm hd) (by norm_num)
+  -- the small part
+  have hsmall := small_part_le hm hd
+  have hsmallR : ((∑ t ∈ (gtTriples m d).filter (fun t => ¬ (d * t.1 * (t.1 + t.2.1) ≤ m)),
+        (d * t.1 + (m - t.2.1 * t.2.2) / t.1) : ℕ) : ℝ)
+      ≤ (((Nat.sqrt ((m - 1) / d) + 1) * ((2 * d + 2) * (2 * m)) : ℕ) : ℝ) := by
+    exact_mod_cast hsmall
+  have hsmallnn : (0 : ℝ) ≤ ((∑ t ∈ (gtTriples m d).filter
+      (fun t => ¬ (d * t.1 * (t.1 + t.2.1) ≤ m)), (d * t.1 + (m - t.2.1 * t.2.2) / t.1) : ℕ) : ℝ) :=
+    by positivity
+  -- assemble
+  have key : ∀ X Y M b1 b2 : ℝ, |X - M| ≤ b1 → 0 ≤ Y → Y ≤ b2 → |X + Y - M| ≤ b1 + b2 := by
+    intro X Y M b1 b2 h1 h2 h3
+    have htri := abs_add_le (X - M) Y
+    rw [abs_of_nonneg h2] at htri
+    have heq : X + Y - M = (X - M) + Y := by ring
+    rw [heq]
+    linarith
+  rw [hsplit, hbd, Nat.cast_add, Nat.cast_sum]
+  exact key _ _ _ _ _ (hbulkest.trans hmid) hsmallnn hsmallR
+
+/-! ## Summing over the divisors
+
+Both per-divisor errors are dominated by the quantity `outer_layer` and
+`error_isBigO` handle, namely `d(n)·(√n+1)·3n(1+log n)`: the middle layer
+directly, and the small part because `(2d+2)(2m) = 4dm + 4m ≤ 8n`. -/
+
+/-- The aggregate error bound of `outer_layer`. -/
+noncomputable def Err (n : ℕ) : ℝ :=
+  (n.divisors.card : ℝ) * (((Nat.sqrt n : ℝ) + 1) * (3 * (n : ℝ) * (1 + Real.log n)))
+
+/-- **The restricted quadruple sum is `G₁` up to `O(n^{3/2+ε})`.** -/
+theorem Qgt_sub_G1_le {n : ℕ} (hn : 0 < n) :
+    |((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1) : ℕ) : ℝ) - G1 n|
+      ≤ 5 * Err n := by
+  classical
+  have hnR : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hlogn : (0 : ℝ) ≤ Real.log n := Real.log_nonneg hnR
+  set Big : ℝ := ((Nat.sqrt n : ℝ) + 1) * (3 * (n : ℝ) * (1 + Real.log n)) with hBig
+  have hper : ∀ d ∈ n.divisors,
+      |((∑ t ∈ gtTriples (n / d) d, (d * t.1 + (n / d - t.2.1 * t.2.2) / t.1) : ℕ) : ℝ)
+        - ∑ p ∈ (coprimePairs (n / d)).filter (fun p => d * p.1 * (p.1 + p.2) ≤ n / d),
+            ((d : ℝ) * ((n / d : ℕ) : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ))
+              + ((n / d : ℕ) : ℝ) ^ 2 * cTerm p)|
+        ≤ 2 * (((Nat.sqrt ((n / d - 1) / d) : ℝ) + 1)
+            * (3 * ((n / d : ℕ) : ℝ) * (1 + Real.log ((n / d : ℕ) : ℝ)))) + 3 * Big := by
+    intro d hd
+    obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
+    have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+    have hm0 : 0 < n / d := Nat.div_pos (Nat.le_of_dvd hn hdn) hd0
+    refine (divisor_estimate hm0 hd0).trans ?_
+    -- the small part is at most `3·Big`
+    have hmn : n / d ≤ n := Nat.div_le_self _ _
+    have hdm : d * (n / d) = n := Nat.mul_div_cancel' hdn
+    have hsq : Nat.sqrt ((n / d - 1) / d) ≤ Nat.sqrt n := by
+      refine Nat.sqrt_le_sqrt ?_
+      calc (n / d - 1) / d ≤ n / d - 1 := Nat.div_le_self _ _
+        _ ≤ n := by omega
+    have hsqR : ((Nat.sqrt ((n / d - 1) / d) : ℕ) : ℝ) ≤ ((Nat.sqrt n : ℕ) : ℝ) := by
+      exact_mod_cast hsq
+    have hbnd : ((2 * d + 2) * (2 * (n / d)) : ℕ) ≤ 8 * n := by
+      have h1 : d * (n / d) ≤ n := by omega
+      nlinarith
+    have hbndR : (((2 * d + 2) * (2 * (n / d)) : ℕ) : ℝ) ≤ 8 * (n : ℝ) := by
+      exact_mod_cast hbnd
+    have hs1 : (0 : ℝ) ≤ ((Nat.sqrt ((n / d - 1) / d) : ℕ) : ℝ) := by positivity
+    have hsmallbnd : (((Nat.sqrt ((n / d - 1) / d) + 1) * ((2 * d + 2) * (2 * (n / d))) : ℕ) : ℝ)
+        ≤ 3 * Big := by
+      calc (((Nat.sqrt ((n / d - 1) / d) + 1) * ((2 * d + 2) * (2 * (n / d))) : ℕ) : ℝ)
+        = (((Nat.sqrt ((n / d - 1) / d) : ℕ) : ℝ) + 1)
+            * (((2 * d + 2) * (2 * (n / d)) : ℕ) : ℝ) := by push_cast; ring
+        _ ≤ (((Nat.sqrt n : ℕ) : ℝ) + 1) * (8 * (n : ℝ)) := by
+            refine mul_le_mul (by linarith) hbndR (by positivity) (by positivity)
+        _ ≤ 3 * Big := by
+            rw [hBig]
+            have h9 : (8 : ℝ) * (n : ℝ) ≤ 3 * (3 * (n : ℝ) * (1 + Real.log n)) := by nlinarith
+            have hnn : (0 : ℝ) ≤ ((Nat.sqrt n : ℕ) : ℝ) + 1 := by positivity
+            nlinarith
+    linarith
+  rw [Q_gt_tripleSum hn, G1, Nat.cast_sum, ← Finset.sum_sub_distrib]
+  refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+  refine (Finset.sum_le_sum hper).trans ?_
+  rw [Finset.sum_add_distrib]
+  have h1 : ∑ d ∈ n.divisors, 2 * (((Nat.sqrt ((n / d - 1) / d) : ℝ) + 1)
+        * (3 * ((n / d : ℕ) : ℝ) * (1 + Real.log ((n / d : ℕ) : ℝ))))
+      ≤ 2 * Err n := by
+    rw [← Finset.mul_sum, Err]
+    exact mul_le_mul_of_nonneg_left (outer_layer hn) (by norm_num)
+  have h2 : ∑ _d ∈ n.divisors, 3 * Big = 3 * Err n := by
+    rw [Finset.sum_const, nsmul_eq_mul, Err, hBig]
+    ring
+  rw [h2]
+  linarith
+
 end BlockCycleRotation
