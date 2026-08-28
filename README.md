@@ -51,7 +51,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Error term over all `m ≠ 0` | Lemma 18 | `norm_sum_twisted_le` | ✅ proved |
 | Indicator via characters | §4 | `indicator_eq` | ✅ proved |
 | Sum over an AP | §4 | `sum_ap_sub_main_le` | ✅ proved |
-| Divisor bound `d(n) = O(nᵋ)` | §4 | — | 🚧 not in Mathlib |
+| Divisor bound `d(n) = O(nᵋ)` | §4 | `exists_card_divisors_le` | ✅ proved |
 | Möbius/character decomposition | §4 | — | 🚧 planned |
 | Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |
 | Error term `O(n^(1/2+ε))` | Thm 13 | — | 🚧 planned |
@@ -134,7 +134,9 @@ harmonic sum, i.e. `O(log a)`.
 
 No square-root cancellation is used anywhere. What remains for Theorem 13 is
 long rather than deep — there is no missing theorem to invent, just a great many
-explicit estimates to carry out: Möbius inversion over divisors (in Mathlib), additive
+explicit estimates to carry out. The divisor bound, which Mathlib does not
+provide, is proved in `DivisorBound.lean`: for each `ε > 0` there is `C` with
+`d(n) ≤ C·n^ε`, by splitting the primes dividing `n` at `p^ε = 2`. Remaining: Möbius inversion over divisors (in Mathlib), additive
 character orthogonality (in Mathlib, `AddChar.sum_eq_ite`), harmonic sums (in
 Mathlib), and then the assembly of `G₁ + G₂ + G₃`. The one genuine gap is the
 divisor bound `d(n) = O(n^ε)`, which is elementary but absent from Mathlib.

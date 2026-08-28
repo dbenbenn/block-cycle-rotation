@@ -8,3 +8,4 @@ import BlockCycleRotation.Characters
 import BlockCycleRotation.Orthogonality
 import BlockCycleRotation.LinearSums
 import BlockCycleRotation.Progression
+import BlockCycleRotation.DivisorBound
