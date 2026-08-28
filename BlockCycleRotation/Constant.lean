@@ -277,4 +277,63 @@ theorem cConst_le_bulk_add {m d N : ℕ} (hN : 0 < N)
   rw [Finset.sum_congr rfl heq]
 
 
+/-! ## The substitution of Lemma 17
+
+Substituting the paper's coefficients `A = d·a + m/a`, `B = -a'/a` and the real
+bound `V = m/(a+a')` into the main term `(1/a)(A·V + B·V²/2)` gives
+
+```
+d·m/(a+a')  +  m² · cTerm(a, a').
+```
+
+The first term is lower order; the second is what sums to `m²·C`.  This is the
+step where the constant appears. -/
+
+/-- **The substitution.**  The main term at a coprime pair is
+`d·m/(a+a') + m²·cTerm(a,a')`. -/
+theorem main_term_substitute {m d a a' : ℕ} (h1 : 1 ≤ a') (h2 : a' < a)
+    (h3 : Nat.gcd a a' = 1) :
+    (1 / (a : ℝ)) * ((((d * a : ℕ) : ℝ) + (m : ℝ) / (a : ℝ)) * ((m : ℝ) / ((a : ℝ) + (a' : ℝ)))
+        + (-(a' : ℝ) / (a : ℝ)) * ((m : ℝ) / ((a : ℝ) + (a' : ℝ))) ^ 2 / 2)
+      = (d : ℝ) * (m : ℝ) / ((a : ℝ) + (a' : ℝ)) + (m : ℝ) ^ 2 * cTerm (a, a') := by
+  have ha : (0 : ℝ) < (a : ℝ) := by
+    have : 0 < a := by omega
+    exact_mod_cast this
+  have ha'0 : (0 : ℝ) ≤ (a' : ℝ) := by positivity
+  have haa : (0 : ℝ) < (a : ℝ) + (a' : ℝ) := by linarith
+  unfold cTerm
+  rw [if_pos ⟨h1, h2, h3⟩]
+  push_cast
+  field_simp
+  ring
+
+/-! ## Assembling the main term
+
+After substitution the main term splits into a lower-order part
+`d·m·∑ 1/(a+a')` and `m²` times a partial sum of the series for `C`.  The latter
+is squeezed between `C - 3/(2N)` and `C`. -/
+
+/-- **The main term splits.** -/
+theorem G1_split (m d : ℕ) (s : Finset (ℕ × ℕ)) :
+    ∑ p ∈ s, ((d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ)) + (m : ℝ) ^ 2 * cTerm p)
+      = (∑ p ∈ s, (d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ)))
+        + (m : ℝ) ^ 2 * ∑ p ∈ s, cTerm p := by
+  rw [Finset.sum_add_distrib, Finset.mul_sum]
+
+/-- **Any partial sum of the series is at most `C`.** -/
+theorem sum_cTerm_le_cConst (s : Finset (ℕ × ℕ)) : ∑ p ∈ s, cTerm p ≤ cConst :=
+  Summable.sum_le_tsum s (fun p _ => cTerm_nonneg p) cTerm_summable
+
+/-- **The partial sum over the bulk is squeezed.**  Together with
+`cConst_le_bulk_add`, the bulk partial sum of `cTerm` lies within `3/(2N)` of
+`C`, so `m²` times it lies within `m²·3/(2N)` of `m²·C`.  With
+`N = √(m/(2d))` that error is `O(m^{3/2}√d)`, matching the small part. -/
+theorem bulk_sum_close {m d N : ℕ} (hN : 0 < N)
+    (hbulk : ∀ a a', a ≤ N → 1 ≤ a' → a' < a → d * a * (a + a') ≤ m) :
+    cConst - 3 / (2 * (N : ℝ))
+      ≤ ∑ a ∈ Finset.range (N + 1), ∑ a' ∈ Finset.range a,
+          (if d * a * (a + a') ≤ m then cTerm (a, a') else 0) := by
+  have h := cConst_le_bulk_add hN hbulk
+  linarith
+
 end BlockCycleRotation
