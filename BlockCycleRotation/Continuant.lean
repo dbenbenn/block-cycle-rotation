@@ -713,6 +713,43 @@ theorem heilbronn_split_roundtrip {L : List ℕ} (hpos : ∀ c ∈ L, 1 ≤ c)
   have h := cf_K _ hne₂ hpos₂ hhead₂
   rwa [K_reverse, reverse_dropLast_eq, K_reverse] at h
 
+/-! ## The quadruple index set
+
+The right-hand side of (eq. heilbron) sums over quadruples `(a, b, a', b')`
+with `a > a' ≥ 1`, `b > b' ≥ 1`, both coprimality conditions, and
+`n = a·b + a'·b'`.  Every component is bounded by `n`, so this is a `Finset`. -/
+
+/-- The quadruples appearing on the right of (eq. heilbron). -/
+def quadruples (n : ℕ) : Finset (ℕ × ℕ × ℕ × ℕ) :=
+  ((Finset.range (n + 1)) ×ˢ (Finset.range (n + 1)) ×ˢ (Finset.range (n + 1))
+      ×ˢ (Finset.range (n + 1))).filter
+    (fun q => 1 ≤ q.2.2.1 ∧ q.2.2.1 < q.1 ∧ 1 ≤ q.2.2.2 ∧ q.2.2.2 < q.2.1
+      ∧ Nat.gcd q.1 q.2.2.1 = 1 ∧ Nat.gcd q.2.1 q.2.2.2 = 1
+      ∧ n = q.1 * q.2.1 + q.2.2.1 * q.2.2.2)
+
+theorem mem_quadruples {n a b a' b' : ℕ} :
+    (a, b, a', b') ∈ quadruples n ↔
+      (a ≤ n ∧ b ≤ n ∧ a' ≤ n ∧ b' ≤ n) ∧ 1 ≤ a' ∧ a' < a ∧ 1 ≤ b' ∧ b' < b
+        ∧ Nat.gcd a a' = 1 ∧ Nat.gcd b b' = 1 ∧ n = a * b + a' * b' := by
+  simp [quadruples, Finset.mem_filter, Finset.mem_product, and_assoc]
+
+/-- The components of a quadruple are bounded by `n`. -/
+theorem quadruple_le {n a b a' b' : ℕ} (h1 : 1 ≤ a') (h2 : a' < a) (h3 : 1 ≤ b')
+    (h4 : b' < b) (hsum : n = a * b + a' * b') :
+    a ≤ n ∧ b ≤ n ∧ a' ≤ n ∧ b' ≤ n := by
+  have ha : 1 ≤ a := by omega
+  have hb : 1 ≤ b := by omega
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> nlinarith
+
+/-- **Splits land in the quadruple set.** -/
+theorem split_mem_quadruples {n k j : ℕ} (hk : k ∈ shifts n) (hj1 : 1 ≤ j)
+    (hj2 : j < (cf n k).length) :
+    (K ((cf n k).take j), K ((cf n k).drop j),
+      K ((cf n k).take j).dropLast, K ((cf n k).drop j).tail) ∈ quadruples n := by
+  obtain ⟨hsum, h1, h2, h3, h4, h5, h6⟩ := split_quadruple hk hj1 hj2
+  rw [mem_quadruples]
+  exact ⟨quadruple_le h1 h2 h3 h4 hsum, h1, h2, h3, h4, h5, h6, hsum⟩
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
@@ -749,5 +786,7 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
         + K ((cf 30 7).take 1).dropLast * K ((cf 30 7).drop 1).tail = 30
 #guard K ((cf 30 7).take 2) * K ((cf 30 7).drop 2)
         + K ((cf 30 7).take 2).dropLast * K ((cf 30 7).drop 2).tail = 30
+#guard ((2, 13, 1, 4) : ℕ × ℕ × ℕ × ℕ) ∈ quadruples 30
+#guard ((7, 4, 2, 1) : ℕ × ℕ × ℕ × ℕ) ∈ quadruples 30
 
 end BlockCycleRotation
