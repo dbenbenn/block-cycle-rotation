@@ -336,4 +336,99 @@ theorem bulk_sum_close {m d N : ℕ} (hN : 0 < N)
   have h := cConst_le_bulk_add hN hbulk
   linarith
 
+/-! ## Reconciling the index shapes
+
+`bulk_sum_close` is stated over the double sum `∑_{a ≤ N} ∑_{a' < a}`, while
+`G1_split` produces a sum over a `Finset (ℕ × ℕ)` of bulk pairs.  The first is a
+sum over `{(a,a') : a ≤ N, a' < a}`, whose nonzero terms all lie in the second. -/
+
+/-- The double sum as a sum over pairs. -/
+theorem double_sum_eq_pairs {N : ℕ} (f : ℕ → ℕ → ℝ) :
+    ∑ a ∈ Finset.range (N + 1), ∑ a' ∈ Finset.range a, f a a'
+      = ∑ p ∈ ((Finset.range (N + 1)) ×ˢ (Finset.range (N + 1))).filter (fun p => p.2 < p.1),
+          f p.1 p.2 := by
+  rw [Finset.sum_sigma']
+  refine Finset.sum_bij' (i := fun x _ => (x.1, x.2))
+    (j := fun p _ => (⟨p.1, p.2⟩ : (_ : ℕ) × ℕ)) ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨a, a'⟩ hx
+    simp only [Finset.mem_sigma, Finset.mem_range] at hx
+    simp only [Finset.mem_filter, Finset.mem_product, Finset.mem_range]
+    exact ⟨⟨hx.1, by omega⟩, hx.2⟩
+  · rintro ⟨a, a'⟩ hp
+    simp only [Finset.mem_filter, Finset.mem_product, Finset.mem_range] at hp
+    simp only [Finset.mem_sigma, Finset.mem_range]
+    exact ⟨hp.1.1, hp.2⟩
+  · rintro ⟨a, a'⟩ _; rfl
+  · rintro ⟨a, a'⟩ _; rfl
+  · rintro ⟨a, a'⟩ _; rfl
+
+/-- **The reconciliation.**  The double sum over `a ≤ N` is at most the sum over
+the bulk pairs. -/
+theorem bulk_double_le_pairs {m d N : ℕ} (hd : 0 < d) :
+    ∑ a ∈ Finset.range (N + 1), ∑ a' ∈ Finset.range a,
+        (if d * a * (a + a') ≤ m then cTerm (a, a') else 0)
+      ≤ ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m), cTerm p := by
+  classical
+  rw [double_sum_eq_pairs (fun a a' => if d * a * (a + a') ≤ m then cTerm (a, a') else 0)]
+  set P := ((Finset.range (N + 1)) ×ˢ (Finset.range (N + 1))).filter (fun p => p.2 < p.1) with hP
+  set B := (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m) with hB
+  -- every nonzero term of the left sum sits at a bulk pair
+  have hzero : ∀ p ∈ P, p ∉ B →
+      (if d * p.1 * (p.1 + p.2) ≤ m then cTerm (p.1, p.2) else 0) = 0 := by
+    rintro ⟨a, a'⟩ hp hnb
+    by_cases hbulk : d * a * (a + a') ≤ m
+    · simp only [hbulk, if_true]
+      -- the pair must fail admissibility, else it would lie in `B`
+      unfold cTerm
+      rw [if_neg]
+      rintro ⟨h1, h2, h3⟩
+      have h1' : 1 ≤ a' := h1
+      have h2' : a' < a := h2
+      have h3' : Nat.gcd a a' = 1 := h3
+      have hd1 : 1 ≤ d := hd
+      have ham : a ≤ m := by
+        have ha1 : 1 ≤ a := by omega
+        have haa : 1 ≤ a + a' := by omega
+        have hstep : a ≤ d * a * (a + a') := by
+          calc a = 1 * a * 1 := by ring
+            _ ≤ d * a * (a + a') := Nat.mul_le_mul (Nat.mul_le_mul hd1 (le_refl a)) haa
+        omega
+      have ha'm : a' ≤ m := by omega
+      refine hnb ?_
+      rw [hB]
+      simp only [Finset.mem_filter]
+      exact ⟨mem_coprimePairs.2 ⟨⟨ham, ha'm⟩, h1', h2', h3'⟩, hbulk⟩
+    · simp [hbulk]
+  calc ∑ p ∈ P, (if d * p.1 * (p.1 + p.2) ≤ m then cTerm (p.1, p.2) else 0)
+      = ∑ p ∈ P.filter (fun p => p ∈ B),
+          (if d * p.1 * (p.1 + p.2) ≤ m then cTerm (p.1, p.2) else 0) := by
+        refine (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
+        intro x hx hnx
+        simp only [Finset.mem_filter, not_and] at hnx
+        exact hzero x hx (hnx hx)
+    _ ≤ ∑ p ∈ P.filter (fun p => p ∈ B), cTerm p := by
+        refine Finset.sum_le_sum fun p _ => ?_
+        split
+        · exact le_refl _
+        · exact cTerm_nonneg p
+    _ ≤ ∑ p ∈ B, cTerm p := by
+        refine Finset.sum_le_sum_of_subset_of_nonneg ?_ (fun p _ _ => cTerm_nonneg p)
+        intro x hx
+        simp only [Finset.mem_filter] at hx
+        exact hx.2
+
+/-- **The bulk pair sum is within `3/(2N)` of `C`.**
+
+This is the reconciled form of `bulk_sum_close`: the partial sum of the series
+for `C` over the bulk pairs — the shape the main term actually produces — is
+squeezed between `C - 3/(2N)` and `C`. -/
+theorem bulk_pairs_close {m d N : ℕ} (hN : 0 < N) (hd : 0 < d)
+    (hbulk : ∀ a a', a ≤ N → 1 ≤ a' → a' < a → d * a * (a + a') ≤ m) :
+    cConst - 3 / (2 * (N : ℝ))
+        ≤ ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m), cTerm p
+      ∧ ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m), cTerm p
+        ≤ cConst :=
+  ⟨le_trans (bulk_sum_close hN hbulk) (bulk_double_le_pairs hd),
+    sum_cTerm_le_cConst _⟩
+
 end BlockCycleRotation
