@@ -757,4 +757,164 @@ theorem tendsto_riemann_fBar :
   filter_upwards [eventually_gt_atTop 0] with n hn
   exact integral_step_eq hn
 
+/-! ## The `gcd` term is negligible -/
+
+theorem sum_gcd_range_le {n : ℕ} (hn : 0 < n) :
+    ∑ k ∈ Finset.range n, Nat.gcd n k ≤ n + 2 * (n * n.divisors.card) := by
+  have hsplit : ∑ k ∈ Finset.range n, Nat.gcd n k
+      = Nat.gcd n 0 + ∑ k ∈ Finset.Ico 1 n, Nat.gcd n k := by
+    rw [Finset.range_eq_Ico, Finset.sum_eq_sum_Ico_succ_bot hn]
+  have hmin : ∀ k ∈ Finset.Ico 1 n, Nat.gcd n k = Nat.gcd n (min k (n - k)) := by
+    intro k hk
+    rw [Finset.mem_Ico] at hk
+    exact (gcd_min_self_sub (le_of_lt hk.2)).symm
+  have hdouble := sum_min_eq hn (fun j => Nat.gcd n j)
+  have hle : ∑ k ∈ Finset.Ico 1 n, Nat.gcd n (min k (n - k))
+      ≤ 2 * ∑ j ∈ allShifts n, Nat.gcd n j := by
+    rw [← hdouble]
+    exact Nat.le_add_right _ _
+  have hall := sum_gcd_le hn
+  rw [hsplit, Finset.sum_congr rfl hmin, Nat.gcd_zero_right]
+  have : 2 * ∑ j ∈ allShifts n, Nat.gcd n j ≤ 2 * (n * n.divisors.card) :=
+    Nat.mul_le_mul_left 2 hall
+  omega
+
+theorem tendsto_divisors_div : Tendsto (fun n : ℕ => (n.divisors.card : ℝ) / (n : ℝ))
+    atTop (𝓝 0) := by
+  obtain ⟨C, hC, hCd⟩ := exists_card_divisors_le (show (0 : ℝ) < 1 / 2 by norm_num)
+  have hlim : Tendsto (fun n : ℕ => C / (n : ℝ) ^ (1 / 2 : ℝ)) atTop (𝓝 0) := by
+    refine Filter.Tendsto.const_div_atTop ?_ C
+    exact (tendsto_rpow_atTop (by norm_num)).comp tendsto_natCast_atTop_atTop
+  refine squeeze_zero' (Filter.Eventually.of_forall fun n => by positivity) ?_ hlim
+  filter_upwards [eventually_gt_atTop 0] with n hn
+  have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  have h1 := hCd n hn.ne'
+  have hpow : (n : ℝ) = (n : ℝ) ^ (1 / 2 : ℝ) * (n : ℝ) ^ (1 / 2 : ℝ) := by
+    rw [← Real.rpow_add hnR]
+    norm_num
+  have hp : (0 : ℝ) < (n : ℝ) ^ (1 / 2 : ℝ) := Real.rpow_pos_of_pos hnR _
+  rw [div_le_div_iff₀ hnR hp]
+  nlinarith [h1, hp, hpow]
+
+/-! ## Theorem 10 -/
+
+theorem avgCost_eq_riemann {n : ℕ} (hn : 0 < n) :
+    avgCost n / (n : ℝ)
+      = (∑ k ∈ Finset.range n, fBar ((k : ℝ) / (n : ℝ))) / (n : ℝ)
+        - ((∑ k ∈ Finset.range n, Nat.gcd n k : ℕ) : ℝ) / (n : ℝ) ^ 2 := by
+  have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  have hterm : ∀ k ∈ Finset.range n,
+      ((algCost n k : ℕ) : ℝ)
+        = (n : ℝ) * fBar ((k : ℝ) / (n : ℝ)) - ((Nat.gcd n k : ℕ) : ℝ) := by
+    intro k hk
+    rw [Finset.mem_range] at hk
+    have hkn : k ≤ n := le_of_lt hk
+    have hk0 : (0 : ℝ) ≤ (k : ℝ) / (n : ℝ) := by positivity
+    have hk1 : (k : ℝ) / (n : ℝ) ≤ 1 := by
+      rw [div_le_one hnR]
+      exact_mod_cast hkn
+    rw [fBar_eq_fCost hk0 hk1]
+    linarith [relation hn hkn]
+  rw [avgCost, Finset.sum_congr rfl hterm, Finset.sum_sub_distrib, ← Finset.mul_sum,
+    Nat.cast_sum]
+  field_simp
+
+/-- **Theorem 10.**  `avgCost n / n → ∫₀¹ f`. -/
+theorem theorem10_unit :
+    Tendsto (fun n : ℕ => avgCost n / (n : ℝ)) atTop (𝓝 (∫ x in (0 : ℝ)..1, fBar x)) := by
+  have hgcd : Tendsto
+      (fun n : ℕ => ((∑ k ∈ Finset.range n, Nat.gcd n k : ℕ) : ℝ) / (n : ℝ) ^ 2)
+      atTop (𝓝 0) := by
+    have hlim : Tendsto (fun n : ℕ => 1 / (n : ℝ) + 2 * ((n.divisors.card : ℝ) / (n : ℝ)))
+        atTop (𝓝 0) := by
+      have h1 : Tendsto (fun n : ℕ => 1 / (n : ℝ)) atTop (𝓝 0) :=
+        tendsto_one_div_atTop_nhds_zero_nat
+      have h2 : Tendsto (fun n : ℕ => 2 * ((n.divisors.card : ℝ) / (n : ℝ))) atTop (𝓝 (2 * 0)) :=
+        tendsto_divisors_div.const_mul 2
+      rw [mul_zero] at h2
+      have h3 := h1.add h2
+      rw [add_zero] at h3
+      exact h3
+    refine squeeze_zero' (Filter.Eventually.of_forall fun n => by positivity) ?_ hlim
+    filter_upwards [eventually_gt_atTop 0] with n hn
+    have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+    have hb : ((∑ k ∈ Finset.range n, Nat.gcd n k : ℕ) : ℝ)
+        ≤ (n : ℝ) + 2 * ((n : ℝ) * (n.divisors.card : ℝ)) := by
+      have := sum_gcd_range_le hn
+      exact_mod_cast this
+    rw [div_le_iff₀ (by positivity)]
+    have hexp : (1 / (n : ℝ) + 2 * ((n.divisors.card : ℝ) / (n : ℝ))) * (n : ℝ) ^ 2
+        = (n : ℝ) + 2 * ((n : ℝ) * (n.divisors.card : ℝ)) := by
+      field_simp
+    rw [hexp]
+    exact hb
+  have hcomb := tendsto_riemann_fBar.sub hgcd
+  rw [sub_zero] at hcomb
+  refine hcomb.congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with n hn
+  exact (avgCost_eq_riemann hn).symm
+
+/-! ## The paper's form: `2∫₀^{1/2} f` -/
+
+theorem intervalIntegrable_fBar (a b : ℝ) : IntervalIntegrable fBar volume a b := by
+  constructor <;>
+    exact Measure.integrableOn_of_bounded measure_Ioc_lt_top.ne
+      fBar_aestronglyMeasurable (M := 4)
+      (Filter.Eventually.of_forall fun x => by rw [Real.norm_eq_abs]; exact abs_fBar_le _)
+
+theorem uIoc_subset_Icc {a b : ℝ} (ha : 0 ≤ a) (ha1 : a ≤ 1) (hb : 0 ≤ b) (hb1 : b ≤ 1) :
+    ∀ x ∈ Set.uIoc a b, 0 ≤ x ∧ x ≤ 1 := by
+  intro x hx
+  rw [Set.uIoc, Set.mem_Ioc] at hx
+  constructor
+  · exact le_of_lt (lt_of_le_of_lt (le_inf ha hb) hx.1)
+  · exact le_trans hx.2 (sup_le ha1 hb1)
+
+theorem intervalIntegrable_fCost {a b : ℝ} (ha : 0 ≤ a) (ha1 : a ≤ 1) (hb : 0 ≤ b)
+    (hb1 : b ≤ 1) : IntervalIntegrable fCost volume a b := by
+  refine (intervalIntegrable_fBar a b).congr ?_
+  intro x hx
+  obtain ⟨h0, h1⟩ := uIoc_subset_Icc ha ha1 hb hb1 x hx
+  exact fBar_eq_fCost h0 h1
+
+theorem integral_fBar_eq_fCost {a b : ℝ} (ha : 0 ≤ a) (ha1 : a ≤ 1) (hb : 0 ≤ b) (hb1 : b ≤ 1) :
+    ∫ x in a..b, fBar x = ∫ x in a..b, fCost x := by
+  refine intervalIntegral.integral_congr_ae (Filter.Eventually.of_forall fun x hx => ?_)
+  obtain ⟨h0, h1⟩ := uIoc_subset_Icc ha ha1 hb hb1 x hx
+  exact fBar_eq_fCost h0 h1
+
+/-- **`f(1-x) = f(x)`.**  This is `M(n,k) = M(n,n-k)` in relative form. -/
+theorem fCost_symm (x : ℝ) : fCost (1 - x) = fCost x := by
+  unfold fCost
+  congr 2
+  rw [show (1 : ℝ) - (1 - x) = x by ring, min_comm]
+
+/-- **`∫₀¹ f = 2∫₀^{1/2} f`.** -/
+theorem integral_fCost_split :
+    ∫ x in (0 : ℝ)..1, fCost x = 2 * ∫ x in (0 : ℝ)..(1 / 2), fCost x := by
+  have hI1 : IntervalIntegrable fCost volume 0 (1 / 2) :=
+    intervalIntegrable_fCost (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  have hI2 : IntervalIntegrable fCost volume (1 / 2) 1 :=
+    intervalIntegrable_fCost (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  have hadd := intervalIntegral.integral_add_adjacent_intervals hI1 hI2
+  have hrefl : ∫ x in (1 / 2 : ℝ)..1, fCost x = ∫ x in (0 : ℝ)..(1 / 2), fCost x := by
+    have hsub := intervalIntegral.integral_comp_sub_left (a := (0 : ℝ)) (b := 1 / 2)
+      (d := (1 : ℝ)) fCost
+    have hsym : ∫ x in (0 : ℝ)..(1 / 2), fCost (1 - x) = ∫ x in (0 : ℝ)..(1 / 2), fCost x :=
+      intervalIntegral.integral_congr (fun x _ => fCost_symm x)
+    rw [hsym] at hsub
+    norm_num at hsub
+    exact hsub.symm
+  rw [← hadd, hrefl]
+  ring
+
+/-- **Theorem 10.**  `avgCost n / n → 2∫₀^{1/2} f`. -/
+theorem theorem10 :
+    Tendsto (fun n : ℕ => avgCost n / (n : ℝ)) atTop
+      (𝓝 (2 * ∫ x in (0 : ℝ)..(1 / 2), fCost x)) := by
+  have h := theorem10_unit
+  rw [integral_fBar_eq_fCost (by norm_num) (by norm_num) (by norm_num) (by norm_num),
+    integral_fCost_split] at h
+  exact h
+
 end BlockCycleRotation
