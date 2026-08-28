@@ -142,6 +142,17 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Symmetry `M(n,k) = M(n,n−k)` | Thm 13 | `sum_min_eq`, `sum_algCost_eq` | ✅ proved |
 | Cost over shifts via `cost + gcd` | Thm 13 | `sum_cost_allShifts` | ✅ proved |
 | **Theorem 13, `D = 1 + 4C ≈ 1.85`** | Thm 13 | `theorem13` | ✅ **proved** |
+| Relative recursion `In`, `Out` | Obs 9 / Thm 8 | `Inn`, `Outt`, `Outt_le` | ✅ proved |
+| The series for `ψ` converges | Thm 8 | `psi_summable`, `psi_le_three` | ✅ proved |
+| Functional equation for `ψ` | Thm 8 | `psi_eq` | ✅ proved |
+| **`n·ψ(k/n) = 2·remSum(n,k)`** | Lemma 11 | `psi_rat` | ✅ **proved** |
+| **Equation (relation)** | §3 | `relation`, `fCost` | ✅ **proved** |
+| **Theorem 8: continuity at irrationals** | Thm 8 | `continuousAt_psi`, `continuousAt_fCost` | ✅ **proved** |
+| **Theorem 8: Riemann integrability** | Thm 8 | `fBar_hasBoxIntegral` | ✅ **proved** |
+| Evenly spaced Riemann sums | Thm 10 | `integralSum_prepartition`, `tendsto_riemann_fBar` | ✅ proved |
+| `∑_{k<n} gcd(n,k) = o(n²)` | Thm 10 | `sum_gcd_range_le` | ✅ proved |
+| `f(1−x) = f(x)`, `∫₀¹ = 2∫₀^{1/2}` | Thm 10 | `fCost_symm`, `integral_fCost_split` | ✅ proved |
+| **Theorem 10** | Thm 10 | `theorem10` | ✅ **proved** |
 | Summand rewriting | Remark 21 | `gTerm_eq` | ✅ proved |
 | `ζ(3)` removes the coprimality | Remark 21 | `tsum_gTerm_eq`, `zeta3_mul_cConst` | ✅ proved |
 | Telescoping `∑_k [1/k − 1/(n+k)] = H_n` | Remark 21 | `tsum_telescope` | ✅ proved |
@@ -272,9 +283,16 @@ bound `d(n) = O(n^ε)` (cited as standard, absent from Mathlib), Bernoulli's
 inequality, and the correctness of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
-**Not attempted.** Theorem 10's limit (`avgCost n / n → D` also follows from
-`theorem13`, but the paper's `∫₀¹ ρ` representation does not); the remark on
-averaging over all `1 ≤ k ≤ n`; and the benchmarks of §5.
+**Not attempted.** The corollary on higher moments, the remark on averaging
+over all `1 ≤ k ≤ n`, the buffered variant `f_β` of the closing remark, and the
+benchmarks of §5.
+
+**Theorem 10 is proved independently of Theorem 13**, as the paper has it: from
+eq. (relation), the `O(n^{1+ε})` bound on `∑ gcd(n,k)`, and Riemann
+integrability applied to the evenly spaced subdivision. The two theorems
+therefore give two independent routes to the constant, and they agree
+numerically: `2∫₀^{1/2} f = 1.84522 ± 0.00141` by Monte Carlo, against the
+rigorous enclosure `D ∈ [1.8455, 1.8459]`.
 
 In short: Theorem 13 — the paper's main theorem — is proved, sorry-free, in the
 form `avgCost n = D·n + O(n^{1/2+ε})` with `D = 1 + 4C`, and `C` is available in
