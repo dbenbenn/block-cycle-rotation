@@ -28,7 +28,12 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Master inequality | (new, see below) | `remSum_add_gcd_le` | ✅ proved |
 | Worst case `≤ 3(n − gcd)` | Thm A / Obs. 5 | `moveCount_add_gcd_le` | ✅ proved |
 | Worst case `≤ 3n` | Thm A | `moveCount_le_three_mul` | ✅ proved |
-| Algorithm + correctness | §2 | — | 🚧 planned |
+| Algorithm's cost recursion | §2 | `BlockCycleRotation.cost` | ✅ defined |
+| Lemma 12(1): stops at `gcd` | Lemma 12 | `finalSeg_eq_gcd` | ✅ proved |
+| Lemma 12: algorithm ↔ Euclid | Lemma 12 | `remSum_congr_mod` | ✅ proved |
+| Eq. (12): move count | Eq. (12) | `cost_add_gcd` | ✅ proved |
+| Worst case, for the algorithm | Thm A | `cost_le_three_mul` | ✅ proved |
+| Data-level correctness (it rotates) | §2 | — | 🚧 planned |
 | Continuous cost `Ψ`, scaling | §3 | — | 🚧 planned |
 | Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |
 | Error term `O(n^(1/2+ε))` | Thm 13 | — | 🚧 planned |
