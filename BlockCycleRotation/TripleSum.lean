@@ -1135,6 +1135,58 @@ theorem error_isBigO {ε : ℝ} (hε : 0 < ε) :
   have hfac : (0 : ℝ) ≤ C0 * (1 + 2 / ε) := by positivity
   nlinarith [mul_nonneg hfac hpos]
 
+/-! ## The bulk / small split
+
+Lemma 17 splits `G₁` according to which of the two bounds defining `U` is
+active.  Comparing `m/(a+a')` with `(m - d·a²)/a'`, the first is the smaller
+exactly when `d·a·(a+a') ≤ m`.  On that branch — the *bulk* — the constraint
+`(a+a')·b' < m` implies the other one, so the range of `b'` is a single initial
+segment.  The complementary branch is the *small* part. -/
+
+/-- **On the bulk branch, the first constraint implies the second.** -/
+theorem bulk_second_of_first {m d a a' b' : ℕ} (ha : 0 < a) (ha' : 0 < a')
+    (hbulk : d * a * (a + a') ≤ m) (h2 : (a + a') * b' < m) :
+    a' * b' + d * a * a < m := by
+  have haa : 0 < a + a' := by omega
+  have key : (a + a') * (a' * b' + d * a * a) < (a + a') * m := by
+    have e1 : (a + a') * (a' * b' + d * a * a)
+        = a' * ((a + a') * b') + a * (d * a * (a + a')) := by ring
+    have h3 : a' * ((a + a') * b') < a' * m := by nlinarith
+    have h4 : a * (d * a * (a + a')) ≤ a * m := Nat.mul_le_mul_left a hbulk
+    have e2 : (a + a') * m = a' * m + a * m := by ring
+    omega
+  exact Nat.lt_of_mul_lt_mul_left key
+
+/-- On the bulk branch the range of `b'` is cut by `(a+a')·b' < m` alone. -/
+theorem gtBound_bulk {m d a a' : ℕ} (hm : 0 < m) (ha : 0 < a) (ha' : 0 < a')
+    (hda : d * a * a < m) (hbulk : d * a * (a + a') ≤ m) :
+    Finset.Ico 1 (gtBound m d a a') = Finset.Ico 1 ((m - 1) / (a + a') + 1) := by
+  ext b'
+  rw [mem_gtRange hm (by omega) ha' hda, Finset.mem_Ico, Nat.lt_succ_iff,
+    Nat.le_div_iff_mul_le (by omega : 0 < a + a'), Nat.mul_comm b' (a + a')]
+  constructor
+  · rintro ⟨h1, h2, -⟩
+    exact ⟨h1, by omega⟩
+  · rintro ⟨h1, h2⟩
+    have h2' : (a + a') * b' < m := by omega
+    exact ⟨h1, h2', bulk_second_of_first ha ha' hbulk h2'⟩
+
+/-- **The bulk / small split of the triple sum.** -/
+theorem gtTriples_bulk_small (m d : ℕ) (f : ℕ → ℕ → ℕ → ℕ) :
+    ∑ t ∈ gtTriples m d, f t.1 t.2.1 t.2.2
+      = (∑ t ∈ (gtTriples m d).filter (fun t => d * t.1 * (t.1 + t.2.1) ≤ m),
+          f t.1 t.2.1 t.2.2)
+        + ∑ t ∈ (gtTriples m d).filter (fun t => ¬ (d * t.1 * (t.1 + t.2.1) ≤ m)),
+            f t.1 t.2.1 t.2.2 :=
+  (Finset.sum_filter_add_sum_filter_not _ _ _).symm
+
+/-- **On the small branch, `2·d·a² > m`.**  This is the paper's observation that
+`2a²` is bounded below by `m/d`, which is what makes the small part small. -/
+theorem small_two_mul_gt {m d a a' b' : ℕ} (h : (a, a', b') ∈ gtTriples m d)
+    (hsmall : m < d * a * (a + a')) : m < 2 * (d * a * a) := by
+  obtain ⟨⟨⟨-, -, ha2, -, -, -⟩, -⟩, -⟩ := mem_gtTriples.1 h
+  nlinarith
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.

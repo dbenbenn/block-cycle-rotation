@@ -110,7 +110,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | `C` as iterated / finite-row sums | Eq. (const-c) | `cConst_eq_tsum_finRows` | ✅ proved |
 | Tail bound `∑_{a>N} 1/a² ≤ 1/N` | Lemma 17 | `sum_inv_sq_tail_le` | ✅ proved |
 | Truncation error for `C` | Lemma 17 | `cConst_le_partial_add` | ✅ proved |
-| Lemma 17: bulk/small split, assembly | Lemma 17 | — | 🚧 remaining |
+| Bulk/small split condition | Lemma 17 | `gtBound_bulk`, `gtTriples_bulk_small` | ✅ proved |
+| Small branch: `2d·a² > m` | Lemma 17 | `small_two_mul_gt` | ✅ proved |
+| Lemma 17: small-part bound, truncation, assembly | Lemma 17 | — | 🚧 remaining |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
