@@ -805,6 +805,98 @@ theorem quadExpansion_spec {n a b a' b' : ℕ} (hq : (a, b, a', b') ∈ quadrupl
     have hbl : 0 < (cf b b').reverse.length := List.length_pos_iff.2 hnebr
     omega
 
+/-- The shift attached to a quadruple lies in `shifts n`, and its expansion is
+the reassembled one. -/
+theorem quadExpansion_shift {n a b a' b' : ℕ} (hq : (a, b, a', b') ∈ quadruples n) :
+    K (quadExpansion a b a' b').dropLast ∈ shifts n
+      ∧ cf n (K (quadExpansion a b a' b').dropLast) = quadExpansion a b a' b' := by
+  obtain ⟨hKL, hne, hpos, hhead, hlast, -, -, -, -⟩ := quadExpansion_spec hq
+  set L := quadExpansion a b a' b' with hL
+  have hk1 : 1 ≤ K L.dropLast :=
+    K_pos _ (fun x hx => hpos x (List.dropLast_subset L hx))
+  have hk2 : 2 * K L.dropLast ≤ n := by
+    have := two_mul_K_dropLast_le L hne hpos hlast
+    omega
+  have hgcd : Nat.gcd n (K L.dropLast) = 1 := by
+    rw [← hKL]
+    exact K_coprime L
+  refine ⟨mem_shifts.2 ⟨by omega, hk1, hk2, hgcd⟩, ?_⟩
+  have := cf_K L hne hpos hhead
+  rwa [hKL] at this
+
+/-! ## Equation (eq. heilbron)
+
+The reindexing: the double sum of continuants over interior splits equals the
+sum of `a` over Heilbronn's quadruples. -/
+
+/-- **The reindexing of (eq. heilbron).** -/
+theorem sum_split_eq_sum_quadruples (n : ℕ) :
+    ∑ k ∈ shifts n, ∑ j ∈ Finset.Ico 1 (cf n k).length, K ((cf n k).take j)
+      = ∑ q ∈ quadruples n, q.1 := by
+  rw [Finset.sum_sigma']
+  refine Finset.sum_bij'
+    (i := fun p _ => (K ((cf n p.1).take p.2), K ((cf n p.1).drop p.2),
+      K ((cf n p.1).take p.2).dropLast, K ((cf n p.1).drop p.2).tail))
+    (j := fun q _ => (⟨K (quadExpansion q.1 q.2.1 q.2.2.1 q.2.2.2).dropLast,
+      (cf q.1 q.2.2.1).length⟩ : (_ : ℕ) × ℕ))
+    ?_ ?_ ?_ ?_ ?_
+  · -- the forward map lands in `quadruples n`
+    rintro ⟨k, j⟩ hp
+    simp only [Finset.mem_sigma, Finset.mem_Ico] at hp
+    exact split_mem_quadruples hp.1 hp.2.1 hp.2.2
+  · -- the inverse map lands in the sigma set
+    rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨hs, hcf⟩ := quadExpansion_shift hq
+    obtain ⟨-, -, -, -, -, -, -, hlen1, hlen2⟩ := quadExpansion_spec hq
+    rw [Finset.mem_sigma, Finset.mem_Ico]
+    refine ⟨hs, hlen1, ?_⟩
+    rw [hcf]
+    exact hlen2
+  · -- left inverse
+    rintro ⟨k, j⟩ hp
+    simp only [Finset.mem_sigma, Finset.mem_Ico] at hp
+    obtain ⟨hk, hj1, hj2⟩ := hp
+    obtain ⟨-, hk1, hk2, hgcd⟩ := mem_shifts.1 hk
+    have hkn : k < n := by omega
+    obtain ⟨hne, hpos, hhead⟩ := cf_spec k n hk1 hkn hgcd
+    have hlast := two_le_cf_getLast (by omega : k ≠ 0) hk2
+    obtain ⟨h₁, h₂⟩ := heilbronn_split_roundtrip hpos hhead hlast hj1 hj2
+    have hLeq : quadExpansion (K ((cf n k).take j)) (K ((cf n k).drop j))
+        (K ((cf n k).take j).dropLast) (K ((cf n k).drop j).tail) = cf n k := by
+      rw [quadExpansion, h₁, h₂, List.reverse_reverse, List.take_append_drop]
+    simp only [hLeq, h₁]
+    have hKd : K (cf n k).dropLast = k := (K_cf k n hk1 hkn hgcd).2
+    have hjlen : ((cf n k).take j).length = j := by
+      rw [List.length_take]
+      omega
+    rw [hKd, hjlen]
+  · -- right inverse
+    rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨-, hcf⟩ := quadExpansion_shift hq
+    obtain ⟨-, -, -, -, -, htake, hdrop, -, -⟩ := quadExpansion_spec hq
+    obtain ⟨-, ha1, ha2, hb1, hb2, hga, hgb, -⟩ := mem_quadruples.1 hq
+    obtain ⟨hKa, hKa'⟩ := K_cf a' a ha1 ha2 hga
+    obtain ⟨hKb, hKb'⟩ := K_cf b' b hb1 hb2 hgb
+    simp only [hcf, htake, hdrop]
+    have e2 : K (cf b b').reverse = b := by rw [K_reverse]; exact hKb
+    have e4 : K ((cf b b').reverse).tail = b' := by
+      rw [reverse_tail_eq, K_reverse]; exact hKb'
+    rw [hKa, e2, hKa', e4]
+  · rintro ⟨k, j⟩ _
+    rfl
+
+/-- **Equation (eq. heilbron).**
+
+Summing the Euclidean remainder sums over the shifts the block cycle algorithm
+recurses on equals the number of those shifts plus a sum over Heilbronn's
+quadruples.  The first term is the paper's `∑ gcd(n,k)`, which is a count here
+because the shifts are coprime to `n`.
+
+This is the passage from move counts to lattice point counts. -/
+theorem heilbron (n : ℕ) :
+    ∑ k ∈ shifts n, remSum n k = (shifts n).card + ∑ q ∈ quadruples n, q.1 := by
+  rw [sum_remSum_eq, sum_split_eq_sum_quadruples]
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
@@ -843,5 +935,8 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
         + K ((cf 30 7).take 2).dropLast * K ((cf 30 7).drop 2).tail = 30
 #guard ((2, 13, 1, 4) : ℕ × ℕ × ℕ × ℕ) ∈ quadruples 30
 #guard ((7, 4, 2, 1) : ℕ × ℕ × ℕ × ℕ) ∈ quadruples 30
+-- Equation (eq. heilbron), checked numerically for several `n`.
+#guard (List.range 40).all (fun n =>
+  (∑ k ∈ shifts n, remSum n k) = (shifts n).card + ∑ q ∈ quadruples n, q.1)
 
 end BlockCycleRotation
