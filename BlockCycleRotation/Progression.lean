@@ -101,4 +101,43 @@ theorem sum_ap_sub_main_le {a : ℕ} (ha : 0 < a) (c : ℤ) (A B : ℂ) (T : ℕ
     _ = (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * (∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ)) * (a : ℝ) := by
         ring
 
+/-! ## Making the `log a` explicit
+
+The estimate above carries a raw harmonic sum.  Mathlib's
+`harmonic_le_one_add_log` turns it into an explicit logarithm, which is the
+shape §4 uses. -/
+
+/-- `∑_{0<m<a} 1/m ≤ 1 + log a`. -/
+theorem sum_inv_le_one_add_log (a : ℕ) :
+    ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ) ≤ 1 + Real.log a := by
+  have hsub : Finset.Ico 1 a ⊆ Finset.Icc 1 a := by
+    intro x hx
+    rw [Finset.mem_Ico] at hx
+    rw [Finset.mem_Icc]
+    omega
+  have h1 : ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ)
+      ≤ ∑ m ∈ Finset.Icc 1 a, (1 : ℝ) / (m : ℝ) := by
+    refine Finset.sum_le_sum_of_subset_of_nonneg hsub ?_
+    intro i _ _
+    positivity
+  have h2 : ((harmonic a : ℚ) : ℝ) = ∑ m ∈ Finset.Icc 1 a, (1 : ℝ) / (m : ℝ) := by
+    rw [harmonic_eq_sum_Icc]
+    push_cast
+    exact Finset.sum_congr rfl fun i _ => by simp [one_div]
+  calc ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ)
+      ≤ ∑ m ∈ Finset.Icc 1 a, (1 : ℝ) / (m : ℝ) := h1
+    _ = ((harmonic a : ℚ) : ℝ) := h2.symm
+    _ ≤ 1 + Real.log a := harmonic_le_one_add_log a
+
+/-- **Sums over an arithmetic progression, with an explicit logarithm.**
+
+Replacing the sum by its expected value costs `O(log a)`. -/
+theorem sum_ap_sub_main_le_log {a : ℕ} (ha : 0 < a) (c : ℤ) (A B : ℂ) (T : ℕ) :
+    ‖(∑ b ∈ Finset.Ico 1 T, if (a : ℤ) ∣ ((b : ℤ) - c) then (A + B * b) else 0)
+        - (1 / (a : ℂ)) * ∑ b ∈ Finset.Ico 1 T, (A + B * b)‖
+      ≤ (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * (1 + Real.log a) := by
+  refine (sum_ap_sub_main_le ha c A B T).trans ?_
+  have hK : (0 : ℝ) ≤ ‖A‖ + ‖B‖ * (T - 1 : ℕ) := by positivity
+  exact mul_le_mul_of_nonneg_left (sum_inv_le_one_add_log a) hK
+
 end BlockCycleRotation
