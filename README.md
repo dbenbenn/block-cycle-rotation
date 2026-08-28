@@ -122,7 +122,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | **Lower-order part `O(m^{3/2}√d)`** | Lemma 17 | `lower_order_le` | ✅ **proved** |
 | **Index reconciliation** | Lemma 17 | `bulk_double_le_pairs` | ✅ **proved** |
 | Bulk pair sum within `3/(2N)` of `C` | Lemma 17 | `bulk_pairs_close` | ✅ proved |
-| Lemma 17: the `d`-sum and statement | Lemma 17 | — | 🚧 remaining |
+| **`d`-sum: main terms** | Lemma 17 | `sum_div_sq_eq` | ✅ **proved** |
+| `d`-sum: errors `≤ d(n)·n^{3/2}` | Lemma 17 | `error_per_divisor_le`, `sum_divisors_le` | ✅ proved |
+| Lemma 17: the final statement | Lemma 17 | — | 🚧 remaining |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |

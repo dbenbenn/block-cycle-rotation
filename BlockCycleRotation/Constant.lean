@@ -431,4 +431,49 @@ theorem bulk_pairs_close {m d N : ℕ} (hN : 0 < N) (hd : 0 < d)
   ⟨le_trans (bulk_sum_close hN hbulk) (bulk_double_le_pairs hd),
     sum_cTerm_le_cConst _⟩
 
+/-! ## The sum over divisors
+
+For `d ∣ n` the natural-number quotient `n/d` is exact, so `m = n/d` gives
+`m² = n²/d²` and the main terms sum to `C·n²·∑_{d∣n} 1/d²` — the shape of
+Lemma 17.  The errors, of size `O((n/d)^{3/2}√d) = O(n^{3/2}/d)`, sum to
+`O(n^{3/2}·d(n))`. -/
+
+/-- **The main terms sum to `C·n²·∑_{d∣n} 1/d²`.** -/
+theorem sum_div_sq_eq {n : ℕ} (hn : 0 < n) (K : ℝ) :
+    ∑ d ∈ n.divisors, K * (((n / d : ℕ) : ℝ)) ^ 2
+      = K * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2 := by
+  rw [Finset.mul_sum]
+  refine Finset.sum_congr rfl fun d hd => ?_
+  obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
+  have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+  have hdR : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hd0
+  have hcast : ((n / d : ℕ) : ℝ) = (n : ℝ) / (d : ℝ) :=
+    Nat.cast_div hdn (by positivity)
+  rw [hcast]
+  field_simp
+
+/-- **The errors sum to at most `d(n)` times their maximum.** -/
+theorem sum_divisors_le {n : ℕ} (g : ℕ → ℝ) (K : ℝ)
+    (hg : ∀ d ∈ n.divisors, g d ≤ K) :
+    ∑ d ∈ n.divisors, g d ≤ (n.divisors.card : ℝ) * K := by
+  calc ∑ d ∈ n.divisors, g d ≤ ∑ _d ∈ n.divisors, K := Finset.sum_le_sum hg
+    _ = (n.divisors.card : ℝ) * K := by rw [Finset.sum_const, nsmul_eq_mul]
+
+/-- The per-divisor error `(n/d)^{3/2}·√d` is `n^{3/2}/d`, hence at most
+`n^{3/2}`. -/
+theorem error_per_divisor_le {n d : ℕ} (hn : 0 < n) (hd : d ∈ n.divisors) :
+    ((n / d : ℕ) : ℝ) ^ (3 / 2 : ℝ) * (d : ℝ) ^ ((1 : ℝ) / 2)
+      ≤ (n : ℝ) ^ (3 / 2 : ℝ) := by
+  obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
+  have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+  have hdR : (1 : ℝ) ≤ (d : ℝ) := by exact_mod_cast hd0
+  have hnR : (0 : ℝ) ≤ (n : ℝ) := by positivity
+  have hcast : ((n / d : ℕ) : ℝ) = (n : ℝ) / (d : ℝ) := Nat.cast_div hdn (by positivity)
+  rw [hcast, Real.div_rpow hnR (by positivity), div_mul_eq_mul_div,
+    div_le_iff₀ (by positivity)]
+  have hexp : (d : ℝ) ^ ((1 : ℝ) / 2) ≤ (d : ℝ) ^ ((3 : ℝ) / 2) :=
+    Real.rpow_le_rpow_of_exponent_le hdR (by norm_num)
+  have hn32 : (0 : ℝ) ≤ (n : ℝ) ^ (3 / 2 : ℝ) := by positivity
+  nlinarith [hexp, hn32]
+
 end BlockCycleRotation
