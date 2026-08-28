@@ -472,6 +472,80 @@ theorem remSum_eq_sum_K : ∀ k n : ℕ, 1 ≤ k → k < n → Nat.gcd n k = 1 �
       rw [Finset.sum_congr rfl h1, List.take_left, hM]
       ring
 
+/-! ## The constraint `k ≤ n/2`
+
+Heilbronn's correspondence also asks `2 ≤ c_l`.  The last entry of `cf n k` is
+the first Euclidean quotient `n / k`, so that condition says exactly `2k ≤ n` —
+which is the range of shifts the block cycle algorithm recurses on.  The two
+lemmas below are the two directions of that equivalence. -/
+
+/-- The last entry of `cf n k` is the first Euclidean quotient. -/
+theorem cf_getLast {n k : ℕ} (hk : k ≠ 0) : (cf n k).getLast? = some (n / k) := by
+  rw [cf_of_pos hk]
+  simp
+
+/-- If `2k ≤ n` the expansion's last entry is at least `2`. -/
+theorem two_le_cf_getLast {n k : ℕ} (hk : k ≠ 0) (h : 2 * k ≤ n) :
+    ∀ x ∈ (cf n k).getLast?, 2 ≤ x := by
+  intro x hx
+  rw [cf_getLast hk] at hx
+  simp at hx
+  subst hx
+  exact (Nat.le_div_iff_mul_le (Nat.pos_of_ne_zero hk)).2 (by omega)
+
+/-- Conversely, an expansion whose last entry is at least `2` has
+`2 · K L.dropLast ≤ K L`. -/
+theorem two_mul_K_dropLast_le : ∀ L : List ℕ, L ≠ [] → (∀ c ∈ L, 1 ≤ c) →
+    (∀ x ∈ L.getLast?, 2 ≤ x) → 2 * K L.dropLast ≤ K L := by
+  intro L
+  induction L using List.reverseRecOn with
+  | nil => intro h; exact absurd rfl h
+  | append_singleton m c _ =>
+    intro _ hpos hlast
+    have hc2 : 2 ≤ c := by
+      apply hlast c
+      simp
+    have hdl : (m ++ [c]).dropLast = m := by simp
+    rw [hdl]
+    by_cases hm : m = []
+    · subst hm
+      simp
+      omega
+    · have hmp : 1 ≤ K m := K_pos m (fun x hx => hpos x (List.mem_append.2 (Or.inl hx)))
+      rw [K_concat m hm c]
+      nlinarith [Nat.zero_le (K m.dropLast)]
+
+/-- **The shift–expansion bijection.**
+
+For each `n`, the map `k ↦ cf n k` sends the shifts `1 ≤ k` with `2k ≤ n` and
+`gcd(n,k) = 1` — exactly the range the block cycle algorithm recurses on — to
+the normalised expansions of `n` whose last entry is at least `2`, i.e. exactly
+Heilbronn's index set.  The inverse is `L ↦ K L.dropLast`.
+
+The first component says the forward map lands correctly and is inverted by
+`L ↦ K L.dropLast`; the second says the backward map lands correctly and is
+inverted by `k ↦ cf n k`. -/
+theorem shift_expansion_bijection (n : ℕ) :
+    (∀ k : ℕ, 1 ≤ k → 2 * k ≤ n → Nat.gcd n k = 1 →
+        K (cf n k) = n ∧ K (cf n k).dropLast = k ∧ cf n k ≠ []
+          ∧ (∀ c ∈ cf n k, 1 ≤ c) ∧ (∀ x ∈ (cf n k).head?, 2 ≤ x)
+          ∧ (∀ x ∈ (cf n k).getLast?, 2 ≤ x))
+      ∧ (∀ L : List ℕ, L ≠ [] → (∀ c ∈ L, 1 ≤ c) → (∀ x ∈ L.head?, 2 ≤ x) →
+        (∀ x ∈ L.getLast?, 2 ≤ x) →
+          cf (K L) (K L.dropLast) = L ∧ 1 ≤ K L.dropLast
+            ∧ 2 * K L.dropLast ≤ K L ∧ Nat.gcd (K L) (K L.dropLast) = 1) := by
+  constructor
+  · intro k hk1 hk2 hgcd
+    have hkn : k < n := by omega
+    have hkne : k ≠ 0 := by omega
+    obtain ⟨hK, hKd⟩ := K_cf k n hk1 hkn hgcd
+    obtain ⟨hne, hpos, hhead⟩ := cf_spec k n hk1 hkn hgcd
+    exact ⟨hK, hKd, hne, hpos, hhead, two_le_cf_getLast hkne hk2⟩
+  · intro L hne hpos hhead hlast
+    refine ⟨cf_K L hne hpos hhead, ?_, two_mul_K_dropLast_le L hne hpos hlast,
+      K_coprime L⟩
+    exact K_pos _ (fun x hx => hpos x (List.dropLast_subset L hx))
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
@@ -497,5 +571,9 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
 -- `cf 30 13 = [4,3,2]` have continuants `K [] = 1`, `K [4] = 4`, `K [4,3] = 13`.
 #guard remSum 30 13 = 18
 #guard (List.range (cf 30 13).length).map (fun j => K ((cf 30 13).take j)) = [1, 4, 13]
+-- `k = 13 > 30/2`, so the last entry of `cf 30 13` is `30/13 = 2`; for `k = 7`
+-- we get `30/7 = 4`.
+#guard (cf 30 13).getLast? = some 2
+#guard (cf 30 7).getLast? = some 4
 
 end BlockCycleRotation
