@@ -896,6 +896,131 @@ theorem inner_gt_estimate {m d a a' : ℕ} (ha : 0 < a) (hgcd : Nat.gcd a a' = 1
   rw [hc U hU]
   exact sum_ap_sub_main_le_log_real ha c _ _ U
 
+/-! ## The middle layer
+
+Summing the per-pair error over `a' < a` coprime and then over `a ≤ √(m/d)`.
+The grouping matters: the `a` values of `a'` cancel the `1/a` in the
+coefficient `2m/a`, leaving `d·a² + 2m ≤ 3m` per value of `a`. -/
+
+/-- The pairs, decomposed by their first component. -/
+theorem sum_coprimePairs_filter {m d : ℕ} (g : ℕ → ℕ → ℝ) :
+    ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m), g p.1 p.2
+      = ∑ a ∈ (Finset.range (m + 1)).filter (fun a => d * a * a < m),
+          ∑ a' ∈ (Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1), g a a' := by
+  rw [Finset.sum_sigma']
+  refine Finset.sum_bij' (i := fun p _ => (⟨p.1, p.2⟩ : (_ : ℕ) × ℕ))
+    (j := fun q _ => (q.1, q.2)) ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨a, a'⟩ hp
+    simp only [Finset.mem_filter] at hp
+    obtain ⟨hpair, hda⟩ := hp
+    obtain ⟨⟨han, ha'n⟩, ha1, ha2, hgcd⟩ := mem_coprimePairs.1 hpair
+    simp only [Finset.mem_sigma, Finset.mem_filter, Finset.mem_range, Finset.mem_Ico]
+    exact ⟨⟨by omega, hda⟩, ⟨ha1, ha2⟩, hgcd⟩
+  · rintro ⟨a, a'⟩ hq
+    simp only [Finset.mem_sigma, Finset.mem_filter, Finset.mem_range, Finset.mem_Ico] at hq
+    obtain ⟨⟨ham, hda⟩, ⟨ha1, ha2⟩, hgcd⟩ := hq
+    simp only [Finset.mem_filter]
+    exact ⟨mem_coprimePairs.2 ⟨⟨by omega, by omega⟩, ha1, ha2, hgcd⟩, hda⟩
+  · rintro ⟨a, a'⟩ _
+    rfl
+  · rintro ⟨a, a'⟩ _
+    rfl
+  · rintro ⟨a, a'⟩ _
+    rfl
+
+/-- For each `a`, the number of admissible `a'` is less than `a`. -/
+theorem card_coprimeSecond_lt {a : ℕ} (ha : 0 < a) :
+    (((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card : ℝ) ≤ (a : ℝ) := by
+  have h : ((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card ≤ a := by
+    calc ((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card
+        ≤ (Finset.Ico 1 a).card := Finset.card_filter_le _ _
+      _ = a - 1 := by simp
+      _ ≤ a := Nat.sub_le _ _
+  exact_mod_cast h
+
+/-- The admissible `a` are at most `√((m-1)/d)`. -/
+theorem card_a_le {m d : ℕ} (hd : 0 < d) :
+    ((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card
+      ≤ Nat.sqrt ((m - 1) / d) + 1 := by
+  have hsub : (Finset.range (m + 1)).filter (fun a => d * a * a < m)
+      ⊆ Finset.range (Nat.sqrt ((m - 1) / d) + 1) := by
+    intro a ha
+    simp only [Finset.mem_filter, Finset.mem_range] at ha ⊢
+    obtain ⟨-, hda⟩ := ha
+    have h1 : a * a * d ≤ m - 1 := by
+      have heq : d * a * a = a * a * d := by ring
+      omega
+    exact Nat.lt_succ_of_le (Nat.le_sqrt.2 ((Nat.le_div_iff_mul_le hd).2 h1))
+  calc ((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card
+      ≤ (Finset.range (Nat.sqrt ((m - 1) / d) + 1)).card := Finset.card_le_card hsub
+    _ = Nat.sqrt ((m - 1) / d) + 1 := Finset.card_range _
+
+/-- **The middle layer.**  Summing the per-pair error bound over the coprime
+pairs gives `3m(1 + log m)` for each admissible `a`. -/
+theorem middle_layer_bound {m d : ℕ} (hm : 0 < m) :
+    ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
+        (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / p.1) * (1 + Real.log m)
+      ≤ (((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card : ℝ)
+          * (3 * (m : ℝ) * (1 + Real.log m)) := by
+  have hm' : (1 : ℝ) ≤ (m : ℝ) := by exact_mod_cast hm
+  have hlog : (0 : ℝ) ≤ 1 + Real.log m := by
+    have := Real.log_nonneg hm'
+    linarith
+  rw [sum_coprimePairs_filter (m := m) (d := d)
+    (g := fun a _ => (((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a) * (1 + Real.log m))]
+  calc ∑ a ∈ (Finset.range (m + 1)).filter (fun a => d * a * a < m),
+        ∑ _a' ∈ (Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1),
+          (((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a) * (1 + Real.log m)
+      ≤ ∑ _a ∈ (Finset.range (m + 1)).filter (fun a => d * a * a < m),
+          3 * (m : ℝ) * (1 + Real.log m) := by
+        refine Finset.sum_le_sum fun a ha => ?_
+        simp only [Finset.mem_filter, Finset.mem_range] at ha
+        obtain ⟨ham, hda⟩ := ha
+        rcases Nat.eq_zero_or_pos a with h0 | h0
+        · subst h0
+          simp
+          positivity
+        · have hcard := card_coprimeSecond_lt h0
+          have ha1 : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast h0
+          have hane : (a : ℝ) ≠ 0 := by linarith
+          have hdle : (d : ℝ) * a * a ≤ (m : ℝ) := by
+            have h2 : d * a * a ≤ m := hda.le
+            exact_mod_cast h2
+          calc ∑ _a' ∈ (Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1),
+                (((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a) * (1 + Real.log m)
+              = ((((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card : ℝ))
+                  * ((((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a) * (1 + Real.log m)) := by
+                rw [Finset.sum_const, nsmul_eq_mul]
+            _ ≤ (a : ℝ) * ((((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a) * (1 + Real.log m)) := by
+                refine mul_le_mul_of_nonneg_right hcard ?_
+                have hnn : (0 : ℝ) ≤ ((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a := by positivity
+                exact mul_nonneg hnn hlog
+            _ = ((d : ℝ) * a * a + 2 * (m : ℝ)) * (1 + Real.log m) := by
+                push_cast
+                field_simp
+            _ ≤ 3 * (m : ℝ) * (1 + Real.log m) := by nlinarith
+    _ = (((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card : ℝ)
+          * (3 * (m : ℝ) * (1 + Real.log m)) := by
+        rw [Finset.sum_const, nsmul_eq_mul]
+
+/-- **The middle layer, combined.**  The per-pair error bounds sum to
+`O(√(m/d) · m · log m)` — which is `m^{3/2}/√d` up to the logarithm. -/
+theorem middle_layer {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
+    ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
+        (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / p.1) * (1 + Real.log m)
+      ≤ ((Nat.sqrt ((m - 1) / d) : ℝ) + 1) * (3 * (m : ℝ) * (1 + Real.log m)) := by
+  have hm' : (1 : ℝ) ≤ (m : ℝ) := by exact_mod_cast hm
+  have hlog : (0 : ℝ) ≤ 1 + Real.log m := by
+    have := Real.log_nonneg hm'
+    linarith
+  refine (middle_layer_bound hm).trans ?_
+  refine mul_le_mul_of_nonneg_right ?_ (by positivity)
+  have h := card_a_le (m := m) hd
+  have : (((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card : ℝ)
+      ≤ ((Nat.sqrt ((m - 1) / d) + 1 : ℕ) : ℝ) := by exact_mod_cast h
+  push_cast at this
+  linarith
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.

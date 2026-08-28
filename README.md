@@ -98,7 +98,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Triple sum decomposed by pairs | §4 | `gtTriples_decompose` | ✅ proved |
 | Progression estimate over `ℝ` | §4 | `sum_ap_sub_main_le_log_real` | ✅ proved |
 | **Innermost estimation layer** | Lemmas 18–19 | `inner_gt_estimate` | ✅ **proved** |
-| Middle layer: sum over `(a,a')` | Lemmas 18–19 | — | 🚧 remaining |
+| Pairs decomposed by first component | §4 | `sum_coprimePairs_filter` | ✅ proved |
+| Admissible `a` number `≤ √((m−1)/d)` | §4 | `card_a_le` | ✅ proved |
+| **Middle estimation layer** | Lemmas 18–19 | `middle_layer` | ✅ **proved** |
 | Outer layer: sum over `d ∣ n` | Lemmas 18–19 | — | 🚧 remaining |
 | `G₁`, Theorem 13, constant `D` | Thm 13 | — | 🚧 out of reach |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
