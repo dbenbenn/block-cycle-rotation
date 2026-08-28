@@ -1364,6 +1364,56 @@ theorem small_part_le {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
     _ ≤ (Nat.sqrt ((m - 1) / d) + 1) * ((2 * d + 2) * (2 * m)) :=
         Nat.mul_le_mul_right _ (card_a_le hd)
 
+/-! ## Towards the main term
+
+The main term per pair is `(1/a)·∑_{1 ≤ b' < U} (A + B·b')` with the paper's
+coefficients.  Evaluating that sum in closed form and substituting
+`U = m/(a+a')`, `A = d·a + m/a`, `B = -a'/a` gives
+
+```
+d·m/(a+a')  +  m²·[ 1/(a²(a+a')) - a'/(2a²(a+a')²) ]  =  d·m/(a+a')  +  m²·cTerm(a,a'),
+```
+
+by `cTerm_summand_eq`.  Summing over all coprime pairs gives `m²·C`, and over
+`d ∣ n` with `m = n/d` gives `C·n²·∑_{d∣n} 1/d²` — Lemma 17. -/
+
+/-- **The closed form of the main term.**  `∑_{1 ≤ b < U} (A + B·b)`. -/
+theorem sum_linear_Ico (A B : ℝ) : ∀ U : ℕ, 1 ≤ U →
+    ∑ b ∈ Finset.Ico 1 U, (A + B * (b : ℝ))
+      = A * ((U : ℝ) - 1) + B * (((U : ℝ) - 1) * (U : ℝ) / 2) := by
+  intro U hU
+  induction U, hU using Nat.le_induction with
+  | base => simp
+  | succ U hU ih =>
+    rw [Finset.sum_Ico_succ_top hU, ih]
+    push_cast
+    ring
+
+/-- **Pairs outside the bulk have large `a`.**  If `d·a·(a+a') > m` then
+`2d·a² > m`, so `a > √(m/(2d))`.  This is what makes the truncation of the
+series for `C` cost only `O(√(d/m))`. -/
+theorem excluded_pair_large {m d a a' : ℕ} (ha' : 1 ≤ a') (haa : a' < a)
+    (h : m < d * a * (a + a')) : m < 2 * d * (a * a) := by
+  nlinarith
+
+/-- **Pairs with small `a` lie in the bulk.**  The contrapositive of
+`excluded_pair_large`. -/
+theorem bulk_of_small_a {m d a a' : ℕ} (ha' : 1 ≤ a') (haa : a' < a)
+    (h : 2 * d * (a * a) ≤ m) : d * a * (a + a') ≤ m := by
+  nlinarith
+
+/-- The cut-off `N = √(m/(2d))` puts every pair with `a ≤ N` in the bulk. -/
+theorem bulk_of_le_sqrt {m d a a' : ℕ} (ha' : 1 ≤ a') (haa : a' < a)
+    (ha : a ≤ Nat.sqrt (m / (2 * d))) (hd : 0 < d) : d * a * (a + a') ≤ m := by
+  refine bulk_of_small_a ha' haa ?_
+  have h1 : a * a ≤ m / (2 * d) := by
+    have := Nat.sqrt_le' (m / (2 * d))
+    calc a * a ≤ Nat.sqrt (m / (2 * d)) * Nat.sqrt (m / (2 * d)) :=
+          Nat.mul_le_mul ha ha
+      _ ≤ m / (2 * d) := by rw [← pow_two]; exact Nat.sqrt_le' _
+  calc 2 * d * (a * a) ≤ 2 * d * (m / (2 * d)) := Nat.mul_le_mul_left _ h1
+    _ ≤ m := Nat.mul_div_le m (2 * d)
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.

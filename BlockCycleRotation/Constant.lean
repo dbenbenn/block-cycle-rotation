@@ -252,4 +252,29 @@ theorem cConst_le_partial_add {N : ℕ} (hN : 0 < N) :
   rw [hsplit]
   linarith
 
+/-- **The truncation bound.**  Restricting the series for `C` to the bulk pairs
+loses at most `3/(2N)`, provided every pair with `a ≤ N` lies in the bulk. -/
+theorem cConst_le_bulk_add {m d N : ℕ} (hN : 0 < N)
+    (hbulk : ∀ a a', a ≤ N → 1 ≤ a' → a' < a → d * a * (a + a') ≤ m) :
+    cConst ≤ (∑ a ∈ Finset.range (N + 1), ∑ a' ∈ Finset.range a,
+        if d * a * (a + a') ≤ m then cTerm (a, a') else 0) + 3 / (2 * (N : ℝ)) := by
+  refine le_trans (cConst_le_partial_add hN) ?_
+  have heq : ∀ a ∈ Finset.range (N + 1), ∑ a' ∈ Finset.range a, cTerm (a, a')
+      = ∑ a' ∈ Finset.range a, if d * a * (a + a') ≤ m then cTerm (a, a') else 0 := by
+    intro a ha
+    simp only [Finset.mem_range, Nat.lt_succ_iff] at ha
+    refine Finset.sum_congr rfl fun a' ha' => ?_
+    simp only [Finset.mem_range] at ha'
+    rcases Nat.eq_zero_or_pos a' with h0 | h0
+    · subst h0
+      have hz : cTerm (a, 0) = 0 := by
+        unfold cTerm
+        rw [if_neg]
+        rintro ⟨h1, -, -⟩
+        omega
+      simp [hz]
+    · rw [if_pos (hbulk a a' ha h0 ha')]
+  rw [Finset.sum_congr rfl heq]
+
+
 end BlockCycleRotation

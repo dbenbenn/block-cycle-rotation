@@ -114,7 +114,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Small branch: `2d·a² > m` | Lemma 17 | `small_two_mul_gt` | ✅ proved |
 | AP counting `≤ U/a + 1` | Lemma 17 | `card_mod_filter_le` | ✅ proved |
 | **Small-part bound `O(m^{3/2}√d)`** | Lemma 17 | `small_part_le` | ✅ **proved** |
-| Lemma 17: truncation, assembly | Lemma 17 | — | 🚧 remaining |
+| Closed form of the main term | Lemma 17 | `sum_linear_Ico` | ✅ proved |
+| **Truncation of the series for `C`** | Lemma 17 | `cConst_le_bulk_add` | ✅ **proved** |
+| Lemma 17: final assembly | Lemma 17 | — | 🚧 remaining |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
