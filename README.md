@@ -37,6 +37,13 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Algorithm on lists | §2 | `BlockCycleRotation.bcRotate` | ✅ defined |
 | It computes the rotation | §2 | `bcRotate_eq_rotate` | ✅ proved |
 | Continuous cost `Ψ`, scaling | §3 | — | 🚧 planned |
+| Average cost `avgCost` | Thm 13 | `BlockCycleRotation.avgCost` | ✅ defined |
+| Average `≤ 3n` | (worst case) | `avgCost_le_three_mul` | ✅ proved |
+| Obs. 15: Jordan on the circle | Obs. 15 | `mul_abs_le_norm_e_sub_one` | ✅ proved |
+| Obs. 15: geometric sum bound | Obs. 15 | `norm_geom_sum_le` | ✅ proved |
+| Obs. 15: weighted sum bound | Obs. 15 | `norm_weighted_geom_sum_le` | ✅ proved |
+| Divisor bound `d(n) = O(nᵋ)` | §4 | — | 🚧 not in Mathlib |
+| Möbius/character decomposition | §4 | — | 🚧 planned |
 | Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |
 | Error term `O(n^(1/2+ε))` | Thm 13 | — | 🚧 planned |
 | Constant `D = 1 + 4C` via MZVs | §4 | — | 🚧 planned |
@@ -68,6 +75,23 @@ left step keeps `k` and shortens the list, the mirrored step decreases `k`.
 Observation 6 works out a left segment of length 8 and a right segment of
 length 13 — that is `n = 21`, `k = 8` — with remainder sequence `8, 5, 3, 2, 1`
 and a cost of 58 moves. Both are checked by `#guard` in `Euclid.lean`.
+
+## Tier 3: the error term
+
+Theorem 13 states `avgCost n = D·n + O(n^(1/2+ε))` with `D = 1 + 4C ≈ 1.85`.
+Contrary to first appearances, its proof needs **no Kloosterman or Weil bounds**.
+The only analytic input is Observation 15, now formalised in `ExpSum.lean`:
+
+* Jordan's inequality on the circle, `(2/π)|θ| ≤ ‖e(θ) − 1‖` — Mathlib already
+  has the hard half as `Real.mul_abs_le_abs_sin`;
+* the *trivial* bound on a geometric sum, `‖Σ_{B≤j<T} e(jθ)‖ ≤ π/|θ|`;
+* its weighted form, by the paper's double-counting argument.
+
+No square-root cancellation is used anywhere. What remains for Theorem 13 is
+volume, not machinery: Möbius inversion over divisors (in Mathlib), additive
+character orthogonality (in Mathlib, `AddChar.sum_eq_ite`), harmonic sums (in
+Mathlib), and then the assembly of `G₁ + G₂ + G₃`. The one genuine gap is the
+divisor bound `d(n) = O(n^ε)`, which is elementary but absent from Mathlib.
 
 ## Building
 
