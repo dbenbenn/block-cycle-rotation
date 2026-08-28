@@ -46,4 +46,121 @@ theorem inner_sum_sub_main_le (n d a a' : ℕ) (ha : 0 < a) (c : ℤ) (U : ℕ) 
           * (1 + Real.log a) :=
   sum_ap_sub_main_le_log ha c _ _ U
 
+/-! ## Equation (invquant)
+
+The paper discards the `∑ gcd(n,k)` term of (eq. heilbron) as `O(n^{1+ε})`.
+That bound is `∑_{k} gcd(n,k) ≤ n · d(n)`, which the divisor bound turns into
+`O(n^{1+ε})`. -/
+
+/-- The shifts of `m` number at most `m`. -/
+theorem card_shifts_le (m : ℕ) : (shifts m).card ≤ m := by
+  have hsub : shifts m ⊆ Finset.Icc 1 m := by
+    intro k hk
+    obtain ⟨hkm, hk1, hk2, -⟩ := mem_shifts.1 hk
+    exact Finset.mem_Icc.2 ⟨hk1, hkm⟩
+  calc (shifts m).card ≤ (Finset.Icc 1 m).card := Finset.card_le_card hsub
+    _ = m := by simp
+
+/-- **`∑ gcd(n,k) ≤ n · d(n)`.** -/
+theorem sum_gcd_le {n : ℕ} (hn : 0 < n) :
+    ∑ k ∈ allShifts n, Nat.gcd n k ≤ n * n.divisors.card := by
+  rw [sum_gcd_allShifts hn, Finset.card_eq_sum_ones, Finset.mul_sum]
+  refine Finset.sum_le_sum fun g hg => ?_
+  obtain ⟨hgn, -⟩ := Nat.mem_divisors.1 hg
+  have hmul : g * (n / g) = n := Nat.mul_div_cancel' hgn
+  calc g * (shifts (n / g)).card ≤ g * (n / g) := Nat.mul_le_mul_left _ (card_shifts_le _)
+    _ = n := hmul
+    _ = n * 1 := (Nat.mul_one n).symm
+
+/-- **Equation (invquant).**  The `∑ gcd(n,k)` term of (eq. heilbron) is
+`O(n^{1+ε})`, so `∑_{k} remSum n k` and `R(n)` differ by that much. -/
+theorem invquant {ε : ℝ} (hε : 0 < ε) :
+    ∃ C : ℝ, 0 < C ∧ ∀ n : ℕ, 0 < n →
+      ((∑ k ∈ allShifts n, remSum n k : ℕ) : ℝ)
+          - ((∑ q ∈ quadruplesAll n, q.2.1 : ℕ) : ℝ)
+        ≤ C * (n : ℝ) ^ (1 + ε) := by
+  obtain ⟨C, hC, hCd⟩ := exists_card_divisors_le hε
+  refine ⟨C, hC, fun n hn => ?_⟩
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  have hdiff := heilbron hn
+  have h1 : ((∑ k ∈ allShifts n, Nat.gcd n k : ℕ) : ℝ) ≤ (n : ℝ) * (n.divisors.card : ℝ) := by
+    exact_mod_cast sum_gcd_le hn
+  have h2 : ((∑ k ∈ allShifts n, remSum n k : ℕ) : ℝ)
+      = ((∑ k ∈ allShifts n, Nat.gcd n k : ℕ) : ℝ)
+        + ((∑ q ∈ quadruplesAll n, q.2.1 : ℕ) : ℝ) := by exact_mod_cast hdiff
+  have h3 : (n : ℝ) * (n.divisors.card : ℝ) ≤ (n : ℝ) * (C * (n : ℝ) ^ ε) :=
+    mul_le_mul_of_nonneg_left (hCd n hn.ne') hn'.le
+  have hrpow : (n : ℝ) ^ (1 + ε) = (n : ℝ) * (n : ℝ) ^ ε := by
+    rw [Real.rpow_add hn', Real.rpow_one]
+  rw [hrpow]
+  linarith
+
+/-! ## Eliminating `b`
+
+The paper solves `n = a·b + a'·b'` for `b`, turning the quadruples into triples
+`(a, a', b')`.  The condition `b > b'` becomes `(a + a')·b' < n`, and `b` being
+an integer becomes `a ∣ n - a'·b'` — the congruence `n ≡ a'b' (mod a)`. -/
+
+/-- The triples `(a, a', b')` of the triple sum. -/
+def triples (n : ℕ) : Finset (ℕ × ℕ × ℕ) :=
+  ((Finset.range (n + 1)) ×ˢ (Finset.range (n + 1)) ×ˢ (Finset.range (n + 1))).filter
+    (fun t => 1 ≤ t.2.1 ∧ t.2.1 < t.1 ∧ 1 ≤ t.2.2 ∧ (t.1 + t.2.1) * t.2.2 < n
+      ∧ t.1 ∣ (n - t.2.1 * t.2.2))
+
+theorem mem_triples {n a a' b' : ℕ} :
+    (a, a', b') ∈ triples n ↔
+      (a ≤ n ∧ a' ≤ n ∧ b' ≤ n) ∧ 1 ≤ a' ∧ a' < a ∧ 1 ≤ b'
+        ∧ (a + a') * b' < n ∧ a ∣ (n - a' * b') := by
+  simp [triples, Finset.mem_filter, Finset.mem_product, and_assoc]
+
+/-- **The `b`-elimination.**  `Q(n)` as a sum over triples. -/
+theorem sum_snd_quadruplesQ_eq_triples {n : ℕ} (hn : 0 < n) :
+    ∑ q ∈ quadruplesQ n, q.2.1 = ∑ t ∈ triples n, (n - t.2.1 * t.2.2) / t.1 := by
+  refine Finset.sum_bij'
+    (i := fun q _ => (q.1, q.2.2.1, q.2.2.2))
+    (j := fun t _ => (t.1, (n - t.2.1 * t.2.2) / t.1, t.2.1, t.2.2)) ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨⟨hab, hbb, ha'b, hb'b⟩, ha1, ha2, hb1, hb2, hsum⟩ := mem_quadruplesQ.1 hq
+    have hdvd : a ∣ (n - a' * b') := ⟨b, by omega⟩
+    have hlt : (a + a') * b' < n := by nlinarith
+    show (a, a', b') ∈ triples n
+    rw [mem_triples]
+    exact ⟨⟨hab, ha'b, hb'b⟩, ha1, ha2, hb1, hlt, hdvd⟩
+  · rintro ⟨a, a', b'⟩ ht
+    obtain ⟨⟨han, ha'n, hb'n⟩, ha1, ha2, hb1, hlt, hdvd⟩ := mem_triples.1 ht
+    have ha : 0 < a := by omega
+    have hab : a * ((n - a' * b') / a) = n - a' * b' := Nat.mul_div_cancel' hdvd
+    have hle : a' * b' ≤ n := by nlinarith
+    have hsum : n = a * ((n - a' * b') / a) + a' * b' := by omega
+    have hbb : b' < (n - a' * b') / a := by
+      have h1 : a * b' < a * ((n - a' * b') / a) := by
+        rw [hab]; nlinarith
+      exact Nat.lt_of_mul_lt_mul_left h1
+    show (a, (n - a' * b') / a, a', b') ∈ quadruplesQ n
+    rw [mem_quadruplesQ]
+    exact ⟨quadruple_le ha1 ha2 hb1 hbb hsum, ha1, ha2, hb1, hbb, hsum⟩
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨-, ha1, ha2, hb1, hb2, hsum⟩ := mem_quadruplesQ.1 hq
+    have ha : 0 < a := by omega
+    have h : n - a' * b' = a * b := by omega
+    show (a, (n - a' * b') / a, a', b') = (a, b, a', b')
+    rw [h, Nat.mul_div_cancel_left _ ha]
+  · rintro ⟨a, a', b'⟩ _
+    rfl
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨-, ha1, ha2, hb1, hb2, hsum⟩ := mem_quadruplesQ.1 hq
+    have ha : 0 < a := by omega
+    have h : n - a' * b' = a * b := by omega
+    show b = (n - a' * b') / a
+    rw [h, Nat.mul_div_cancel_left _ ha]
+
+/-! ## Sanity checks -/
+
+-- The `b`-elimination, checked numerically.
+#guard (List.range 22).all (fun m => let n := m + 1
+  (∑ q ∈ quadruplesQ n, q.2.1) = ∑ t ∈ triples n, (n - t.2.1 * t.2.2) / t.1)
+-- `∑ gcd(n,k) ≤ n · d(n)`.
+#guard (List.range 30).all (fun m => let n := m + 1
+  (∑ k ∈ allShifts n, Nat.gcd n k) ≤ n * n.divisors.card)
+
 end BlockCycleRotation
