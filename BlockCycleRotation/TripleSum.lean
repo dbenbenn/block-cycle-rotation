@@ -1485,6 +1485,66 @@ theorem main_term_vs_sum (A B V : ℝ) (K : ℕ) (hK : (K : ℝ) ≤ V) (hK1 : V
         nlinarith
     _ = |A| + |B| * V := by ring
 
+/-! ## The lower-order part
+
+After substitution the main term carries a term `d·m/(a+a')`.  Summing it over
+`a' < a` gives at most `d·m` per value of `a` — the `a` choices of `a'` cancel
+the `1/a` again — and `a` ranges over at most `√((m-1)/d)+1` values, so the
+whole thing is `O(m^{3/2}√d)`, the same order as the other errors. -/
+
+/-- **The lower-order part of the main term.** -/
+theorem lower_order_le {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
+    ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m),
+        (d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ))
+      ≤ ((Nat.sqrt ((m - 1) / d) : ℝ) + 1) * ((d : ℝ) * (m : ℝ)) := by
+  have hsub : (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m)
+      ⊆ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m) := by
+    rintro ⟨a, a'⟩ hp
+    simp only [Finset.mem_filter] at hp ⊢
+    obtain ⟨hmem, hbulk⟩ := hp
+    obtain ⟨-, ha1, ha2, -⟩ := mem_coprimePairs.1 hmem
+    exact ⟨hmem, by nlinarith⟩
+  calc ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m),
+        (d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ))
+      ≤ ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
+          (d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ)) :=
+        Finset.sum_le_sum_of_subset_of_nonneg hsub (fun p _ _ => by positivity)
+    _ = ∑ a ∈ (Finset.range (m + 1)).filter (fun a => d * a * a < m),
+          ∑ a' ∈ (Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1),
+            (d : ℝ) * (m : ℝ) / ((a : ℝ) + (a' : ℝ)) :=
+        sum_coprimePairs_filter (m := m) (d := d)
+          (g := fun a a' => (d : ℝ) * (m : ℝ) / ((a : ℝ) + (a' : ℝ)))
+    _ ≤ ∑ _a ∈ (Finset.range (m + 1)).filter (fun a => d * a * a < m), (d : ℝ) * (m : ℝ) := by
+        refine Finset.sum_le_sum fun a ha => ?_
+        rcases Nat.eq_zero_or_pos a with h0 | h0
+        · subst h0
+          simp
+          positivity
+        · have ha1 : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast h0
+          have hcard := card_coprimeSecond_lt h0
+          calc ∑ a' ∈ (Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1),
+                (d : ℝ) * (m : ℝ) / ((a : ℝ) + (a' : ℝ))
+              ≤ ∑ _a' ∈ (Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1),
+                  (d : ℝ) * (m : ℝ) / (a : ℝ) := by
+                refine Finset.sum_le_sum fun a' _ => ?_
+                have ha'0 : (0 : ℝ) ≤ (a' : ℝ) := by positivity
+                apply div_le_div_of_nonneg_left (by positivity) (by linarith) (by linarith)
+            _ = (((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card : ℝ)
+                  * ((d : ℝ) * (m : ℝ) / (a : ℝ)) := by
+                rw [Finset.sum_const, nsmul_eq_mul]
+            _ ≤ (a : ℝ) * ((d : ℝ) * (m : ℝ) / (a : ℝ)) := by
+                refine mul_le_mul_of_nonneg_right hcard (by positivity)
+            _ = (d : ℝ) * (m : ℝ) := by field_simp
+    _ = ((((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card : ℝ))
+          * ((d : ℝ) * (m : ℝ)) := by rw [Finset.sum_const, nsmul_eq_mul]
+    _ ≤ ((Nat.sqrt ((m - 1) / d) : ℝ) + 1) * ((d : ℝ) * (m : ℝ)) := by
+        refine mul_le_mul_of_nonneg_right ?_ (by positivity)
+        have h := card_a_le (m := m) hd
+        have hc : ((((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card : ℝ))
+            ≤ ((Nat.sqrt ((m - 1) / d) + 1 : ℕ) : ℝ) := by exact_mod_cast h
+        push_cast at hc
+        linarith
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.

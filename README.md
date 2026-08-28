@@ -119,7 +119,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Rounding term (paper's `G₂` form) | Lemma 17 / §4 | `main_term_vs_sum` | ✅ proved |
 | Substitution: `C` appears | Lemma 17 | `main_term_substitute` | ✅ proved |
 | Main term splits; partial sums squeezed | Lemma 17 | `G1_split`, `bulk_sum_close` | ✅ proved |
-| Lemma 17: lower-order part, `d`-sum, statement | Lemma 17 | — | 🚧 remaining |
+| **Lower-order part `O(m^{3/2}√d)`** | Lemma 17 | `lower_order_le` | ✅ **proved** |
+| Lemma 17: index reconciliation, `d`-sum, statement | Lemma 17 | — | 🚧 remaining |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
