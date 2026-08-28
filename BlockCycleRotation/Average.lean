@@ -33,8 +33,8 @@ noncomputable def avgCost (n : ℕ) : ℝ := (∑ k ∈ range n, (algCost n k : 
 
 /-- **The average cost is at most `3 * n`.**
 
-Theorem 13 refines this to `D * n + O(n^(1/2+ε))` with `D ≈ 1.85`; that sharper
-statement is not yet formalised. -/
+Theorem 13 refines this to `D * n + O(n^(1/2+ε))` with `D ≈ 1.85`; see
+`theorem13` in `Theorem13.lean`. -/
 theorem avgCost_le_three_mul {n : ℕ} (hn : 0 < n) : avgCost n ≤ 3 * n := by
   have hn' : (0 : ℝ) < n := by exact_mod_cast hn
   rw [avgCost, div_le_iff₀ hn']
