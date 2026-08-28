@@ -49,6 +49,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Character orthogonality | §4 | `sum_e_root` | ✅ proved |
 | Inner sum `∑(A+Bb)e(2πmb/a)` | §4 | `norm_linear_geom_sum_root_le` | ✅ proved |
 | Error term over all `m ≠ 0` | Lemma 18 | `norm_sum_twisted_le` | ✅ proved |
+| Indicator via characters | §4 | `indicator_eq` | ✅ proved |
+| Sum over an AP | §4 | `sum_ap_sub_main_le` | ✅ proved |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | — | 🚧 not in Mathlib |
 | Möbius/character decomposition | §4 | — | 🚧 planned |
 | Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |
@@ -119,9 +121,16 @@ congruence in characters turns the error into a weighted sum of
 ‖∑_m w_m ∑_b (A + B·b) e(2πmb/a)‖ ≤ (‖A‖ + ‖B‖(T−1)) · a · ∑_{0<m<a} 1/m,
 ```
 
-whose harmonic sum is the `log a` of Lemma 18. (The phases are currently
-abstracted as arbitrary weights of modulus ≤ 1; instantiating them from
-`sum_e_root` is the next step.)
+whose harmonic sum is the `log a` of Lemma 18. `Progression.lean` then
+instantiates the phases from `sum_e_root`, giving the estimate itself:
+
+```
+‖∑_{1≤b<T, b≡c mod a} (A + B·b) − (1/a)·∑_{1≤b<T} (A + B·b)‖
+    ≤ (‖A‖ + ‖B‖(T−1)) · ∑_{0<m<a} 1/m.
+```
+
+Replacing a sum over an arithmetic progression by its expected value costs a
+harmonic sum, i.e. `O(log a)`.
 
 No square-root cancellation is used anywhere. What remains for Theorem 13 is
 long rather than deep — there is no missing theorem to invent, just a great many

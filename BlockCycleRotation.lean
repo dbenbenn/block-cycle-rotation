@@ -7,3 +7,4 @@ import BlockCycleRotation.Average
 import BlockCycleRotation.Characters
 import BlockCycleRotation.Orthogonality
 import BlockCycleRotation.LinearSums
+import BlockCycleRotation.Progression
