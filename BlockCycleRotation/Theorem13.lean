@@ -374,4 +374,145 @@ theorem Qgt_sub_G1_le {n : ℕ} (hn : 0 < n) :
   rw [h2]
   linarith
 
+/-! ## `Q(n)` in closed form
+
+Adding the diagonal (bounded by `sum_diag_isBigO`) and Lemma 17. -/
+
+/-- **`Q(n) = C·n²·∑_{d∣n} 1/d² + O(n^{3/2+ε})`.** -/
+theorem Q_isBigO {ε : ℝ} (hε : 0 < ε) :
+    ∃ K : ℝ, 0 < K ∧ ∀ n : ℕ, 0 < n →
+      |((Qquad n : ℤ) : ℝ) - cConst * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2|
+        ≤ K * (n : ℝ) ^ (3 / 2 + ε) := by
+  classical
+  obtain ⟨C1, hC1, hErr⟩ := error_isBigO hε
+  obtain ⟨C2, hC2, hDiag⟩ := sum_diag_isBigO hε
+  obtain ⟨C3, hC3, hG1⟩ := lemma17_isBigO hε
+  refine ⟨5 * C1 + C2 + C3, by positivity, fun n hn => ?_⟩
+  have hnR : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hnpos : (0 : ℝ) < (n : ℝ) := by linarith
+  have hsym : ((Qquad n : ℤ) : ℝ)
+      = ((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1) : ℕ) : ℝ)
+        + ((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1 : ℕ) : ℝ) := by
+    have h1 : (Qquad n : ℤ) = ((∑ q ∈ quadruplesQ n, q.2.1 : ℕ) : ℤ) := by
+      unfold Qquad; push_cast; rfl
+    rw [h1, Q_symmetrise n]
+    push_cast
+    ring
+  have hdiagnn : (0 : ℝ)
+      ≤ ((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1 : ℕ) : ℝ) := by positivity
+  have hexp : (n : ℝ) ^ (1 + ε) ≤ (n : ℝ) ^ (3 / 2 + ε) :=
+    Real.rpow_le_rpow_of_exponent_le hnR (by linarith)
+  have h1 := Qgt_sub_G1_le hn
+  have h2 := hErr n hn
+  have h3 := hDiag n hn
+  have h4 := hG1 n hn
+  have hsplit : ((Qquad n : ℤ) : ℝ) - cConst * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2
+      = (((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1) : ℕ) : ℝ) - G1 n)
+        + ((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1 : ℕ) : ℝ)
+        + (G1 n - cConst * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2) := by
+    rw [hsym]; ring
+  rw [hsplit]
+  have hA := abs_add_le
+    ((((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1) : ℕ) : ℝ) - G1 n)
+      + ((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1 : ℕ) : ℝ))
+    (G1 n - cConst * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2)
+  have hB := abs_add_le
+    ((((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1) : ℕ) : ℝ) - G1 n))
+    (((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1 : ℕ) : ℝ))
+  rw [abs_of_nonneg hdiagnn] at hB
+  have hErrle : 5 * Err n ≤ 5 * (C1 * (n : ℝ) ^ (3 / 2 + ε)) := by
+    have : Err n ≤ C1 * (n : ℝ) ^ (3 / 2 + ε) := h2
+    linarith
+  nlinarith [hA, hB, h1, h3, h4, hErrle, hexp, hC2]
+
+/-! ## Möbius inversion
+
+`∑_{d ∣ n} d² = n²·∑_{e ∣ n} 1/e²`, so Möbius inversion turns the main term of
+`Q` into `C·n²` when it is summed against `μ`. -/
+
+/-- **The main term after Möbius inversion.** -/
+theorem moebius_main {n : ℕ} (hn : 0 < n) :
+    ∑ d ∈ n.divisors, ((ArithmeticFunction.moebius d : ℤ) : ℝ)
+        * (cConst * ((n / d : ℕ) : ℝ) ^ 2 * ∑ e ∈ (n / d).divisors, 1 / (e : ℝ) ^ 2)
+      = cConst * (n : ℝ) ^ 2 := by
+  have hbase : ∑ x ∈ n.divisorsAntidiagonal,
+      (ArithmeticFunction.moebius x.1) • (∑ d ∈ (x.2).divisors, (d : ℝ) ^ 2) = (n : ℝ) ^ 2 :=
+    ArithmeticFunction.sum_eq_iff_sum_smul_moebius_eq.1 (fun _ _ => rfl) n hn
+  rw [Nat.sum_divisorsAntidiagonal
+    (fun x y => (ArithmeticFunction.moebius x) • (∑ e ∈ (y : ℕ).divisors, (e : ℝ) ^ 2))] at hbase
+  have hstep : ∀ d ∈ n.divisors,
+      ((ArithmeticFunction.moebius d : ℤ) : ℝ)
+          * (cConst * ((n / d : ℕ) : ℝ) ^ 2 * ∑ e ∈ (n / d).divisors, 1 / (e : ℝ) ^ 2)
+        = cConst * ((ArithmeticFunction.moebius d) • (∑ e ∈ (n / d).divisors, (e : ℝ) ^ 2)) := by
+    intro d hd
+    obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
+    have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+    have hk : 0 < n / d := Nat.div_pos (Nat.le_of_dvd hn hdn) hd0
+    have hg : ∑ e ∈ (n / d).divisors, (e : ℝ) ^ 2
+        = ((n / d : ℕ) : ℝ) ^ 2 * ∑ e ∈ (n / d).divisors, 1 / (e : ℝ) ^ 2 := by
+      have h := sum_div_sq_eq hk (1 : ℝ)
+      simp only [one_mul] at h
+      rw [← h]
+      exact (Nat.sum_div_divisors (n / d) (fun y => (y : ℝ) ^ 2)).symm
+    rw [hg, zsmul_eq_mul]
+    ring
+  rw [Finset.sum_congr rfl hstep, ← Finset.mul_sum, hbase]
+
+/-- **`R(n) = C·n² + O(n^{3/2+ε})`.** -/
+theorem R_isBigO {ε : ℝ} (hε : 0 < ε) :
+    ∃ K : ℝ, 0 < K ∧ ∀ n : ℕ, 0 < n →
+      |((Rquad n : ℤ) : ℝ) - cConst * (n : ℝ) ^ 2| ≤ K * (n : ℝ) ^ (3 / 2 + ε) := by
+  classical
+  obtain ⟨K1, hK1, hQ⟩ := Q_isBigO (half_pos hε)
+  obtain ⟨C0, hC0, hCd⟩ := exists_card_divisors_le (half_pos hε)
+  refine ⟨K1 * C0, by positivity, fun n hn => ?_⟩
+  have hnR : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hnpos : (0 : ℝ) < (n : ℝ) := by linarith
+  have hR : ((Rquad n : ℤ) : ℝ)
+      = ∑ d ∈ n.divisors, ((ArithmeticFunction.moebius d : ℤ) : ℝ)
+          * ((Qquad (n / d) : ℤ) : ℝ) := by
+    have h := moebius_Rquad hn
+    rw [Nat.sum_divisorsAntidiagonal
+      (fun x y => (ArithmeticFunction.moebius x) • Qquad y)] at h
+    rw [← h]
+    push_cast [zsmul_eq_mul]
+    ring
+  have hterm : ∀ d ∈ n.divisors,
+      |((ArithmeticFunction.moebius d : ℤ) : ℝ) * ((Qquad (n / d) : ℤ) : ℝ)
+        - ((ArithmeticFunction.moebius d : ℤ) : ℝ)
+            * (cConst * ((n / d : ℕ) : ℝ) ^ 2 * ∑ e ∈ (n / d).divisors, 1 / (e : ℝ) ^ 2)|
+      ≤ K1 * (n : ℝ) ^ (3 / 2 + ε / 2) := by
+    intro d hd
+    obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
+    have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+    have hk : 0 < n / d := Nat.div_pos (Nat.le_of_dvd hn hdn) hd0
+    have hkn : ((n / d : ℕ) : ℝ) ≤ (n : ℝ) := by exact_mod_cast Nat.div_le_self n d
+    rw [← mul_sub, abs_mul]
+    have hmu : |((ArithmeticFunction.moebius d : ℤ) : ℝ)| ≤ 1 := by
+      rw [← Int.cast_abs]
+      exact_mod_cast ArithmeticFunction.abs_moebius_le_one
+    have hq := hQ (n / d) hk
+    have hmono : ((n / d : ℕ) : ℝ) ^ (3 / 2 + ε / 2) ≤ (n : ℝ) ^ (3 / 2 + ε / 2) :=
+      Real.rpow_le_rpow (by positivity) hkn (by linarith)
+    have habs : (0 : ℝ) ≤ |((Qquad (n / d) : ℤ) : ℝ)
+        - cConst * ((n / d : ℕ) : ℝ) ^ 2 * ∑ e ∈ (n / d).divisors, 1 / (e : ℝ) ^ 2| :=
+      abs_nonneg _
+    nlinarith [hmu, hq, hmono, habs, hK1, abs_nonneg ((ArithmeticFunction.moebius d : ℤ) : ℝ)]
+  rw [hR, ← moebius_main hn, ← Finset.sum_sub_distrib]
+  refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+  refine (sum_divisors_le _ _ hterm).trans ?_
+  have hd := hCd n hn.ne'
+  have hstep : (n.divisors.card : ℝ) * (K1 * (n : ℝ) ^ (3 / 2 + ε / 2))
+      ≤ (C0 * (n : ℝ) ^ (ε / 2)) * (K1 * (n : ℝ) ^ (3 / 2 + ε / 2)) := by
+    refine mul_le_mul_of_nonneg_right hd ?_
+    positivity
+  refine hstep.trans (le_of_eq ?_)
+  have hpow : (n : ℝ) ^ (ε / 2) * (n : ℝ) ^ (3 / 2 + ε / 2) = (n : ℝ) ^ (3 / 2 + ε) := by
+    rw [← Real.rpow_add hnpos]
+    congr 1
+    ring
+  calc (C0 * (n : ℝ) ^ (ε / 2)) * (K1 * (n : ℝ) ^ (3 / 2 + ε / 2))
+      = K1 * C0 * ((n : ℝ) ^ (ε / 2) * (n : ℝ) ^ (3 / 2 + ε / 2)) := by ring
+    _ = K1 * C0 * (n : ℝ) ^ (3 / 2 + ε) := by rw [hpow]
+
 end BlockCycleRotation
