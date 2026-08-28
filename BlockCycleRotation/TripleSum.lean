@@ -764,6 +764,138 @@ theorem gtTriples_sq_lt {m d a a' b' : ℕ} (h : (a, a', b') ∈ gtTriples m d) 
   obtain ⟨⟨⟨-, -, -, hb1, hlt, -⟩, -⟩, hgt⟩ := mem_gtTriples.1 h
   omega
 
+/-! ## The innermost range
+
+For a fixed pair `(a, a')` the conditions `(a+a')b' < m` and `m - a'b' > d·a²`
+are two upper bounds on `b'`, so the range is an initial segment cut at the
+paper's `U = min( m/(a+a'), (m - d·a²)/a' )`. -/
+
+/-- The paper's `U`. -/
+def gtBound (m d a a' : ℕ) : ℕ :=
+  min ((m - 1) / (a + a') + 1) ((m - d * a * a - 1) / a' + 1)
+
+theorem mem_gtRange {m d a a' b' : ℕ} (hm : 0 < m) (haa : 0 < a + a') (ha' : 0 < a')
+    (hda : d * a * a < m) :
+    b' ∈ Finset.Ico 1 (gtBound m d a a')
+      ↔ (1 ≤ b' ∧ (a + a') * b' < m ∧ a' * b' + d * a * a < m) := by
+  rw [Finset.mem_Ico, gtBound, lt_min_iff, Nat.lt_succ_iff, Nat.lt_succ_iff,
+    Nat.le_div_iff_mul_le haa, Nat.le_div_iff_mul_le ha',
+    Nat.mul_comm b' (a + a'), Nat.mul_comm b' a']
+  omega
+
+/-- **The restricted triple sum, decomposed by pairs.** -/
+theorem gtTriples_decompose {m d : ℕ} (hm : 0 < m) (f : ℕ → ℕ → ℕ → ℕ) :
+    ∑ t ∈ gtTriples m d, f t.1 t.2.1 t.2.2
+      = ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
+          ∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter
+            (fun b' => p.1 ∣ (m - p.2 * b')), f p.1 p.2 b' := by
+  rw [Finset.sum_sigma']
+  refine Finset.sum_bij'
+    (i := fun t _ => (⟨(t.1, t.2.1), t.2.2⟩ : (_ : ℕ × ℕ) × ℕ))
+    (j := fun p _ => (p.1.1, p.1.2, p.2)) ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨a, a', b'⟩ ht
+    obtain ⟨⟨⟨⟨han, ha'n, hb'n⟩, ha1, ha2, hb1, hlt, hdvd⟩, hgcd⟩, hgt⟩ := mem_gtTriples.1 ht
+    have haa : 0 < a + a' := by omega
+    have hle : a' * b' ≤ m := by nlinarith
+    have hda : d * a * a < m := by omega
+    simp only [Finset.mem_sigma, Finset.mem_filter]
+    exact ⟨⟨mem_coprimePairs.2 ⟨⟨han, ha'n⟩, ha1, ha2, hgcd⟩, hda⟩,
+      (mem_gtRange hm haa (by omega) hda).2 ⟨hb1, hlt, by omega⟩, hdvd⟩
+  · rintro ⟨⟨a, a'⟩, b'⟩ hp
+    simp only [Finset.mem_sigma, Finset.mem_filter] at hp
+    obtain ⟨⟨hpair, hda⟩, hb, hdvd⟩ := hp
+    obtain ⟨⟨han, ha'n⟩, ha1, ha2, hgcd⟩ := mem_coprimePairs.1 hpair
+    have haa : 0 < a + a' := by omega
+    obtain ⟨hb1, hlt, hgt⟩ := (mem_gtRange hm haa (by omega) hda).1 hb
+    have hb'n : b' ≤ m := by nlinarith
+    show (a, a', b') ∈ gtTriples m d
+    rw [mem_gtTriples]
+    have hle : a' * b' ≤ m := by nlinarith
+    exact ⟨⟨⟨⟨han, ha'n, hb'n⟩, ha1, ha2, hb1, hlt, hdvd⟩, hgcd⟩, by omega⟩
+  · rintro ⟨a, a', b'⟩ _
+    rfl
+  · rintro ⟨⟨a, a'⟩, b'⟩ _
+    rfl
+  · rintro ⟨a, a', b'⟩ _
+    rfl
+
+/-! ## The estimate, over the reals
+
+`Progression.lean` states the progression estimate over `ℂ`.  The triple sum is
+real, so we record the real form. -/
+
+/-- The progression estimate, over `ℝ`. -/
+theorem sum_ap_sub_main_le_log_real {a : ℕ} (ha : 0 < a) (c : ℤ) (A B : ℝ) (T : ℕ) :
+    |(∑ b ∈ Finset.Ico 1 T, if (a : ℤ) ∣ ((b : ℤ) - c) then (A + B * b) else 0)
+        - (1 / (a : ℝ)) * ∑ b ∈ Finset.Ico 1 T, (A + B * b)|
+      ≤ (|A| + |B| * (T - 1 : ℕ)) * (1 + Real.log a) := by
+  have h := sum_ap_sub_main_le_log ha c (A : ℂ) (B : ℂ) T
+  have key : ((((∑ b ∈ Finset.Ico 1 T, if (a : ℤ) ∣ ((b : ℤ) - c) then (A + B * b) else 0)
+        - (1 / (a : ℝ)) * ∑ b ∈ Finset.Ico 1 T, (A + B * b) : ℝ)) : ℂ)
+      = (∑ b ∈ Finset.Ico 1 T, if (a : ℤ) ∣ ((b : ℤ) - c) then ((A : ℂ) + B * b) else 0)
+        - (1 / (a : ℂ)) * ∑ b ∈ Finset.Ico 1 T, ((A : ℂ) + B * b) := by
+    push_cast
+    congr 1
+    refine Finset.sum_congr rfl fun b _ => ?_
+    split <;> push_cast <;> ring
+  rw [← key, Complex.norm_real] at h
+  simpa using h
+
+/-- The inner sum of the restricted triple sum, as an arithmetic-progression sum
+with the paper's coefficients `A = d·a + m/a` and `B = -a'/a`. -/
+theorem inner_gt_sum_eq {m d a a' : ℕ} (ha : 0 < a) (hgcd : Nat.gcd a a' = 1) :
+    ∃ c : ℤ, ∀ U : ℕ, (∀ b' ∈ Finset.Ico 1 U, a' * b' ≤ m) →
+      ((∑ b' ∈ (Finset.Ico 1 U).filter (fun b' => a ∣ (m - a' * b')),
+          (d * a + (m - a' * b') / a) : ℕ) : ℝ)
+        = ∑ b' ∈ Finset.Ico 1 U,
+            (if (a : ℤ) ∣ ((b' : ℤ) - c) then
+              ((((d * a : ℕ) : ℝ) + (m : ℝ) / a) + (-(a' : ℝ) / a) * b') else 0) := by
+  obtain ⟨c, hc⟩ := exists_residue (m := m) hgcd
+  refine ⟨c, fun U hU => ?_⟩
+  rw [Finset.sum_filter, Nat.cast_sum]
+  refine Finset.sum_congr rfl fun b' hb' => ?_
+  have hle : a' * b' ≤ m := hU b' hb'
+  have hiff : (a ∣ (m - a' * b')) ↔ ((a : ℤ) ∣ ((b' : ℤ) - c)) := by
+    rw [← hc (b' : ℤ)]
+    constructor
+    · intro h
+      have h2 : ((a : ℤ)) ∣ (((m - a' * b' : ℕ)) : ℤ) := Int.natCast_dvd_natCast.2 h
+      rwa [Nat.cast_sub hle, Nat.cast_mul] at h2
+    · intro h
+      have h2 : ((a : ℤ)) ∣ (((m - a' * b' : ℕ)) : ℤ) := by
+        rwa [Nat.cast_sub hle, Nat.cast_mul]
+      exact Int.natCast_dvd_natCast.1 h2
+  by_cases hd : a ∣ (m - a' * b')
+  · rw [if_pos hd, if_pos (hiff.1 hd)]
+    have hmul : a * ((m - a' * b') / a) = m - a' * b' := Nat.mul_div_cancel' hd
+    have hreal : ((a : ℝ)) * (((m - a' * b') / a : ℕ) : ℝ) = (m : ℝ) - (a' : ℝ) * b' := by
+      have h3 := congrArg (Nat.cast : ℕ → ℝ) hmul
+      push_cast [Nat.cast_sub hle] at h3
+      linarith
+    have hane : ((a : ℝ)) ≠ 0 := by positivity
+    push_cast
+    field_simp at hreal ⊢
+    linarith
+  · rw [if_neg hd, if_neg (fun h => hd (hiff.2 h))]
+    simp
+
+/-- **The innermost estimation layer.**  For a fixed pair `(a, a')`, the inner
+sum differs from its expected value by `O(log a)` times the size of the
+coefficients — the paper's `G₂ + G₃` for that pair. -/
+theorem inner_gt_estimate {m d a a' : ℕ} (ha : 0 < a) (hgcd : Nat.gcd a a' = 1) (U : ℕ)
+    (hU : ∀ b' ∈ Finset.Ico 1 U, a' * b' ≤ m) :
+    ∃ c : ℤ,
+      |((∑ b' ∈ (Finset.Ico 1 U).filter (fun b' => a ∣ (m - a' * b')),
+            (d * a + (m - a' * b') / a) : ℕ) : ℝ)
+          - (1 / (a : ℝ)) * ∑ b' ∈ Finset.Ico 1 U,
+              ((((d * a : ℕ) : ℝ) + (m : ℝ) / a) + (-(a' : ℝ) / a) * b')|
+        ≤ (|((d * a : ℕ) : ℝ) + (m : ℝ) / a| + |(-(a' : ℝ) / a)| * (U - 1 : ℕ))
+            * (1 + Real.log a) := by
+  obtain ⟨c, hc⟩ := inner_gt_sum_eq (m := m) (d := d) ha hgcd
+  refine ⟨c, ?_⟩
+  rw [hc U hU]
+  exact sum_ap_sub_main_le_log_real ha c _ _ U
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.

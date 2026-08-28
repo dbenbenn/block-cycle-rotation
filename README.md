@@ -94,7 +94,13 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | `b > a` through the classification | §4 | `sum_QGT_classify` | ✅ proved |
 | **The paper's triple sum** | §4 | `Q_gt_tripleSum` | ✅ **proved** |
 | Key restriction `d·a² < m` | §4 | `gtTriples_sq_lt` | ✅ proved |
-| `G₁ + G₂ + G₃` estimates | Lemmas 17–19 | — | 🚧 remaining |
+| Paper's `U = min(…)` | §4 | `gtBound`, `mem_gtRange` | ✅ proved |
+| Triple sum decomposed by pairs | §4 | `gtTriples_decompose` | ✅ proved |
+| Progression estimate over `ℝ` | §4 | `sum_ap_sub_main_le_log_real` | ✅ proved |
+| **Innermost estimation layer** | Lemmas 18–19 | `inner_gt_estimate` | ✅ **proved** |
+| Middle layer: sum over `(a,a')` | Lemmas 18–19 | — | 🚧 remaining |
+| Outer layer: sum over `d ∣ n` | Lemmas 18–19 | — | 🚧 remaining |
+| `G₁`, Theorem 13, constant `D` | Thm 13 | — | 🚧 out of reach |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13, §4 | — | 🚧 remaining |
