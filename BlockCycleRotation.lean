@@ -5,3 +5,4 @@ import BlockCycleRotation.Rotate
 import BlockCycleRotation.ExpSum
 import BlockCycleRotation.Average
 import BlockCycleRotation.Characters
+import BlockCycleRotation.Orthogonality

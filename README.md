@@ -45,6 +45,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Chord length `‖e θ − 1‖ = 2\|sin(θ/2)\|` | Obs. 15 | `norm_e_sub_one_eq` | ✅ proved |
 | Root-of-unity chord bound | §4 | `four_mul_min_div_le_norm` | ✅ proved |
 | Sums at roots of unity | §4 | `norm_geom_sum_root_le` | ✅ proved |
+| `log a` factor, `∑ 1/min(m,a−m)` | Lemma 18 | `sum_inv_min_le` | ✅ proved |
+| Character orthogonality | §4 | `sum_e_root` | ✅ proved |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | — | 🚧 not in Mathlib |
 | Möbius/character decomposition | §4 | — | 🚧 planned |
 | Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |
@@ -98,7 +100,13 @@ unity the chord length satisfies `‖e(2πm/a) − 1‖ ≥ 4·min(m, a−m)/a`,
 ‖∑_{B ≤ j < T} e(2πmj/a)‖ ≤ a / (2·min(m, a−m)).
 ```
 
-Summing `1/min(m, a−m)` over `0 < m < a` is what produces the `log a` in Lemma 18.
+Summing `1/min(m, a−m)` over `0 < m < a` is what produces the `log a` in Lemma 18;
+`sum_inv_min_le` bounds that sum by twice a harmonic sum. `Orthogonality.lean`
+supplies the identity that justifies the character expansion in the first place:
+
+```
+∑_{m < a} e(2πmr/a) = a  if a ∣ r,  and 0 otherwise.
+```
 
 No square-root cancellation is used anywhere. What remains for Theorem 13 is
 long rather than deep — there is no missing theorem to invent, just a great many

@@ -105,4 +105,42 @@ theorem norm_geom_sum_root_le {a m : ℕ} (h0 : 0 < m) (hma : m < a) (B T : ℕ)
       _ ≤ (a : ℝ) * ‖e (2 * π * (m : ℝ) / a) - 1‖ := hstep
   linarith
 
+/-! ## Summing the bounds over `m`
+
+The paper's Lemma 18 sums `norm_geom_sum_root_le` over `0 < m < a`, producing a
+factor `∑_{0<m<a} 1/min(m, a-m)`.  Splitting `1/min` as `1/m + 1/(a-m)` and
+reflecting `m ↦ a - m` bounds this by twice a harmonic sum, i.e. by `O(log a)`. -/
+
+/-- `1/min(m, a-m) ≤ 1/m + 1/(a-m)`. -/
+theorem one_div_min_le {a m : ℕ} (h0 : 0 < m) (hma : m < a) :
+    (1 : ℝ) / ((min m (a - m) : ℕ) : ℝ) ≤ 1 / (m : ℝ) + 1 / ((a - m : ℕ) : ℝ) := by
+  have h1 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast h0
+  have h2 : (0 : ℝ) < ((a - m : ℕ) : ℝ) := by
+    have hpos : 0 < a - m := by omega
+    exact_mod_cast hpos
+  rcases le_total m (a - m) with h | h
+  · rw [min_eq_left h]
+    have : (0 : ℝ) < 1 / ((a - m : ℕ) : ℝ) := by positivity
+    linarith
+  · rw [min_eq_right h]
+    have : (0 : ℝ) < 1 / (m : ℝ) := by positivity
+    linarith
+
+/-- **The `log a` factor.**  `∑_{0<m<a} 1/min(m, a-m) ≤ 2 ∑_{0<m<a} 1/m`. -/
+theorem sum_inv_min_le (a : ℕ) :
+    ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / ((min m (a - m) : ℕ) : ℝ)
+      ≤ 2 * ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ) := by
+  have hrefl : ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / ((a - m : ℕ) : ℝ)
+      = ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ) := by
+    have h := Finset.sum_Ico_reflect (fun j => (1 : ℝ) / (j : ℝ)) 1 (n := a) (Nat.le_succ a)
+    simpa using h
+  calc ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / ((min m (a - m) : ℕ) : ℝ)
+      ≤ ∑ m ∈ Finset.Ico 1 a, ((1 : ℝ) / (m : ℝ) + 1 / ((a - m : ℕ) : ℝ)) := by
+        refine Finset.sum_le_sum fun m hm => ?_
+        have hm' := Finset.mem_Ico.1 hm
+        exact one_div_min_le hm'.1 hm'.2
+    _ = (∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ))
+          + ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / ((a - m : ℕ) : ℝ) := Finset.sum_add_distrib
+    _ = 2 * ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ) := by rw [hrefl]; ring
+
 end BlockCycleRotation
