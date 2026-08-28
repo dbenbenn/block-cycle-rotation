@@ -52,7 +52,11 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Indicator via characters | §4 | `indicator_eq` | ✅ proved |
 | Sum over an AP | §4 | `sum_ap_sub_main_le` | ✅ proved |
 | Same, explicit `log a` | §4 | `sum_ap_sub_main_le_log` | ✅ proved |
-| Heilbronn's bijection | §4, Heilbronn 1969 | — | 🚧 the remaining gate |
+| Continuant `K` | Heilbronn 1969 | `BlockCycleRotation.K` | ✅ defined |
+| Euler's continuant identity | (gives `n = ab + a'b'`) | `K_append` | ✅ proved |
+| Continuants are palindromic | Heilbronn 1969 | `K_reverse` | ✅ proved |
+| Consecutive continuants coprime | (gives `gcd(a,a') = 1`) | `K_coprime` | ✅ proved |
+| Heilbronn's bijection itself | §4, Heilbronn 1969 | — | 🚧 the remaining gate |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | `exists_card_divisors_le` | ✅ proved |
 | Möbius/character decomposition | §4 | — | 🚧 planned |
 | Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |
