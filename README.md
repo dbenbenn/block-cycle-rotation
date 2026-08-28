@@ -142,6 +142,13 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Symmetry `M(n,k) = M(n,n−k)` | Thm 13 | `sum_min_eq`, `sum_algCost_eq` | ✅ proved |
 | Cost over shifts via `cost + gcd` | Thm 13 | `sum_cost_allShifts` | ✅ proved |
 | **Theorem 13, `D = 1 + 4C ≈ 1.85`** | Thm 13 | `theorem13` | ✅ **proved** |
+| Summand rewriting | Remark 21 | `gTerm_eq` | ✅ proved |
+| `ζ(3)` removes the coprimality | Remark 21 | `tsum_gTerm_eq`, `zeta3_mul_cConst` | ✅ proved |
+| Telescoping `∑_k [1/k − 1/(n+k)] = H_n` | Remark 21 | `tsum_telescope` | ✅ proved |
+| `1/(n(n+k)²) + 1/(k(n+k)²) = 1/(nk(n+k))` | Remark 21 | `pTerm_add_swap` | ✅ proved |
+| **Euler's `ζ(2,1) = ζ(3)`** | Remark 21 (cited) | `euler_zeta21` | ✅ **proved** |
+| **Eq. (const-c-alternative)** | Remark 21 | `cConst_eq_alternative` | ✅ **proved** |
+| Truncations bound `C`, `D` above | Remark 21 | `cConst_le_truncation`, `dConst_le_truncation` | ✅ proved |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13, §4 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` assembly | Lemmas 17–19 | — | 🚧 remaining |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | `exists_card_divisors_le` | ✅ proved |
@@ -259,16 +266,17 @@ is proved for arbitrary unit-modulus weights and specialised afterwards, and
 `norm_geom_sum_le'` drops the `|θ| ≤ π` hypothesis so that it applies at roots
 of unity.
 
-**Proved here but not in the paper.** The divisor bound `d(n) = O(n^ε)` (cited
-as standard, absent from Mathlib), Bernoulli's inequality, and the correctness
-of the algorithm itself — the paper describes the block cycle scheme but never
+**Proved here but not in the paper.** Euler's `ζ(2,1) = ζ(3)`, which Remark 21
+cites and Mathlib does not have (no multiple-zeta-value theory), the divisor
+bound `d(n) = O(n^ε)` (cited as standard, absent from Mathlib), Bernoulli's
+inequality, and the correctness of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
-**Not attempted.** Remark 21's rewriting of `C` in terms of `ζ(3)`, which needs
-Euler's `ζ(2,1) = ζ(3)`; Theorem 10's limit (`avgCost n / n → D` also follows
-from `theorem13`, but the paper's `∫₀¹ ρ` representation does not); the remark
-on averaging over all `1 ≤ k ≤ n`; and the benchmarks of §5.
+**Not attempted.** Theorem 10's limit (`avgCost n / n → D` also follows from
+`theorem13`, but the paper's `∫₀¹ ρ` representation does not); the remark on
+averaging over all `1 ≤ k ≤ n`; and the benchmarks of §5.
 
 In short: Theorem 13 — the paper's main theorem — is proved, sorry-free, in the
-form `avgCost n = D·n + O(n^{1/2+ε})` with `D = 1 + 4C` and `C` the explicit
-convergent double series of eq. (const-c).
+form `avgCost n = D·n + O(n^{1/2+ε})` with `D = 1 + 4C`, and `C` is available in
+both of the paper's forms: the double series of eq. (const-c) and the
+`ζ(3)` expression of eq. (const-c-alternative).
