@@ -566,4 +566,140 @@ theorem expected_cost_half_buffer :
     intervalIntegral.intervalIntegrable_id, intervalIntegral.integral_const, integral_id]
   norm_num
 
+/-! ## The buffered algorithm, equation (integral)
+
+Equation (integral) of the paper defines `Cost(n, k, β)`, the number of moves
+the block cycle method makes when rotating an array of `n` elements by `k`
+places with an auxiliary buffer of `β` elements, by the recursion
+
+  `Cost(n,k,β) = 0`                                     if `k = 0`,
+  `Cost(n,k,β) = n + k`                                  if `k ≤ β`,
+  `Cost(n,k,β) = (⌊n/k⌋+1)k + Cost(n', k', β)`           otherwise,
+
+with `k' = n - ⌊n/k⌋k = n % k` and `n' = n - (⌊n/k⌋-1)k = k + n % k`.  This is
+the same recursion as the continuous `μ` of equation (continuous), except that
+the discrete algorithm also stops when the remainder vanishes; that extra base
+case is exactly what makes item 3 of the Corollary an inequality. -/
+
+/-- **Equation (integral).**  The number of moves with a buffer of `b`. -/
+def costB (n k b : ℕ) : ℕ :=
+  if h : k = 0 then 0
+  else if k ≤ b then n + k
+  else (n / k + 1) * k + costB (k + n % k) (n % k) b
+termination_by k
+decreasing_by exact Nat.mod_lt _ (Nat.pos_of_ne_zero h)
+
+@[simp]
+theorem costB_zero (n b : ℕ) : costB n 0 b = 0 := by rw [costB]; simp
+
+theorem costB_of_le {n k b : ℕ} (hk : k ≠ 0) (h : k ≤ b) : costB n k b = n + k := by
+  rw [costB]; simp [hk, h]
+
+theorem costB_of_gt {n k b : ℕ} (hk : k ≠ 0) (h : b < k) :
+    costB n k b = (n / k + 1) * k + costB (k + n % k) (n % k) b := by
+  rw [costB]; simp [hk, Nat.not_le.2 h]
+
+/-- `N·Out(k/N)` is the next array length `n' = k + n % k`. -/
+theorem mul_Outt_natCast {n k : ℕ} (hn : 0 < n) (hk : 0 < k) :
+    (n : ℝ) * Outt ((k : ℝ) / (n : ℝ)) = ((k + n % k : ℕ) : ℝ) := by
+  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  have hkR : (0 : ℝ) < k := by exact_mod_cast hk
+  have hx : ((k : ℝ) / (n : ℝ)) ≠ 0 := by positivity
+  have hinv : 1 / ((k : ℝ) / (n : ℝ)) = (n : ℝ) / (k : ℝ) := one_div_div _ _
+  unfold Outt
+  rw [if_neg hx, hinv, Int.fract_div_natCast_eq_div_natCast_mod]
+  push_cast
+  field_simp
+
+/-- `n'·In(k/N)` is the next shift `k' = n % k`. -/
+theorem mul_Inn_natCast {n k : ℕ} (hn : 0 < n) (hk : 0 < k) :
+    ((k + n % k : ℕ) : ℝ) * Inn ((k : ℝ) / (n : ℝ)) = ((n % k : ℕ) : ℝ) := by
+  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  have hkR : (0 : ℝ) < k := by exact_mod_cast hk
+  have hx : ((k : ℝ) / (n : ℝ)) ≠ 0 := by positivity
+  have hinv : 1 / ((k : ℝ) / (n : ℝ)) = (n : ℝ) / (k : ℝ) := one_div_div _ _
+  unfold Inn
+  rw [if_neg hx, hinv, Int.fract_div_natCast_eq_div_natCast_mod]
+  have hden : (1 : ℝ) + ((n % k : ℕ) : ℝ) / (k : ℝ) ≠ 0 := by positivity
+  push_cast
+  field_simp
+
+/-- **Corollary, item 3.**  The buffered algorithm never uses more moves than
+the continuous upper bound `μ`.  The two recursions agree step for step; the
+inequality comes from the algorithm's extra base case `k = 0`. -/
+theorem costB_le_muCost : ∀ k n b : ℕ, 0 < n → 0 < b → 2 * k ≤ n →
+    ((costB n k b : ℕ) : ℝ) ≤ muCost (n : ℝ) (k : ℝ) (b : ℝ) := by
+  intro k
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    intro n b hn hb hkn
+    have hN : (0 : ℝ) < n := by exact_mod_cast hn
+    rcases Nat.eq_zero_or_pos k with hk0 | hk0
+    · subst hk0
+      have h := muCost_rec_of_le (N := (n : ℝ)) (l := 0) (b := (b : ℝ)) hN (by positivity)
+      rw [costB_zero]
+      push_cast
+      linarith
+    rcases le_or_gt k b with hkb | hkb
+    · have h := muCost_rec_of_le (N := (n : ℝ)) (l := (k : ℝ)) (b := (b : ℝ)) hN
+        (by exact_mod_cast hkb)
+      rw [costB_of_le hk0.ne' hkb]
+      push_cast
+      linarith
+    · have hbR : (0 : ℝ) < b := by exact_mod_cast hb
+      have hbkR : (b : ℝ) < (k : ℝ) := by exact_mod_cast hkb
+      have hlR : 2 * (k : ℝ) ≤ (n : ℝ) := by exact_mod_cast hkn
+      have hrec := muCost_rec_of_gt hN hbR hbkR hlR
+      rw [mul_Outt_natCast hn hk0] at hrec
+      rw [mul_Inn_natCast hn hk0] at hrec
+      -- the recursive call, via the induction hypothesis
+      have hmod : n % k < k := Nat.mod_lt _ hk0
+      have hIH := ih (n % k) hmod (k + n % k) b (by omega) hb (by omega)
+      -- the discrete step `(⌊n/k⌋+1)k = n - n % k + k`
+      have hdm : n / k * k + n % k = n := Nat.div_add_mod' n k
+      have hstep : (((n / k + 1) * k : ℕ) : ℝ) = (n : ℝ) - ((n % k : ℕ) : ℝ) + (k : ℝ) := by
+        have h1 : ((n / k * k + n % k : ℕ) : ℝ) = (n : ℝ) := by exact_mod_cast hdm
+        push_cast at h1 ⊢
+        linarith
+      rw [costB_of_gt hk0.ne' hkb]
+      push_cast
+      push_cast at hstep hIH hrec
+      linarith
+
+/-- **Consistency of the two cost models.**  With no buffer, equation (integral)
+computes exactly the move count `n - gcd(n,k) + 2·remSum(n,k)` of Lemma 12. -/
+theorem costB_eq_moveCount : ∀ k n : ℕ, 2 * k ≤ n → costB n k 0 = moveCount n k := by
+  intro k
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    intro n hkn
+    rcases Nat.eq_zero_or_pos k with hk0 | hk0
+    · subst hk0
+      rw [costB_zero]
+      unfold moveCount
+      simp
+    · have hmod : n % k < k := Nat.mod_lt _ hk0
+      have hIH := ih (n % k) hmod (k + n % k) (by omega)
+      rw [costB_of_gt hk0.ne' hk0, hIH]
+      -- the gcd is unchanged along the Euclidean step
+      have hg1 : Nat.gcd n k = Nat.gcd k (n % k) := by
+        rw [Nat.gcd_comm n k, Nat.gcd_rec k n]
+        exact Nat.gcd_comm _ _
+      have hg2 : Nat.gcd (k + n % k) (n % k) = Nat.gcd k (n % k) := gcd_add_left k (n % k)
+      -- the remainder sums differ by the leading term `k`
+      have hr : remSum (k + n % k) (n % k) = remSum k (n % k) := by
+        rcases Nat.eq_zero_or_pos (n % k) with h0 | h0
+        · rw [h0, remSum_zero, remSum_zero]
+        · rw [remSum_of_pos _ h0.ne', remSum_of_pos _ h0.ne', Nat.add_mod_right]
+      have hrs : remSum n k = k + remSum k (n % k) := remSum_of_pos n hk0.ne'
+      -- the gcds are bounded by the array lengths
+      have hgle : Nat.gcd n k ≤ n := Nat.le_of_dvd (by omega) (Nat.gcd_dvd_left n k)
+      have hgle' : Nat.gcd (k + n % k) (n % k) ≤ k + n % k :=
+        Nat.le_of_dvd (by omega) (Nat.gcd_dvd_left _ _)
+      have hdm : n / k * k + n % k = n := Nat.div_add_mod' n k
+      have hmul : (n / k + 1) * k = n / k * k + k := by ring
+      unfold moveCount
+      rw [hmul, hg2, hr, hrs, hg1]
+      omega
+
 end BlockCycleRotation
