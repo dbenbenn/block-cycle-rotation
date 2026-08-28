@@ -783,6 +783,44 @@ theorem mem_gtRange {m d a a' b' : ℕ} (hm : 0 < m) (haa : 0 < a + a') (ha' : 0
     Nat.mul_comm b' (a + a'), Nat.mul_comm b' a']
   omega
 
+/-- **For a bulk pair the first branch of the cut-off wins.**
+
+`Y = min(m/(a+a'), (m - d a²)/a')`, and the paper observes that the first term
+is the smaller exactly when `d·a·(a+a') ≤ m`.  In the floored form used here
+that reads `gtBound m d a a' = (m-1)/(a+a') + 1`. -/
+theorem gtBound_bulk_eq {m d a a' : ℕ} (hd : 0 < d) (ha' : 1 ≤ a') (haa : a' < a)
+    (hbulk : d * a * (a + a') ≤ m) :
+    gtBound m d a a' = (m - 1) / (a + a') + 1 := by
+  have ha : 0 < a := by omega
+  have hs : 0 < a + a' := by omega
+  have hda : 1 ≤ d * a := Nat.one_le_iff_ne_zero.2 (by positivity)
+  have hm2 : d * a * a + 1 ≤ m := by nlinarith
+  have hdm := Nat.div_add_mod (m - 1) (a + a')
+  have hr : (m - 1) % (a + a') < a + a' := Nat.mod_lt _ hs
+  set q := (m - 1) / (a + a') with hq
+  set r := (m - 1) % (a + a') with hrr
+  have hmeq : m = (a + a') * q + r + 1 := by omega
+  have hexp : (a + a') * q = a * q + a' * q := by ring
+  -- either `d·a ≤ q`, or `d·a = q+1` and the remainder is maximal
+  have hcase : d * a * a ≤ a * q + r := by
+    rcases Nat.lt_or_ge q (d * a) with h | h
+    swap
+    · have h1 : d * a * a ≤ q * a := Nat.mul_le_mul_right a h
+      nlinarith
+    · have h1 : d * a * (a + a') ≤ (a + a') * q + r + 1 := by omega
+      have h2 : (a + a') * q + r + 1 ≤ (q + 1) * (a + a') := by nlinarith
+      have h5 : d * a ≤ q + 1 := Nat.le_of_mul_le_mul_right (by nlinarith) hs
+      have hdq : d * a = q + 1 := by omega
+      have h6 : (q + 1) * (a + a') ≤ (a + a') * q + r + 1 := by
+        rw [← hdq]; exact h1
+      have hrs : a + a' ≤ r + 1 := by nlinarith
+      have : d * a * a = a * q + a := by rw [hdq]; ring
+      omega
+  rw [gtBound, min_eq_left]
+  refine Nat.succ_le_succ ?_
+  rw [Nat.le_div_iff_mul_le (by omega), Nat.sub_sub, Nat.le_sub_iff_add_le hm2]
+  nlinarith
+
 /-- **The restricted triple sum, decomposed by pairs.** -/
 theorem gtTriples_decompose {m d : ℕ} (hm : 0 < m) (f : ℕ → ℕ → ℕ → ℕ) :
     ∑ t ∈ gtTriples m d, f t.1 t.2.1 t.2.2
@@ -1461,7 +1499,7 @@ The paper compares the closed form at the *real* bound `V` — namely
 difference by `|A| + |B·V|`.  Writing `K` for the largest admissible `b'`, so
 that `K ≤ V < K+1` and the sum is `A·K + B·K(K+1)/2`, that is what is proved
 here. -/
-theorem main_term_vs_sum (A B V : ℝ) (K : ℕ) (hK : (K : ℝ) ≤ V) (hK1 : V < (K : ℝ) + 1)
+theorem main_term_vs_sum (A B V : ℝ) (K : ℕ) (hK : (K : ℝ) ≤ V) (hK1 : V ≤ (K : ℝ) + 1)
     (hV : 1 ≤ V) :
     |(A * V + B * V ^ 2 / 2) - (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2)|
       ≤ |A| + |B| * V := by

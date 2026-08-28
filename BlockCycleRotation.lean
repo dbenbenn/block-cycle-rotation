@@ -12,3 +12,4 @@ import BlockCycleRotation.DivisorBound
 import BlockCycleRotation.Continuant
 import BlockCycleRotation.TripleSum
 import BlockCycleRotation.Constant
+import BlockCycleRotation.Theorem13
