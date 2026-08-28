@@ -24,6 +24,8 @@ irrationality.
 -/
 
 import BlockCycleRotation.Theorem13
+import Mathlib.MeasureTheory.Integral.DominatedConvergence
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 
 namespace BlockCycleRotation
 
@@ -560,5 +562,199 @@ theorem continuousAt_fCost {x : ℝ} (hirr : Irrational x) (hx0 : 0 < x) (hx : x
     ContinuousAt.comp (g := psi) (continuousAt_psi hmirr hmin0 hmin) hc
   unfold fCost
   exact continuousAt_const.add hcomp
+
+/-! ## Integrability
+
+`f` is bounded and continuous off a countable set, so it is integrable. -/
+
+open MeasureTheory
+
+/-- `f` cut down to `[0,1]`, so that it is globally bounded. -/
+noncomputable def fBar (x : ℝ) : ℝ := if 0 ≤ x ∧ x ≤ 1 then fCost x else 1
+
+theorem fCost_bounds {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1) : 1 ≤ fCost x ∧ fCost x ≤ 4 := by
+  have hm0 : 0 ≤ min x (1 - x) := le_min hx0 (by linarith)
+  have hm : min x (1 - x) ≤ 1 / 2 := by
+    rcases le_total x (1 - x) with h | h
+    · rw [min_eq_left h]; linarith
+    · rw [min_eq_right h]; linarith
+  constructor
+  · unfold fCost; linarith [psi_nonneg hm0 hm]
+  · unfold fCost; linarith [psi_le_three hm0 hm]
+
+theorem fBar_bounds (x : ℝ) : 1 ≤ fBar x ∧ fBar x ≤ 4 := by
+  unfold fBar
+  split_ifs with h
+  · exact fCost_bounds h.1 h.2
+  · constructor <;> norm_num
+
+theorem abs_fBar_le (x : ℝ) : |fBar x| ≤ 4 := by
+  obtain ⟨h1, h2⟩ := fBar_bounds x
+  rw [abs_le]
+  constructor <;> linarith
+
+theorem fBar_eq_fCost {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1) : fBar x = fCost x := by
+  unfold fBar; rw [if_pos ⟨hx0, hx⟩]
+
+theorem continuousAt_fBar {x : ℝ} (hirr : Irrational x) : ContinuousAt fBar x := by
+  have hconst : ContinuousAt (fun _ : ℝ => (1 : ℝ)) x := continuousAt_const
+  rcases lt_trichotomy x 0 with h | h | h
+  · refine hconst.congr ?_
+    filter_upwards [Iio_mem_nhds h] with y hy
+    unfold fBar
+    rw [if_neg (by simp only [not_and, not_le]; intro hc; linarith [Set.mem_Iio.1 hy])]
+  · exact absurd h (irrational_ne_zero hirr)
+  · rcases lt_trichotomy x 1 with h1 | h1 | h1
+    · refine ContinuousAt.congr (continuousAt_fCost hirr h h1) ?_
+      filter_upwards [Ioo_mem_nhds h h1] with y hy
+      rw [fBar_eq_fCost (le_of_lt (Set.mem_Ioo.1 hy).1) (le_of_lt (Set.mem_Ioo.1 hy).2)]
+    · exfalso
+      have hx1 : x ≠ ((1 : ℤ) : ℝ) := Irrational.ne_int hirr 1
+      simp only [Int.cast_one] at hx1
+      exact hx1 h1
+    · refine hconst.congr ?_
+      filter_upwards [Ioi_mem_nhds h1] with y hy
+      unfold fBar
+      rw [if_neg (by simp only [not_and, not_le]; intro _; linarith [Set.mem_Ioi.1 hy])]
+
+theorem ae_irrational : ∀ᵐ x : ℝ, Irrational x := by
+  have hc : (Set.range ((↑) : ℚ → ℝ)).Countable := Set.countable_range _
+  have h0 : volume (Set.range ((↑) : ℚ → ℝ)) = 0 := hc.measure_zero _
+  rw [Filter.eventually_iff, mem_ae_iff]
+  refine measure_mono_null (fun x hx => ?_) h0
+  by_contra hcon
+  exact hx hcon
+
+theorem ae_continuousAt_fBar : ∀ᵐ x : ℝ, ContinuousAt fBar x :=
+  ae_irrational.mono fun x hx => continuousAt_fBar hx
+
+theorem fBar_aestronglyMeasurable : AEStronglyMeasurable fBar volume := by
+  have hset : MeasurableSet {x : ℝ | ContinuousAt fBar x} := measurableSet_of_continuousAt fBar
+  have hcont : ContinuousOn fBar {x : ℝ | ContinuousAt fBar x} :=
+    continuousOn_of_forall_continuousAt fun _ h => h
+  have h1 : AEStronglyMeasurable fBar (volume.restrict {x : ℝ | ContinuousAt fBar x}) :=
+    hcont.aestronglyMeasurable hset
+  have h2 : volume.restrict {x : ℝ | ContinuousAt fBar x} = volume :=
+    Measure.restrict_eq_self_of_ae_mem ae_continuousAt_fBar
+  rwa [h2] at h1
+
+/-! ## Riemann sums
+
+Mathlib's `∫` is the Lebesgue integral, so "the Riemann sums converge to the
+integral" needs an argument.  The step functions `x ↦ f(⌊nx⌋/n)` converge to `f`
+at every point of continuity, hence a.e., and are bounded by `4`, so dominated
+convergence applies. -/
+
+/-- The step function is measurable: it factors through `⌊n·x⌋ : ℤ`. -/
+theorem measurable_step (n : ℕ) :
+    Measurable (fun x : ℝ => fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ))) := by
+  have h1 : Measurable (fun x : ℝ => ⌊(n : ℝ) * x⌋) :=
+    Int.measurable_floor.comp (measurable_const_mul _)
+  exact (measurable_of_countable (fun j : ℤ => fBar ((j : ℝ) / (n : ℝ)))).comp h1
+
+/-- On `[k/n, (k+1)/n)` the step function is the constant `f(k/n)`. -/
+theorem step_eq_const {n k : ℕ} (hn : 0 < n) {x : ℝ}
+    (h1 : (k : ℝ) / (n : ℝ) ≤ x) (h2 : x < ((k : ℝ) + 1) / (n : ℝ)) :
+    ((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ) = (k : ℝ) / (n : ℝ) := by
+  have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  rw [div_le_iff₀ hnR] at h1
+  rw [lt_div_iff₀ hnR] at h2
+  have hfl : ⌊(n : ℝ) * x⌋ = (k : ℤ) := by
+    rw [Int.floor_eq_iff]
+    constructor
+    · push_cast; linarith
+    · push_cast; linarith
+  rw [hfl]
+  push_cast
+  ring
+
+/-- The integral of the step function is the Riemann sum. -/
+theorem integral_step_eq {n : ℕ} (hn : 0 < n) :
+    ∫ x in (0 : ℝ)..1, fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ))
+      = (∑ k ∈ Finset.range n, fBar ((k : ℝ) / (n : ℝ))) / (n : ℝ) := by
+  have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  have hFmeas : Measurable (fun x : ℝ => fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ))) :=
+    measurable_step n
+  have hcast : ∀ k : ℕ, ((k + 1 : ℕ) : ℝ) = (k : ℝ) + 1 := by intro k; push_cast; ring
+  have hlt : ∀ k : ℕ, (k : ℝ) / (n : ℝ) < ((k + 1 : ℕ) : ℝ) / (n : ℝ) := by
+    intro k
+    rw [div_lt_div_iff₀ hnR hnR, hcast]
+    nlinarith
+  have hae : ∀ k : ℕ, ∀ᵐ x, x ∈ Set.uIoc ((k : ℝ) / (n : ℝ)) (((k + 1 : ℕ) : ℝ) / (n : ℝ)) →
+      fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ)) = fBar ((k : ℝ) / (n : ℝ)) := by
+    intro k
+    filter_upwards [MeasureTheory.compl_mem_ae_iff.2
+      (measure_singleton (((k + 1 : ℕ) : ℝ) / (n : ℝ)))] with x hx hmem
+    rw [Set.uIoc_of_le (le_of_lt (hlt k)), Set.mem_Ioc] at hmem
+    refine congrArg fBar (step_eq_const hn (le_of_lt hmem.1) ?_)
+    have h2 : x < ((k + 1 : ℕ) : ℝ) / (n : ℝ) := lt_of_le_of_ne hmem.2 hx
+    rwa [hcast k] at h2
+  have hint : ∀ k : ℕ, IntervalIntegrable
+      (fun x : ℝ => fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ))) volume
+      ((k : ℝ) / (n : ℝ)) (((k + 1 : ℕ) : ℝ) / (n : ℝ)) := by
+    intro k
+    constructor <;>
+      exact Measure.integrableOn_of_bounded (measure_Ioc_lt_top).ne
+        hFmeas.aestronglyMeasurable
+        (Filter.Eventually.of_forall fun x => by rw [Real.norm_eq_abs]; exact abs_fBar_le _)
+  have hpiece : ∀ k : ℕ,
+      (∫ x in ((k : ℝ) / (n : ℝ))..(((k + 1 : ℕ) : ℝ) / (n : ℝ)),
+        fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ)))
+        = fBar ((k : ℝ) / (n : ℝ)) / (n : ℝ) := by
+    intro k
+    rw [intervalIntegral.integral_congr_ae (hae k), intervalIntegral.integral_const]
+    have hdiff : ((k + 1 : ℕ) : ℝ) / (n : ℝ) - (k : ℝ) / (n : ℝ) = 1 / (n : ℝ) := by
+      rw [hcast k]; field_simp; ring
+    rw [hdiff]
+    ring
+  have hsum := intervalIntegral.sum_integral_adjacent_intervals
+    (a := fun k : ℕ => (k : ℝ) / (n : ℝ))
+    (f := fun x : ℝ => fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ))) (n := n) (fun k _ => hint k)
+  have ha0 : ((0 : ℕ) : ℝ) / (n : ℝ) = 0 := by simp
+  have han : ((n : ℕ) : ℝ) / (n : ℝ) = 1 := by field_simp
+  rw [ha0, han] at hsum
+  rw [← hsum, Finset.sum_congr rfl (fun k _ => hpiece k), ← Finset.sum_div]
+
+theorem tendsto_floor_div (x : ℝ) :
+    Tendsto (fun n : ℕ => ((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ)) atTop (𝓝 x) := by
+  have h1 : Tendsto (fun n : ℕ => x - 1 / (n : ℝ)) atTop (𝓝 x) := by
+    have h : Tendsto (fun n : ℕ => 1 / (n : ℝ)) atTop (𝓝 0) := tendsto_one_div_atTop_nhds_zero_nat
+    have h2 : Tendsto (fun n : ℕ => x - 1 / (n : ℝ)) atTop (𝓝 (x - 0)) :=
+      Filter.Tendsto.sub tendsto_const_nhds h
+    rwa [sub_zero] at h2
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' h1 tendsto_const_nhds ?_ ?_
+  · filter_upwards [eventually_gt_atTop 0] with n hn
+    have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+    rw [le_div_iff₀ hnR]
+    have h := Int.sub_one_lt_floor ((n : ℝ) * x)
+    have hexp : (x - 1 / (n : ℝ)) * (n : ℝ) = x * (n : ℝ) - 1 := by field_simp
+    rw [hexp]
+    nlinarith [h]
+  · filter_upwards [eventually_gt_atTop 0] with n hn
+    have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+    rw [div_le_iff₀ hnR]
+    have h := Int.floor_le ((n : ℝ) * x)
+    linarith
+
+theorem tendsto_integral_step :
+    Tendsto (fun n : ℕ => ∫ x in (0 : ℝ)..1, fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ)))
+      atTop (𝓝 (∫ x in (0 : ℝ)..1, fBar x)) := by
+  simp only [intervalIntegral.integral_of_le (by norm_num : (0 : ℝ) ≤ 1)]
+  refine MeasureTheory.tendsto_integral_of_dominated_convergence (fun _ => (4 : ℝ))
+    (fun n => (measurable_step n).aestronglyMeasurable) ?_ ?_ ?_
+  · exact MeasureTheory.integrableOn_const (hs := measure_Ioc_lt_top.ne)
+  · intro n
+    exact Filter.Eventually.of_forall fun x => by
+      rw [Real.norm_eq_abs]; exact abs_fBar_le _
+  · filter_upwards [MeasureTheory.ae_restrict_of_ae ae_irrational] with x hx
+    exact (continuousAt_fBar hx).tendsto.comp (tendsto_floor_div x)
+
+/-- **The Riemann sums of `f` converge to its integral.** -/
+theorem tendsto_riemann_fBar :
+    Tendsto (fun n : ℕ => (∑ k ∈ Finset.range n, fBar ((k : ℝ) / (n : ℝ))) / (n : ℝ))
+      atTop (𝓝 (∫ x in (0 : ℝ)..1, fBar x)) := by
+  refine tendsto_integral_step.congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with n hn
+  exact integral_step_eq hn
 
 end BlockCycleRotation
