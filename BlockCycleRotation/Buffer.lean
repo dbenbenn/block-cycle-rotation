@@ -229,6 +229,160 @@ theorem fCostBuf_le_fCost {β x : ℝ} (hβ : 0 < β) (hx0 : 0 ≤ x) (hx : x �
   rw [fCostBuf, fCost_eq_of_le_half hx0 hx]
   linarith [psiBuf_le_psi hβ hx0 hx]
 
+/-! ## Two-step decay
+
+The *one*-step ratio of segments is exactly `{1/y}` at `y = Inⁱ(x)`:
+`Out(y)·In(y) = y·{1/y}`, and `{1/y}` can be arbitrarily close to `1` (take `y`
+just below `1/m`).  So segments need not shrink from one step to the next.
+
+Over *two* steps they do.  Writing `g = {1/y}`, the next ratio is `{1/In(y)}`,
+and `1/In(y) = 1/g + 1`, so it is `{1/g}`.  The two-step ratio is therefore
+`g·{1/g} = 1 - g⌊1/g⌋`, and with `m = ⌊1/g⌋ ≥ 1` and `g > 1/(m+1)` one has
+`g·m > m/(m+1) ≥ 1/2`.  Hence `seg_{i+2} ≤ seg_i/2` — the classical fact that
+Euclidean remainders halve every two steps. -/
+
+theorem Outt_mul_Inn (y : ℝ) : Outt y * Inn y = y * Int.fract (1 / y) := by
+  unfold Outt Inn
+  split_ifs with h
+  · rw [h]; simp
+  · have hg : (0 : ℝ) ≤ Int.fract (1 / y) := Int.fract_nonneg _
+    have hden : (1 : ℝ) + Int.fract (1 / y) ≠ 0 := by positivity
+    field_simp
+
+/-- The one-step ratio of segments is `{1/Inⁱ(x)}`. -/
+theorem seg_succ' (x : ℝ) (i : ℕ) :
+    seg x (i + 1) = seg x i * Int.fract (1 / Inn^[i] x) := by
+  unfold seg
+  rw [Finset.prod_range_succ, Function.iterate_succ_apply']
+  have h := Outt_mul_Inn (Inn^[i] x)
+  calc (∏ m ∈ Finset.range i, Outt (Inn^[m] x)) * Outt (Inn^[i] x) * Inn (Inn^[i] x)
+      = (∏ m ∈ Finset.range i, Outt (Inn^[m] x)) * (Outt (Inn^[i] x) * Inn (Inn^[i] x)) := by
+        ring
+    _ = (∏ m ∈ Finset.range i, Outt (Inn^[m] x)) * (Inn^[i] x * Int.fract (1 / Inn^[i] x)) := by
+        rw [h]
+    _ = (∏ m ∈ Finset.range i, Outt (Inn^[m] x)) * Inn^[i] x * Int.fract (1 / Inn^[i] x) := by
+        ring
+
+/-- `1/In(y) = 1/{1/y} + 1`, so the fractional parts agree. -/
+theorem fract_inv_Inn (y : ℝ) :
+    Int.fract (1 / Inn y) = Int.fract (1 / Int.fract (1 / y)) := by
+  unfold Inn
+  split_ifs with h
+  · rw [h]; simp
+  · rcases eq_or_lt_of_le (Int.fract_nonneg (1 / y)) with hg | hg
+    · rw [← hg]; simp
+    · have hden : (0 : ℝ) < 1 + Int.fract (1 / y) := by linarith
+      have hrw : 1 / (Int.fract (1 / y) / (1 + Int.fract (1 / y)))
+          = 1 / Int.fract (1 / y) + 1 := by field_simp
+      rw [hrw, Int.fract_add_one]
+
+/-- **`g·{1/g} ≤ 1/2`** for `0 ≤ g < 1`. -/
+theorem fract_mul_le_half {g : ℝ} (hg0 : 0 ≤ g) (hg1 : g < 1) :
+    g * Int.fract (1 / g) ≤ 1 / 2 := by
+  rcases eq_or_lt_of_le hg0 with h | hg
+  · rw [← h]; simp
+  · have hm : (1 : ℝ) < 1 / g := by rw [lt_div_iff₀ hg]; linarith
+    have hm1 : (1 : ℝ) ≤ ((⌊1 / g⌋ : ℤ) : ℝ) := by
+      have : (1 : ℤ) ≤ ⌊1 / g⌋ := Int.le_floor.2 (by exact_mod_cast le_of_lt hm)
+      exact_mod_cast this
+    have hlt : 1 / g < ((⌊1 / g⌋ : ℤ) : ℝ) + 1 := Int.lt_floor_add_one _
+    have hub : 1 < (((⌊1 / g⌋ : ℤ) : ℝ) + 1) * g := (div_lt_iff₀ hg).1 hlt
+    rw [Int.fract]
+    have heq : g * (1 / g - ((⌊1 / g⌋ : ℤ) : ℝ)) = 1 - g * ((⌊1 / g⌋ : ℤ) : ℝ) := by
+      field_simp
+    rw [heq]
+    nlinarith [hub, hm1, hg,
+      mul_lt_mul_of_pos_left hub (show (0 : ℝ) < ((⌊1 / g⌋ : ℤ) : ℝ) by linarith)]
+
+/-- **Segments halve every two steps.** -/
+theorem seg_add_two_le {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) (i : ℕ) :
+    seg x (i + 2) ≤ 1 / 2 * seg x i := by
+  have h1 : seg x (i + 1) = seg x i * Int.fract (1 / Inn^[i] x) := seg_succ' x i
+  have h2 : seg x (i + 2) = seg x (i + 1) * Int.fract (1 / Inn^[i + 1] x) := seg_succ' x (i + 1)
+  have h3 : Inn^[i + 1] x = Inn (Inn^[i] x) := Function.iterate_succ_apply' Inn i x
+  have hg0 : (0 : ℝ) ≤ Int.fract (1 / Inn^[i] x) := Int.fract_nonneg _
+  have hg1 : Int.fract (1 / Inn^[i] x) < 1 := Int.fract_lt_one _
+  have hhalf := fract_mul_le_half hg0 hg1
+  have hsi := seg_nonneg hx0 hx i
+  rw [h2, h1, h3, fract_inv_Inn]
+  nlinarith
+
+/-- The one-step ratio is at most `1`, so segments are non-increasing. -/
+theorem seg_succ_le_self {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) (i : ℕ) :
+    seg x (i + 1) ≤ seg x i := by
+  rw [seg_succ' x i]
+  have hg0 : (0 : ℝ) ≤ Int.fract (1 / Inn^[i] x) := Int.fract_nonneg _
+  have hg1 : Int.fract (1 / Inn^[i] x) < 1 := Int.fract_lt_one _
+  nlinarith [seg_nonneg hx0 hx i]
+
+/-! ## The buffered cost converges to the unbuffered one
+
+Because segments halve every two steps, the tail past the cut-off is at most
+`2(seg_T + seg_{T+1}) ≤ 4β`, so `ψ - ψ_β ≤ 8β`.  This is the paper's
+`μ(N,ℓ) = lim_{β→0+} μ(N,ℓ,β)`. -/
+
+theorem seg_summable {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) : Summable (seg x) := by
+  have h := (psi_summable hx0 hx).div_const 2
+  refine h.congr fun i => ?_
+  rw [psiTerm_eq_two_mul_seg]
+  ring
+
+theorem tsum_seg_tail_le {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) (T : ℕ) :
+    ∑' j, seg x (T + j) ≤ 2 * (seg x T + seg x (T + 1)) := by
+  have hs : Summable (fun j => seg x (T + j)) := by
+    have := (seg_summable hx0 hx).comp_injective (add_right_injective T)
+    exact this
+  have hs2 : Summable (fun j => seg x (T + (j + 2))) := by
+    have := (summable_nat_add_iff 2).2 hs
+    exact this
+  have hsplit := hs.sum_add_tsum_nat_add 2
+  have hbound : ∑' j, seg x (T + (j + 2)) ≤ ∑' j, seg x (T + j) / 2 := by
+    refine hs2.tsum_le_tsum (fun j => ?_) (hs.div_const 2)
+    have := seg_add_two_le hx0 hx (T + j)
+    have heq : T + (j + 2) = T + j + 2 := by omega
+    rw [heq]
+    linarith
+  rw [tsum_div_const] at hbound
+  have hfin : ∑ j ∈ Finset.range 2, seg x (T + j) = seg x T + seg x (T + 1) := by
+    rw [Finset.sum_range_succ, Finset.sum_range_one, Nat.add_zero]
+  rw [hfin] at hsplit
+  linarith
+
+/-- **`ψ - ψ_β ≤ 8β`.** -/
+theorem psi_sub_psiBuf_le_linear {β x : ℝ} (hβ : 0 < β) (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) :
+    psi x - psiBuf β x ≤ 8 * β := by
+  have hex : ∃ i, seg x i ≤ β := exists_seg_le hβ hx0 hx
+  set T := bufDepth β x with hT
+  have hsT : seg x T ≤ β := seg_bufDepth_le hex
+  have hsT1 : seg x (T + 1) ≤ β := le_trans (seg_succ_le_self hx0 hx T) hsT
+  have htail := tsum_seg_tail_le hx0 hx T
+  have hs : Summable (seg x) := seg_summable hx0 hx
+  have hsplit := hs.sum_add_tsum_nat_add T
+  have hpsi : psi x = 2 * ∑' i, seg x i := by
+    rw [psi, ← tsum_mul_left]
+    exact tsum_congr fun i => psiTerm_eq_two_mul_seg x i
+  have hnn := seg_nonneg hx0 hx T
+  have hcomm : ∑' i : ℕ, seg x (i + T) = ∑' j : ℕ, seg x (T + j) :=
+    tsum_congr fun i => by rw [Nat.add_comm]
+  rw [hcomm] at hsplit
+  rw [hpsi, psiBuf]
+  linarith
+
+/-- **`ψ_β → ψ` as `β → 0⁺`.** -/
+theorem tendsto_psiBuf {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) :
+    Filter.Tendsto (fun β => psiBuf β x) (nhdsWithin 0 (Set.Ioi 0)) (𝓝 (psi x)) := by
+  have hlow : Filter.Tendsto (fun β : ℝ => psi x - 8 * β) (nhdsWithin 0 (Set.Ioi 0))
+      (𝓝 (psi x)) := by
+    have h : Filter.Tendsto (fun β : ℝ => psi x - 8 * β) (𝓝 0) (𝓝 (psi x - 8 * 0)) :=
+      tendsto_const_nhds.sub (tendsto_const_nhds.mul Filter.tendsto_id)
+    rw [mul_zero, sub_zero] at h
+    exact h.mono_left nhdsWithin_le_nhds
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow tendsto_const_nhds ?_ ?_
+  · filter_upwards [self_mem_nhdsWithin] with β hβ
+    linarith [psi_sub_psiBuf_le_linear hβ hx0 hx]
+  · filter_upwards [self_mem_nhdsWithin] with β hβ
+    exact psiBuf_le_psi hβ hx0 hx
+
 /-! ## The remark
 
 "The algorithm takes advantage of the buffer even in cases where neither the
