@@ -221,6 +221,71 @@ theorem heilbronn_forward {l₁ l₂ : List ℕ} (h₁ : l₁ ≠ []) (h₂ : l�
   · exact K_pos _ (fun x hx => hpos₁ x (List.dropLast_subset l₁ hx))
   · exact K_pos _ (fun x hx => hpos₂ x (List.tail_subset l₂ hx))
 
+/-! ## The inverse map
+
+Recovering the expansion from the pair `(a, a')` is exactly the Euclidean
+algorithm: `K_concat` says `a = c·a' + K m.dropLast` with `c = a / a'` and
+`K m.dropLast = a mod a'`, so peeling entries off the end of the list is the
+same as running Euclid on `(a, a')`.  This is the point of contact between
+Heilbronn's bijection and the remainder sums of `Euclid.lean`. -/
+
+/-- The continued-fraction expansion of `a / a'`, read off by the Euclidean
+algorithm.  The quotients are collected from the end of the list backwards. -/
+def cf (a a' : ℕ) : List ℕ :=
+  if h : a' = 0 then [] else cf a' (a % a') ++ [a / a']
+termination_by a'
+decreasing_by exact Nat.mod_lt _ (Nat.pos_of_ne_zero h)
+
+@[simp] theorem cf_zero (a : ℕ) : cf a 0 = [] := by rw [cf]; simp
+
+theorem cf_of_pos {a a' : ℕ} (h : a' ≠ 0) :
+    cf a a' = cf a' (a % a') ++ [a / a'] := by rw [cf]; simp [h]
+
+/-- **Heilbronn's correspondence, inverse direction.**  Every coprime pair
+`a > a' ≥ 1` is `(K l, K l.dropLast)` for the expansion `l = cf a a'`. -/
+theorem K_cf : ∀ a' a : ℕ, 1 ≤ a' → a' < a → Nat.gcd a a' = 1 →
+    K (cf a a') = a ∧ K (cf a a').dropLast = a' := by
+  intro a'
+  induction a' using Nat.strong_induction_on with
+  | _ a' ih =>
+    intro a ha'1 hlt hgcd
+    rcases Nat.lt_or_ge a' 2 with h2 | h2
+    · -- `a' = 1`: the expansion is the single entry `a`
+      have ha'eq : a' = 1 := by omega
+      subst ha'eq
+      have h1 : cf a 1 = [a] := by
+        rw [cf_of_pos (by norm_num), Nat.mod_one, cf_zero, Nat.div_one]
+        simp
+      rw [h1]
+      simp
+    · -- `a' ≥ 2`: peel off the quotient and recurse
+      have ha'ne : a' ≠ 0 := by omega
+      have hrlt : a % a' < a' := Nat.mod_lt _ (by omega)
+      have hr1 : 1 ≤ a % a' := by
+        rcases Nat.eq_zero_or_pos (a % a') with h0 | h0
+        · exfalso
+          have hdvd : a' ∣ a := Nat.dvd_of_mod_eq_zero h0
+          have hg : Nat.gcd a a' = a' := Nat.gcd_eq_right hdvd
+          omega
+        · exact h0
+      have hgcd' : Nat.gcd a' (a % a') = 1 := by
+        rw [← hgcd, Nat.gcd_comm a a', Nat.gcd_rec a' a]
+        exact Nat.gcd_comm _ _
+      obtain ⟨hK, hKd⟩ := ih (a % a') hrlt a' hr1 hrlt hgcd'
+      have hne : cf a' (a % a') ≠ [] := by
+        intro hc
+        rw [hc] at hK
+        simp at hK
+        omega
+      have hcf : cf a a' = cf a' (a % a') ++ [a / a'] := cf_of_pos ha'ne
+      constructor
+      · rw [hcf, K_concat _ hne (a / a'), hK, hKd]
+        have hdm := Nat.div_add_mod a a'
+        have hcomm : a / a' * a' = a' * (a / a') := Nat.mul_comm _ _
+        omega
+      · rw [hcf]
+        simpa using hK
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
@@ -234,5 +299,11 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
 #guard Nat.gcd (K [2, 3, 4]) (K [2, 3, 4].dropLast) = 1
 #guard K [2, 3, 4].dropLast < K [2, 3, 4]
 #guard K [2, 3, 4].tail < K [2, 3, 4]
+-- `K [2,3,4] = 30` and `K [2,3] = 7`, so the pair `(30, 7)` recovers `[2,3,4]`.
+#guard cf 30 7 = [2, 3, 4]
+#guard K (cf 30 7) = 30
+#guard K (cf 30 7).dropLast = 7
+-- `(30, 13)` is the reversed expansion, since `K [4,3] = 13`.
+#guard cf 30 13 = [4, 3, 2]
 
 end BlockCycleRotation
