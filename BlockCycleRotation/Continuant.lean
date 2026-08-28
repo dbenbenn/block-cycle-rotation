@@ -1137,6 +1137,117 @@ theorem heilbron {n : ℕ} (hn : 0 < n) :
   congr 1
   exact Finset.sum_congr rfl fun e _ => by rw [sum_fst_eq_sum_snd]
 
+/-! ## Removing the gcd condition
+
+The paper writes `R(n)` for the sum of `b` over quadruples with `gcd(a,a') = 1`
+— the right-hand side of (eq. heilbron) — and `Q(n)` for the same sum with no
+gcd condition at all.  Classifying by `d = gcd(a,a')` gives `Q(n) = ∑_{d ∣ n} R(d)`,
+which is what Möbius inversion is then applied to.
+
+Note the summand `b` is untouched by this classification, so unlike the
+aggregation of (eq. heilbron) there is no divisor weight. -/
+
+/-- The quadruples with no gcd condition. -/
+def quadruplesQ (n : ℕ) : Finset (ℕ × ℕ × ℕ × ℕ) :=
+  ((Finset.range (n + 1)) ×ˢ (Finset.range (n + 1)) ×ˢ (Finset.range (n + 1))
+      ×ˢ (Finset.range (n + 1))).filter
+    (fun q => 1 ≤ q.2.2.1 ∧ q.2.2.1 < q.1 ∧ 1 ≤ q.2.2.2 ∧ q.2.2.2 < q.2.1
+      ∧ n = q.1 * q.2.1 + q.2.2.1 * q.2.2.2)
+
+theorem mem_quadruplesQ {n a b a' b' : ℕ} :
+    (a, b, a', b') ∈ quadruplesQ n ↔
+      (a ≤ n ∧ b ≤ n ∧ a' ≤ n ∧ b' ≤ n) ∧ 1 ≤ a' ∧ a' < a ∧ 1 ≤ b' ∧ b' < b
+        ∧ n = a * b + a' * b' := by
+  simp [quadruplesQ, Finset.mem_filter, Finset.mem_product, and_assoc]
+
+/-- **`Q(n) = ∑_{d ∣ n} R(n/d)`.**  Classifying quadruples by `d = gcd(a,a')`. -/
+theorem sum_snd_quadruplesQ {n : ℕ} (hn : 0 < n) :
+    ∑ q ∈ quadruplesQ n, q.2.1
+      = ∑ d ∈ n.divisors, ∑ p ∈ quadruplesAll (n / d), p.2.1 := by
+  rw [Finset.sum_sigma']
+  refine Finset.sum_bij'
+    (i := fun q _ => (⟨Nat.gcd q.1 q.2.2.1,
+        (q.1 / Nat.gcd q.1 q.2.2.1, q.2.1, q.2.2.1 / Nat.gcd q.1 q.2.2.1,
+          q.2.2.2)⟩ : (_ : ℕ) × (ℕ × ℕ × ℕ × ℕ)))
+    (j := fun p _ => (p.1 * p.2.1, p.2.2.1, p.1 * p.2.2.2.1, p.2.2.2.2))
+    ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨-, ha1, ha2, hb1, hb2, hsum⟩ := mem_quadruplesQ.1 hq
+    have hd : 0 < Nat.gcd a a' := Nat.gcd_pos_of_pos_left _ (by omega)
+    have hda : Nat.gcd a a' ∣ a := Nat.gcd_dvd_left _ _
+    have hda' : Nat.gcd a a' ∣ a' := Nat.gcd_dvd_right _ _
+    have hdn : Nat.gcd a a' ∣ n := by
+      rw [hsum]
+      exact Dvd.dvd.add (Dvd.dvd.mul_right hda b) (Dvd.dvd.mul_right hda' b')
+    have hnd : n / Nat.gcd a a'
+        = a / Nat.gcd a a' * b + a' / Nat.gcd a a' * b' := by
+      rw [Nat.div_eq_iff_eq_mul_left hd hdn, hsum, Nat.add_mul, Nat.mul_right_comm,
+        Nat.mul_right_comm (a' / Nat.gcd a a'), Nat.div_mul_cancel hda,
+        Nat.div_mul_cancel hda']
+    have hq1 : 1 ≤ a' / Nat.gcd a a' :=
+      (Nat.one_le_div_iff hd).2 (Nat.le_of_dvd (by omega) hda')
+    have hq2 : a' / Nat.gcd a a' < a / Nat.gcd a a' :=
+      Nat.div_lt_div_of_lt_of_dvd hda ha2
+    simp only [Finset.mem_sigma, Nat.mem_divisors]
+    exact ⟨⟨hdn, hn.ne'⟩, mem_quadruplesAll.2
+      ⟨quadruple_le hq1 hq2 hb1 hb2 hnd, hq1, hq2, hb1, hb2,
+        Nat.coprime_div_gcd_div_gcd hd, hnd⟩⟩
+  · rintro ⟨d, a1, b, a1', b'⟩ hp
+    simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
+    obtain ⟨⟨hdn, -⟩, hq⟩ := hp
+    obtain ⟨-, ha1, ha2, hb1, hb2, -, hsum⟩ := mem_quadruplesAll.1 hq
+    have hd : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+    have hmul : d * (n / d) = n := Nat.mul_div_cancel' hdn
+    have hsum' : n = d * a1 * b + d * a1' * b' := by
+      rw [← hmul, hsum]; ring
+    have hp1 : 1 ≤ d * a1' := Nat.mul_pos hd ha1
+    have hp2 : d * a1' < d * a1 := by nlinarith
+    rw [mem_quadruplesQ]
+    exact ⟨quadruple_le hp1 hp2 hb1 hb2 hsum', hp1, hp2, hb1, hb2, hsum'⟩
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨-, ha1, ha2, -, -, -⟩ := mem_quadruplesQ.1 hq
+    have hd : 0 < Nat.gcd a a' := Nat.gcd_pos_of_pos_left _ (by omega)
+    have e1 : Nat.gcd a a' * (a / Nat.gcd a a') = a :=
+      Nat.mul_div_cancel' (Nat.gcd_dvd_left _ _)
+    have e2 : Nat.gcd a a' * (a' / Nat.gcd a a') = a' :=
+      Nat.mul_div_cancel' (Nat.gcd_dvd_right _ _)
+    rw [e1, e2]
+  · rintro ⟨d, a1, b, a1', b'⟩ hp
+    simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
+    obtain ⟨⟨hdn, -⟩, hq⟩ := hp
+    obtain ⟨-, -, -, -, -, hcop, -⟩ := mem_quadruplesAll.1 hq
+    have hd : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+    have hgcd : Nat.gcd (d * a1) (d * a1') = d := by
+      rw [Nat.gcd_mul_left, hcop, mul_one]
+    simp only [hgcd, Nat.mul_div_cancel_left _ hd]
+  · rintro ⟨a, b, a', b'⟩ _
+    rfl
+
+/-! ## Möbius inversion
+
+With `Q(n) = ∑_{d ∣ n} R(d)` in hand, Möbius inversion gives `R` back from `Q`.
+This is equation (mobius) of the paper.  Both are recast over `ℤ` so that
+Mathlib's inversion applies. -/
+
+/-- `R(n)`: the sum of `b` over quadruples with `gcd(a,a') = 1`. -/
+def Rquad (n : ℕ) : ℤ := ∑ q ∈ quadruplesAll n, (q.2.1 : ℤ)
+
+/-- `Q(n)`: the same sum with no gcd condition. -/
+def Qquad (n : ℕ) : ℤ := ∑ q ∈ quadruplesQ n, (q.2.1 : ℤ)
+
+theorem Qquad_eq {n : ℕ} (hn : 0 < n) : Qquad n = ∑ d ∈ n.divisors, Rquad (n / d) := by
+  unfold Qquad Rquad
+  exact_mod_cast sum_snd_quadruplesQ hn
+
+/-- `Q(n) = ∑_{d ∣ n} R(d)`. -/
+theorem sum_Rquad {n : ℕ} (hn : 0 < n) : ∑ d ∈ n.divisors, Rquad d = Qquad n := by
+  rw [Qquad_eq hn, Nat.sum_div_divisors]
+
+/-- **Equation (mobius).**  `R(n) = ∑_{d ∣ n} μ(d) · Q(n/d)`. -/
+theorem moebius_Rquad {n : ℕ} (hn : 0 < n) :
+    ∑ x ∈ n.divisorsAntidiagonal, ArithmeticFunction.moebius x.1 • Qquad x.2 = Rquad n :=
+  ArithmeticFunction.sum_eq_iff_sum_smul_moebius_eq.1 (fun _ hm => sum_Rquad hm) n hn
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
@@ -1180,6 +1291,10 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
   (∑ k ∈ shifts n, remSum n k) = (shifts n).card + ∑ q ∈ quadruples n, q.1)
 -- The remainder sum scales: Euclid on `(dn, dk)` is `d` times Euclid on `(n,k)`.
 #guard remSum 42 18 = 3 * remSum 14 6
+-- Q(n) = sum over divisors of R, checked numerically.
+#guard (List.range 20).all (fun m => let n := m + 1
+  (∑ q ∈ quadruplesQ n, q.2.1)
+    = ∑ d ∈ n.divisors, ∑ p ∈ quadruplesAll (n / d), p.2.1)
 -- Equation (eq. heilbron) itself, checked numerically.
 #guard (List.range 22).all (fun m => let n := m + 1
   (∑ k ∈ allShifts n, remSum n k)

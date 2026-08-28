@@ -79,7 +79,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Quadruples classified by `gcd(b,b')` | §4 | `sum_snd_quadruplesAll` | ✅ proved |
 | **Equation (eq. heilbron)** | §4 | `heilbron` | ✅ **proved** |
 | Triple sum: inner sum over `b'` | §4 | `inner_sum_sub_main_le` | ✅ proved |
-| Triple sum: `(a,a')` and `d ∣ n` layers | §4 | — | 🚧 remaining |
+| `Q(n) = ∑_{d∣n} R(d)` | §4 | `sum_Rquad` | ✅ proved |
+| Equation (mobius) | Eq. (mobius) | `moebius_Rquad` | ✅ proved |
+| Triple sum: `(a,a')` layer | §4 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13, §4 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` assembly | Lemmas 17–19 | — | 🚧 remaining |
