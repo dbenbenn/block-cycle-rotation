@@ -73,7 +73,10 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Expansion attached to a quadruple | §4 | `quadExpansion_spec` | ✅ proved |
 | Reindexing by quadruples | §4 | `sum_split_eq_sum_quadruples` | ✅ proved |
 | **Equation (eq. heilbron)** | §4 | `heilbron` | ✅ **proved** |
-| Triple sum over `d ∣ n`, `(a,a')` | §4 | — | 🚧 remaining |
+| Triple sum: inner sum over `b'` | §4 | `inner_sum_sub_main_le` | ✅ proved |
+| Triple sum: `(a,a')` and `d ∣ n` layers | §4 | — | 🚧 remaining |
+| `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
+| Theorem 13, constant `D = 1 + 4C` | Thm 13, §4 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` assembly | Lemmas 17–19 | — | 🚧 remaining |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | `exists_card_divisors_le` | ✅ proved |
 | Möbius/character decomposition | §4 | — | 🚧 planned |
@@ -174,3 +177,30 @@ revision are pinned (Lean 4.33.1 / Mathlib v4.33.1).
 lake exe cache get   # fetch prebuilt Mathlib oleans
 lake build
 ```
+
+## Fidelity to the paper
+
+**Formalised as stated.** §2 (the algorithm), Lemma 12, equation (12),
+Theorem A's worst case, equation (RemainderSum), Observation 15, Heilbronn's
+correspondence, and equation (eq. heilbron) follow the paper's statements and
+proof structure.
+
+**Deviations, all documented in the sources.** The worst-case bound needed a
+strengthening — `remSum n k + gcd n k ≤ 2k + n mod k` — because the paper's
+hypothesis `2k ≤ n` is not inherited by the recursion. `norm_sum_twisted_le`
+is proved for arbitrary unit-modulus weights and specialised afterwards, and
+`norm_geom_sum_le'` drops the `|θ| ≤ π` hypothesis so that it applies at roots
+of unity.
+
+**Proved here but not in the paper.** The divisor bound `d(n) = O(n^ε)` (cited
+as standard, absent from Mathlib), Bernoulli's inequality, and the correctness
+of the algorithm itself — the paper describes the block cycle scheme but never
+proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
+
+**Not attempted.** Everything from Lemma 17 onwards: the `(a,a')` and `d ∣ n`
+layers of the triple sum, `G₁ + G₂ + G₃`, the error term of Theorem 13, the
+constant `D = 1 + 4C` and its multiple-zeta-value series, Theorem 10's limit,
+and the benchmarks of §5. This is the majority of §4 by length.
+
+In short: the paper's structural results are formalised, and every tool its
+analytic conclusion needs is proved, but that conclusion itself is not.

@@ -10,3 +10,4 @@ import BlockCycleRotation.LinearSums
 import BlockCycleRotation.Progression
 import BlockCycleRotation.DivisorBound
 import BlockCycleRotation.Continuant
+import BlockCycleRotation.TripleSum
