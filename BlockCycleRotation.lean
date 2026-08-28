@@ -17,3 +17,4 @@ import BlockCycleRotation.Remark21
 import BlockCycleRotation.Theorem10
 import BlockCycleRotation.Buffer
 import BlockCycleRotation.AllShifts
+import BlockCycleRotation.Bound

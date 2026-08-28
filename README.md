@@ -168,6 +168,10 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | **Reflection `remSum n k = k + remSum n (n−k)`** | Rem. (all shifts) | `remSum_reflect` | ✅ **proved** |
 | `∑_{k>n/2} k = 3n²/8 + O(n)` | Rem. (all shifts) | `sum_bigShifts_id_close` | ✅ proved |
 | **Average over `1 ≤ k ≤ n` is `(3/8+2C)n + O(n^{1/2+ε})`** | Rem. (all shifts) | `remark_all_shifts` | ✅ **proved** |
+| Sharper `cTerm ≤ 1/a³`, tail `≤ 1/N` | §4 | `cTerm_le_cube`, `cConst_le_partial_add_sharp` | ✅ proved |
+| Certified `partial(20) ≤ 39/200` | §4 | `cConst_partial_le` | ✅ proved |
+| **`D < 2`** (beats trinity rotation on average) | Rem. after Thm 13 | `dConst_lt_two` | ✅ **proved** |
+| `1 < D` | Rem. after Thm 13 | `one_lt_dConst` | ✅ proved |
 | Summand rewriting | Remark 21 | `gTerm_eq` | ✅ proved |
 | `ζ(3)` removes the coprimality | Remark 21 | `tsum_gTerm_eq`, `zeta3_mul_cConst` | ✅ proved |
 | Telescoping `∑_k [1/k − 1/(n+k)] = H_n` | Remark 21 | `tsum_telescope` | ✅ proved |
@@ -303,7 +307,11 @@ bound `d(n) = O(n^ε)` (cited as standard, absent from Mathlib), Bernoulli's
 inequality, and the correctness of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
-**Not attempted.** The benchmarks of §5. The bound proved
+**Not attempted.** The benchmarks of §5, which are C++ listings and wall-clock
+timings on a named CPU — empirical claims with no mathematical content a proof
+assistant can certify. Also the remark's "standard deviation about 0.50": the
+moment machinery is there (`moment_fCost`), but no certified bound on the
+variance is proved. The bound proved
 for `f` is `f ≤ 4`, from the crude `∑ (2/3)^i = 3` for the series; the paper's
 sharp maximum `f = 3`, attained at `1 - φ`, is not formalised (nothing needs
 it).
