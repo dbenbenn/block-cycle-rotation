@@ -100,6 +100,29 @@ theorem remSum_add_gcd_le_self {n k : ℕ} (h : 2 * k ≤ n) :
   have : 2 * k + n % k ≤ n := by nlinarith [Nat.div_add_mod n k]
   exact le_trans (remSum_add_gcd_le k n) this
 
+/-! ## Scaling
+
+Running the Euclidean algorithm on `(d·n, d·k)` is running it on `(n, k)` with
+every remainder multiplied by `d`.  This is what lets the coprime form of the
+Heilbronn identity be aggregated over `d = gcd(n, k)`. -/
+
+/-- **The remainder sum scales.** -/
+theorem remSum_mul : ∀ k n d : ℕ, remSum (d * n) (d * k) = d * remSum n k := by
+  intro k
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    intro n d
+    rcases Nat.eq_zero_or_pos k with hk | hk
+    · subst hk; simp
+    rcases Nat.eq_zero_or_pos d with hd | hd
+    · subst hd; simp
+    have hdk : d * k ≠ 0 := by positivity
+    have hmod : d * n % (d * k) = d * (n % k) := by
+      rw [Nat.mul_mod_mul_left]
+    rw [remSum_of_pos _ hdk, remSum_of_pos n hk.ne', hmod,
+      ih (n % k) (Nat.mod_lt _ hk) k d]
+    ring
+
 /-! ## Move count -/
 
 /-- The number of moves the block cycle algorithm performs when rotating an

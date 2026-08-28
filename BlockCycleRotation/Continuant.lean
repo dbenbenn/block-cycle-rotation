@@ -885,15 +885,45 @@ theorem sum_split_eq_sum_quadruples (n : ℕ) :
   · rintro ⟨k, j⟩ _
     rfl
 
-/-- **Equation (eq. heilbron).**
+/-- The quadruple set is symmetric under swapping the two halves. -/
+theorem mem_quadruples_swap {n a b a' b' : ℕ} (h : (a, b, a', b') ∈ quadruples n) :
+    (b, a, b', a') ∈ quadruples n := by
+  rw [mem_quadruples] at h ⊢
+  obtain ⟨⟨h1, h2, h3, h4⟩, h5, h6, h7, h8, h9, h10, h11⟩ := h
+  exact ⟨⟨h2, h1, h4, h3⟩, h7, h8, h5, h6, h10, h9, by rw [h11]; ring⟩
+
+/-- **Summing `a` over the quadruples is the same as summing `b`.**
+
+The paper uses this to symmetrise; it is the involution swapping the two
+halves of the quadruple. -/
+theorem sum_fst_eq_sum_snd (n : ℕ) :
+    ∑ q ∈ quadruples n, q.1 = ∑ q ∈ quadruples n, q.2.1 := by
+  refine Finset.sum_bij'
+    (i := fun q _ => (q.2.1, q.1, q.2.2.2, q.2.2.1))
+    (j := fun q _ => (q.2.1, q.1, q.2.2.2, q.2.2.1)) ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨a, b, a', b'⟩ hq
+    exact mem_quadruples_swap hq
+  · rintro ⟨a, b, a', b'⟩ hq
+    exact mem_quadruples_swap hq
+  · rintro ⟨a, b, a', b'⟩ _
+    rfl
+  · rintro ⟨a, b, a', b'⟩ _
+    rfl
+  · rintro ⟨a, b, a', b'⟩ _
+    rfl
+
+/-- **The coprime form of the Heilbronn identity.**
 
 Summing the Euclidean remainder sums over the shifts the block cycle algorithm
-recurses on equals the number of those shifts plus a sum over Heilbronn's
-quadruples.  The first term is the paper's `∑ gcd(n,k)`, which is a count here
-because the shifts are coprime to `n`.
+recurses on *that are coprime to `n`* equals the number of those shifts plus a
+sum over Heilbronn's quadruples.  The first term is the paper's `∑ gcd(n,k)`,
+which is a count here because the shifts are coprime to `n`.
 
-This is the passage from move counts to lattice point counts. -/
-theorem heilbron (n : ℕ) :
+This is the unlabelled display preceding equation (eq. heilbron) in the paper.
+Equation (eq. heilbron) itself drops both coprimality restrictions, and follows
+from this by summing over `d = gcd(n,k)`; see `remSum_mul` for the scaling that
+aggregation relies on. -/
+theorem heilbron_coprime (n : ℕ) :
     ∑ k ∈ shifts n, remSum n k = (shifts n).card + ∑ q ∈ quadruples n, q.1 := by
   rw [sum_remSum_eq, sum_split_eq_sum_quadruples]
 
@@ -938,5 +968,9 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
 -- Equation (eq. heilbron), checked numerically for several `n`.
 #guard (List.range 40).all (fun n =>
   (∑ k ∈ shifts n, remSum n k) = (shifts n).card + ∑ q ∈ quadruples n, q.1)
+-- The remainder sum scales: Euclid on `(dn, dk)` is `d` times Euclid on `(n,k)`.
+#guard remSum 42 18 = 3 * remSum 14 6
+#guard (List.range 12).all (fun n => (List.range 12).all (fun k =>
+  (List.range 5).all (fun d => remSum (d * n) (d * k) = d * remSum n k)))
 
 end BlockCycleRotation
