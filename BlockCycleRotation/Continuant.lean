@@ -393,6 +393,10 @@ theorem heilbronn_bijection :
           ∧ K (cf a a') = a ∧ K (cf a a').dropLast = a') :=
   ⟨cf_K, fun a a' h1 h2 h3 => ⟨cf_spec a' a h1 h2 h3, K_cf a' a h1 h2 h3⟩⟩
 
+/-- Dropping the last entry of a reversed list drops the first entry. -/
+theorem reverse_dropLast_eq (l : List ℕ) : (l.reverse).dropLast = (l.tail).reverse := by
+  rcases l with _ | ⟨a, t⟩ <;> simp
+
 /-- Mirror of the earlier reversal identity. -/
 theorem reverse_tail_eq (l : List ℕ) : (l.reverse).tail = (l.dropLast).reverse := by
   have h : ((l.reverse).reverse).dropLast = ((l.reverse).tail).reverse := by
@@ -545,6 +549,94 @@ theorem shift_expansion_bijection (n : ℕ) :
     refine ⟨cf_K L hne hpos hhead, ?_, two_mul_K_dropLast_le L hne hpos hlast,
       K_coprime L⟩
     exact K_pos _ (fun x hx => hpos x (List.dropLast_subset L hx))
+
+/-! ## Towards equation (eq. heilbron)
+
+The left-hand side of (eq. heilbron) sums `remSum` over the shifts the
+algorithm recurses on.  Expanding each term by `remSum_eq_sum_K` and splitting
+off the `j = 0` contribution `K [] = 1` gives the shape of the identity: a count
+of shifts, plus a double sum over splits of expansions.  The `j = 0` terms are
+what the paper records as `∑ gcd(n,k)`, here all equal to `1` by coprimality. -/
+
+/-- The shifts the block cycle algorithm recurses on that are coprime to `n`. -/
+def shifts (n : ℕ) : Finset ℕ :=
+  (Finset.range (n + 1)).filter (fun k => 1 ≤ k ∧ 2 * k ≤ n ∧ Nat.gcd n k = 1)
+
+theorem mem_shifts {n k : ℕ} :
+    k ∈ shifts n ↔ k ≤ n ∧ 1 ≤ k ∧ 2 * k ≤ n ∧ Nat.gcd n k = 1 := by
+  simp [shifts]
+
+/-- **The left-hand side of (eq. heilbron).**  Summing `remSum` over the shifts
+splits into a count of shifts plus a double sum of continuants over splits. -/
+theorem sum_remSum_eq (n : ℕ) :
+    ∑ k ∈ shifts n, remSum n k
+      = (shifts n).card
+        + ∑ k ∈ shifts n, ∑ j ∈ Finset.Ico 1 (cf n k).length, K ((cf n k).take j) := by
+  rw [Finset.card_eq_sum_ones, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun k hk => ?_
+  obtain ⟨-, hk1, hk2, hgcd⟩ := mem_shifts.1 hk
+  have hkn : k < n := by omega
+  have hne : cf n k ≠ [] := (cf_spec k n hk1 hkn hgcd).1
+  have hlen : 0 < (cf n k).length := List.length_pos_iff.2 hne
+  rw [remSum_eq_sum_K k n hk1 hkn hgcd, Finset.range_eq_Ico,
+    Finset.sum_eq_sum_Ico_succ_bot hlen]
+  simp
+
+/-- **The round trip on a split.**  For a normalised expansion `L` and an
+interior split point, both halves are recovered from their continuants — the
+prefix directly, the suffix after reversing.  This is what makes the passage
+from splits to quadruples injective. -/
+theorem heilbronn_split_roundtrip {L : List ℕ} (hpos : ∀ c ∈ L, 1 ≤ c)
+    (hhead : ∀ x ∈ L.head?, 2 ≤ x) (hlast : ∀ x ∈ L.getLast?, 2 ≤ x)
+    {j : ℕ} (hj1 : 1 ≤ j) (hj2 : j < L.length) :
+    cf (K (L.take j)) (K (L.take j).dropLast) = L.take j
+      ∧ cf (K (L.drop j)) (K (L.drop j).tail) = (L.drop j).reverse := by
+  have hL : L ≠ [] := by
+    intro hc
+    rw [hc] at hj2
+    simp at hj2
+  -- the prefix inherits the head condition
+  have hne₁ : L.take j ≠ [] := by
+    intro hc
+    have : (L.take j).length = 0 := by rw [hc]; simp
+    rw [List.length_take] at this
+    omega
+  have hpos₁ : ∀ c ∈ L.take j, 1 ≤ c := fun c hc => hpos c (List.take_subset j L hc)
+  have hhead₁ : ∀ x ∈ (L.take j).head?, 2 ≤ x := by
+    intro x hx
+    apply hhead
+    rcases L with _ | ⟨a, t⟩
+    · simp at hL
+    · rcases j with _ | j'
+      · omega
+      · simp at hx ⊢
+        omega
+  -- the reversed suffix inherits the last-entry condition as a head condition
+  have hne₂ : (L.drop j).reverse ≠ [] := by
+    intro hc
+    have : (L.drop j).length = 0 := by
+      have := congrArg List.length hc
+      simpa using this
+    rw [List.length_drop] at this
+    omega
+  have hpos₂ : ∀ c ∈ (L.drop j).reverse, 1 ≤ c := by
+    intro c hc
+    exact hpos c (List.drop_subset j L (List.mem_reverse.1 hc))
+  have hdropne : L.drop j ≠ [] := by
+    intro hc
+    have hl : (L.drop j).length = 0 := by rw [hc]; simp
+    rw [List.length_drop] at hl
+    omega
+  have hgl : L.getLast? = (L.drop j).getLast? := by
+    conv_lhs => rw [← List.take_append_drop j L]
+    exact List.getLast?_append_of_ne_nil _ hdropne
+  have hhead₂ : ∀ x ∈ ((L.drop j).reverse).head?, 2 ≤ x := by
+    intro x hx
+    rw [List.head?_reverse, ← hgl] at hx
+    exact hlast x hx
+  refine ⟨cf_K _ hne₁ hpos₁ hhead₁, ?_⟩
+  have h := cf_K _ hne₂ hpos₂ hhead₂
+  rwa [K_reverse, reverse_dropLast_eq, K_reverse] at h
 
 /-! ## Sanity checks
 

@@ -66,7 +66,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Heilbronn, surjectivity on quadruples | §4, Heilbronn 1969 | `heilbronn_surjective` | ✅ proved |
 | Eq. (RemainderSum): the bridge | Eq. (RemainderSum) | `remSum_eq_sum_K` | ✅ proved |
 | Shift ↔ expansion bijection | §4 | `shift_expansion_bijection` | ✅ proved |
-| Eq. (eq. heilbron) as a sum identity | §4 | — | 🚧 remaining |
+| LHS of (eq. heilbron) | §4 | `sum_remSum_eq` | ✅ proved |
+| Round trip on a split | §4 | `heilbronn_split_roundtrip` | ✅ proved |
+| (eq. heilbron): reindex by quadruples | §4 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` assembly | Lemmas 17–19 | — | 🚧 remaining |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | `exists_card_divisors_le` | ✅ proved |
 | Möbius/character decomposition | §4 | — | 🚧 planned |
