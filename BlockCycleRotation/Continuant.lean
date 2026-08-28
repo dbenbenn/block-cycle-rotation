@@ -17,6 +17,7 @@ The continuant is `K[] = 1`, `K[c] = c`, `K(c₀ :: c₁ :: cs) = c₀·K(c₁ :
 -/
 
 import BlockCycleRotation.DivisorBound
+import BlockCycleRotation.Euclid
 
 namespace BlockCycleRotation
 
@@ -422,6 +423,55 @@ theorem heilbronn_surjective {a b a' b' : ℕ}
   refine ⟨cf a a', (cf b b').reverse, hne₁, hne₂', hK₁, hKd₁, hb₂, hb₂', ?_⟩
   rw [K_append _ _ hne₁ hne₂', hK₁, hKd₁, hb₂, hb₂']
 
+/-! ## The bridge to remainder sums
+
+Equation (eq. RemainderSum) of the paper: for coprime `n > k`, the remainders
+`r₁, r₂, …` of the Euclidean algorithm are exactly the continuants of the
+prefixes of the expansion `cf n k`, so the remainder sum of `Euclid.lean` is a
+sum of continuants.  This is the point where Tier 1 meets Heilbronn. -/
+
+/-- **Equation (eq. RemainderSum).**  For coprime `n > k ≥ 1`,
+
+  `remSum n k = ∑_{j < |cf n k|} K ((cf n k).take j)`.
+
+The remainders in the Euclidean algorithm are the continuants of the prefixes
+of the expansion. -/
+theorem remSum_eq_sum_K : ∀ k n : ℕ, 1 ≤ k → k < n → Nat.gcd n k = 1 →
+    remSum n k = ∑ j ∈ Finset.range (cf n k).length, K ((cf n k).take j) := by
+  intro k
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    intro n hk1 hkn hgcd
+    rcases Nat.lt_or_ge k 2 with h2 | h2
+    · have hk : k = 1 := by omega
+      subst hk
+      have hcf : cf n 1 = [n] := by
+        rw [cf_of_pos (by norm_num), Nat.mod_one, cf_zero, Nat.div_one]
+        simp
+      rw [hcf, remSum_of_pos n (by norm_num)]
+      simp [Nat.mod_one]
+    · have hkne : k ≠ 0 := by omega
+      have hrlt : n % k < k := Nat.mod_lt _ (by omega)
+      have hr1 : 1 ≤ n % k := by
+        rcases Nat.eq_zero_or_pos (n % k) with h0 | h0
+        · exfalso
+          have hg : Nat.gcd n k = k := Nat.gcd_eq_right (Nat.dvd_of_mod_eq_zero h0)
+          omega
+        · exact h0
+      have hgcd' : Nat.gcd k (n % k) = 1 := by
+        rw [← hgcd, Nat.gcd_comm n k, Nat.gcd_rec k n]
+        exact Nat.gcd_comm _ _
+      have hM : K (cf k (n % k)) = k := (K_cf (n % k) k hr1 hrlt hgcd').1
+      have hIH := ih (n % k) hrlt k hr1 hrlt hgcd'
+      rw [remSum_of_pos n hkne, hIH, cf_of_pos hkne, List.length_append,
+        List.length_singleton, Finset.sum_range_succ]
+      have h1 : ∀ j ∈ Finset.range (cf k (n % k)).length,
+          K ((cf k (n % k) ++ [n / k]).take j) = K ((cf k (n % k)).take j) := by
+        intro j hj
+        rw [List.take_append_of_le_length (Nat.le_of_lt (Finset.mem_range.1 hj))]
+      rw [Finset.sum_congr rfl h1, List.take_left, hM]
+      ring
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
@@ -443,5 +493,9 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
 #guard cf 30 13 = [4, 3, 2]
 #guard cf (K [2, 3, 4]) (K [2, 3, 4].dropLast) = [2, 3, 4]
 #guard cf (K [5, 1, 7, 2]) (K [5, 1, 7, 2].dropLast) = [5, 1, 7, 2]
+-- Euclid on (30,13) gives remainders 13, 4, 1, summing to 18; the prefixes of
+-- `cf 30 13 = [4,3,2]` have continuants `K [] = 1`, `K [4] = 4`, `K [4,3] = 13`.
+#guard remSum 30 13 = 18
+#guard (List.range (cf 30 13).length).map (fun j => K ((cf 30 13).take j)) = [1, 4, 13]
 
 end BlockCycleRotation
