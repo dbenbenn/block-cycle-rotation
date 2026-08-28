@@ -286,6 +286,112 @@ theorem K_cf : ∀ a' a : ℕ, 1 ≤ a' → a' < a → Nat.gcd a a' = 1 →
       · rw [hcf]
         simpa using hK
 
+/-- **Heilbronn's correspondence, injectivity.**  A normalised expansion is
+recovered from its pair of continuants.
+
+Normalisation is `2 ≤ c₀`: without it `[1, c]` and `[c+1]` have the same pair,
+which is the familiar ambiguity of continued fractions. -/
+theorem cf_K : ∀ l : List ℕ, l ≠ [] → (∀ c ∈ l, 1 ≤ c) → (∀ x ∈ l.head?, 2 ≤ x) →
+    cf (K l) (K l.dropLast) = l := by
+  intro l
+  induction l using List.reverseRecOn with
+  | nil => intro h; exact absurd rfl h
+  | append_singleton m c ih =>
+    intro _ hpos hhead
+    rcases m with _ | ⟨d, ds⟩
+    · -- `l = [c]`, normalised means `2 ≤ c`
+      have hc2 : 2 ≤ c := hhead c (by simp)
+      simp only [List.nil_append]
+      rw [K_singleton, show ([c] : List ℕ).dropLast = [] from by simp, K_nil,
+        cf_of_pos (by norm_num), Nat.mod_one, cf_zero, Nat.div_one]
+      simp
+    · set m := d :: ds with hm
+      have hmne : m ≠ [] := by simp [hm]
+      have hmpos : ∀ x ∈ m, 1 ≤ x := fun x hx => hpos x (List.mem_append.2 (Or.inl hx))
+      have hhead_d : 2 ≤ d := by
+        apply hhead d
+        rw [hm]
+        simp
+      have hmhead : ∀ x ∈ m.head?, 2 ≤ x := by
+        intro x hx
+        rw [hm] at hx
+        simp at hx
+        omega
+      have hsingle : m.length = 1 → 2 ≤ K m := by
+        intro h1
+        obtain ⟨e, he⟩ := List.length_eq_one_iff.1 h1
+        rw [he, K_singleton]
+        exact hmhead e (by rw [he]; simp)
+      have hlt : K m.dropLast < K m := K_dropLast_lt' hmne hmpos hsingle
+      have hKmpos : K m ≠ 0 := by
+        have := K_pos m hmpos
+        omega
+      have hdl : (m ++ [c]).dropLast = m := by simp
+      rw [K_concat m hmne c, hdl,
+        show c * K m + K m.dropLast = K m.dropLast + K m * c from by ring,
+        cf_of_pos hKmpos, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hlt,
+        Nat.add_mul_div_left _ _ (by omega : 0 < K m), Nat.div_eq_of_lt hlt,
+        Nat.zero_add, ih hmne hmpos hmhead]
+
+/-- The expansion produced by `cf` is normalised: nonempty, with positive
+entries and first entry at least `2`. -/
+theorem cf_spec : ∀ a' a : ℕ, 1 ≤ a' → a' < a → Nat.gcd a a' = 1 →
+    cf a a' ≠ [] ∧ (∀ x ∈ cf a a', 1 ≤ x) ∧ (∀ x ∈ (cf a a').head?, 2 ≤ x) := by
+  intro a'
+  induction a' using Nat.strong_induction_on with
+  | _ a' ih =>
+    intro a ha'1 hlt hgcd
+    rcases Nat.lt_or_ge a' 2 with h2 | h2
+    · have ha'eq : a' = 1 := by omega
+      subst ha'eq
+      have h1 : cf a 1 = [a] := by
+        rw [cf_of_pos (by norm_num), Nat.mod_one, cf_zero, Nat.div_one]
+        simp
+      rw [h1]
+      refine ⟨by simp, ?_, ?_⟩ <;> intro x hx <;> simp at hx <;> omega
+    · have ha'ne : a' ≠ 0 := by omega
+      have hrlt : a % a' < a' := Nat.mod_lt _ (by omega)
+      have hr1 : 1 ≤ a % a' := by
+        rcases Nat.eq_zero_or_pos (a % a') with h0 | h0
+        · exfalso
+          have hg : Nat.gcd a a' = a' := Nat.gcd_eq_right (Nat.dvd_of_mod_eq_zero h0)
+          omega
+        · exact h0
+      have hgcd' : Nat.gcd a' (a % a') = 1 := by
+        rw [← hgcd, Nat.gcd_comm a a', Nat.gcd_rec a' a]
+        exact Nat.gcd_comm _ _
+      obtain ⟨hne, hpos, hhd⟩ := ih (a % a') hrlt a' hr1 hrlt hgcd'
+      have hq1 : 1 ≤ a / a' := (Nat.one_le_div_iff (by omega)).2 (by omega)
+      rw [cf_of_pos ha'ne]
+      refine ⟨by simp, ?_, ?_⟩
+      · intro x hx
+        rcases List.mem_append.1 hx with h | h
+        · exact hpos x h
+        · simp at h; omega
+      · intro x hx
+        rcases hcf : cf a' (a % a') with _ | ⟨y, ys⟩
+        · exact absurd hcf hne
+        · rw [hcf] at hx hhd
+          simp at hx ⊢
+          exact hhd x (by simp [hx])
+
+/-- **Heilbronn's bijection.**
+
+The map `l ↦ (K l, K l.dropLast)` is a bijection from normalised expansions
+(nonempty, positive entries, first entry at least `2`) onto the coprime pairs
+`a > a' ≥ 1`.  The first component is injectivity, the second surjectivity
+together with the fact that the inverse lands among normalised expansions.
+
+Combined with `heilbronn_forward`, this is the correspondence underlying
+equation (eq. heilbron) of Blomer--Bux. -/
+theorem heilbronn_bijection :
+    (∀ l : List ℕ, l ≠ [] → (∀ c ∈ l, 1 ≤ c) → (∀ x ∈ l.head?, 2 ≤ x) →
+        cf (K l) (K l.dropLast) = l)
+      ∧ (∀ a a' : ℕ, 1 ≤ a' → a' < a → Nat.gcd a a' = 1 →
+        (cf a a' ≠ [] ∧ (∀ c ∈ cf a a', 1 ≤ c) ∧ (∀ x ∈ (cf a a').head?, 2 ≤ x))
+          ∧ K (cf a a') = a ∧ K (cf a a').dropLast = a') :=
+  ⟨cf_K, fun a a' h1 h2 h3 => ⟨cf_spec a' a h1 h2 h3, K_cf a' a h1 h2 h3⟩⟩
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
@@ -305,5 +411,7 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
 #guard K (cf 30 7).dropLast = 7
 -- `(30, 13)` is the reversed expansion, since `K [4,3] = 13`.
 #guard cf 30 13 = [4, 3, 2]
+#guard cf (K [2, 3, 4]) (K [2, 3, 4].dropLast) = [2, 3, 4]
+#guard cf (K [5, 1, 7, 2]) (K [5, 1, 7, 2].dropLast) = [5, 1, 7, 2]
 
 end BlockCycleRotation
