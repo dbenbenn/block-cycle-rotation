@@ -126,7 +126,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | `d`-sum: errors `≤ d(n)·n^{3/2}` | Lemma 17 | `error_per_divisor_le`, `sum_divisors_le` | ✅ proved |
 | **Lemma 17, at a single divisor** | Lemma 17 | `lemma17_local` | ✅ **proved** |
 | **Lemma 17** | Lemma 17 | `lemma17` | ✅ **proved** (errors as `∑_d E d`) |
-| Instantiating `E` to get `O(n^{3/2+ε})` | Lemma 17 | — | 🚧 remaining |
+| **Lemma 17, error instantiated** | Lemma 17 | `lemma17_final`, `Eterm` | ✅ **proved** |
+| Bounding `∑_d Eterm` by `O(n^{3/2+ε})` | Lemma 17 | — | 🚧 remaining |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |

@@ -548,4 +548,58 @@ theorem lemma17 {n : ℕ} (hn : 0 < n) (E : ℕ → ℝ)
             - ((n / d : ℕ) : ℝ) ^ 2 * cConst| := Finset.abs_sum_le_sum_abs _ _
     _ ≤ ∑ d ∈ n.divisors, E d := Finset.sum_le_sum hE
 
+/-! ## Instantiating the error
+
+When `2d ≤ m` the cut-off `N = √(m/(2d))` is positive and `lemma17_local`
+applies.  Otherwise `m < 2d ≤ 6d`, and the bulk set is empty — `a > a' ≥ 1`
+forces `a ≥ 2` and `a + a' ≥ 3`, so `d·a·(a+a') ≥ 6d > m` — leaving the error
+`m²·C`. -/
+
+/-- **The bulk set is empty when `m` is small relative to `d`.** -/
+theorem bulk_empty_of_small {m d : ℕ} (h : m < 6 * d) :
+    (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m) = ∅ := by
+  rw [Finset.filter_eq_empty_iff]
+  rintro ⟨a, a'⟩ hp
+  obtain ⟨-, ha1, ha2, -⟩ := mem_coprimePairs.1 hp
+  have ha2' : 2 ≤ a := by omega
+  have haa : 3 ≤ a + a' := by omega
+  intro hcon
+  have hcon' : d * a * (a + a') ≤ m := hcon
+  have hge : 6 * d ≤ d * a * (a + a') := by
+    calc 6 * d = d * 2 * 3 := by ring
+      _ ≤ d * a * (a + a') := Nat.mul_le_mul (Nat.mul_le_mul_left d ha2') haa
+  omega
+
+/-- **The per-divisor error of Lemma 17.** -/
+noncomputable def Eterm (n d : ℕ) : ℝ :=
+  if 2 * d ≤ n / d then
+    ((Nat.sqrt ((n / d - 1) / d) : ℝ) + 1) * ((d : ℝ) * ((n / d : ℕ) : ℝ))
+      + ((n / d : ℕ) : ℝ) ^ 2 * (3 / (2 * ((Nat.sqrt ((n / d) / (2 * d)) : ℕ) : ℝ)))
+  else ((n / d : ℕ) : ℝ) ^ 2 * cConst
+
+/-- **The per-divisor error bound holds.** -/
+theorem lemma17_E {n : ℕ} (hn : 0 < n) (d : ℕ) (hd : d ∈ n.divisors) :
+    |(∑ p ∈ (coprimePairs (n / d)).filter (fun p => d * p.1 * (p.1 + p.2) ≤ n / d),
+          ((d : ℝ) * ((n / d : ℕ) : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ))
+            + ((n / d : ℕ) : ℝ) ^ 2 * cTerm p))
+        - ((n / d : ℕ) : ℝ) ^ 2 * cConst| ≤ Eterm n d := by
+  obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
+  have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+  have hm : 0 < n / d := Nat.div_pos (Nat.le_of_dvd hn hdn) hd0
+  unfold Eterm
+  by_cases hcase : 2 * d ≤ n / d
+  · rw [if_pos hcase]
+    have hN : 0 < Nat.sqrt ((n / d) / (2 * d)) := by
+      refine Nat.sqrt_pos.2 ?_
+      exact (Nat.one_le_div_iff (by omega)).2 hcase
+    exact lemma17_local hm hd0 hN (fun a a' ha h1 h2 => bulk_of_le_sqrt h1 h2 ha hd0)
+  · rw [if_neg hcase, bulk_empty_of_small (by omega), Finset.sum_empty, zero_sub, abs_neg,
+      abs_of_nonneg (mul_nonneg (by positivity) cConst_nonneg)]
+
+/-- **Lemma 17, with the error instantiated.** -/
+theorem lemma17_final {n : ℕ} (hn : 0 < n) :
+    |G1 n - cConst * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2|
+      ≤ ∑ d ∈ n.divisors, Eterm n d :=
+  lemma17 hn (Eterm n) (fun d hd => lemma17_E hn d hd)
+
 end BlockCycleRotation
