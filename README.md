@@ -75,7 +75,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Heilbronn identity, coprime form | §4 (display before eq. heilbron) | `heilbron_coprime` | ✅ proved |
 | Remainder sum scales | §4 | `remSum_mul` | ✅ proved |
 | Quadruples symmetric, `∑a = ∑b` | §4 | `sum_fst_eq_sum_snd` | ✅ proved |
-| **Equation (eq. heilbron)** | §4 | — | 🚧 aggregation over `gcd` remaining |
+| Shifts classified by `gcd(n,k)` | §4 | `sum_allShifts_eq` | ✅ proved |
+| Quadruples classified by `gcd(b,b')` | §4 | `sum_snd_quadruplesAll` | ✅ proved |
+| **Equation (eq. heilbron)** | §4 | `heilbron` | ✅ **proved** |
 | Triple sum: inner sum over `b'` | §4 | `inner_sum_sub_main_le` | ✅ proved |
 | Triple sum: `(a,a')` and `d ∣ n` layers | §4 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
@@ -186,8 +188,8 @@ lake build
 **Formalised as stated.** §2 (the algorithm), Lemma 12, equation (12),
 Theorem A's worst case, equation (RemainderSum), Observation 15, Heilbronn's
 correspondence, and the coprime form of the Heilbronn identity follow the
-paper's statements and proof structure.  Equation (eq. heilbron) itself is the
-aggregate of that identity over `d = gcd(n,k)`, and is not yet proved.
+paper's statements and proof structure.  Equation (eq. heilbron) itself, the
+aggregate of that identity over the gcd, is `heilbron`.
 
 **Deviations, all documented in the sources.** The worst-case bound needed a
 strengthening — `remSum n k + gcd n k ≤ 2k + n mod k` — because the paper's

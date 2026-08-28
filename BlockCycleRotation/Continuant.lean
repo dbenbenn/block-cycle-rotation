@@ -927,6 +927,216 @@ theorem heilbron_coprime (n : ℕ) :
     ∑ k ∈ shifts n, remSum n k = (shifts n).card + ∑ q ∈ quadruples n, q.1 := by
   rw [sum_remSum_eq, sum_split_eq_sum_quadruples]
 
+/-! ## Aggregating over the gcd
+
+Equation (eq. heilbron) drops both coprimality restrictions.  Recovering it from
+the coprime form means classifying each shift `k` by `g = gcd(n,k)`, writing
+`k = g·k'` with `k'` coprime to `n/g`.  The following reindexing does that once
+and for all, for an arbitrary summand. -/
+
+/-- All shifts the algorithm recurses on, coprime or not. -/
+def allShifts (n : ℕ) : Finset ℕ :=
+  (Finset.range (n + 1)).filter (fun k => 1 ≤ k ∧ 2 * k ≤ n)
+
+theorem mem_allShifts {n k : ℕ} : k ∈ allShifts n ↔ k ≤ n ∧ 1 ≤ k ∧ 2 * k ≤ n := by
+  simp [allShifts]
+
+/-- **Classifying shifts by their gcd with `n`.**  Every shift is `g·k'` for a
+unique divisor `g` of `n` and a shift `k'` of `n/g` coprime to it. -/
+theorem sum_allShifts_eq {n : ℕ} (hn : 0 < n) (F : ℕ → ℕ → ℕ) :
+    ∑ k ∈ allShifts n, F (Nat.gcd n k) (k / Nat.gcd n k)
+      = ∑ g ∈ n.divisors, ∑ k' ∈ shifts (n / g), F g k' := by
+  rw [Finset.sum_sigma']
+  refine Finset.sum_bij'
+    (i := fun k _ => (⟨Nat.gcd n k, k / Nat.gcd n k⟩ : (_ : ℕ) × ℕ))
+    (j := fun p _ => p.1 * p.2) ?_ ?_ ?_ ?_ ?_
+  · -- forward map lands correctly
+    intro k hk
+    obtain ⟨hkn, hk1, hk2⟩ := mem_allShifts.1 hk
+    have hg : 0 < Nat.gcd n k := Nat.gcd_pos_of_pos_left _ hn
+    have hgn : Nat.gcd n k ∣ n := Nat.gcd_dvd_left _ _
+    have hgk : Nat.gcd n k ∣ k := Nat.gcd_dvd_right _ _
+    simp only [Finset.mem_sigma, Nat.mem_divisors]
+    refine ⟨⟨hgn, hn.ne'⟩, mem_shifts.2 ⟨?_, ?_, ?_, ?_⟩⟩
+    · exact Nat.div_le_div_right hkn
+    · exact Nat.one_le_div_iff hg |>.2 (Nat.le_of_dvd (by omega) hgk)
+    · calc 2 * (k / Nat.gcd n k) = 2 * k / Nat.gcd n k := (Nat.mul_div_assoc 2 hgk).symm
+        _ ≤ n / Nat.gcd n k := Nat.div_le_div_right hk2
+    · exact Nat.coprime_div_gcd_div_gcd hg
+  · -- inverse map lands correctly
+    rintro ⟨g, k'⟩ hp
+    simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
+    obtain ⟨⟨hgn, -⟩, hk'⟩ := hp
+    obtain ⟨-, hk'1, hk'2, -⟩ := mem_shifts.1 hk'
+    have hg : 0 < g := Nat.pos_of_dvd_of_pos hgn hn
+    have hmul : g * (n / g) = n := Nat.mul_div_cancel' hgn
+    rw [mem_allShifts]
+    refine ⟨?_, ?_, ?_⟩
+    · nlinarith [hmul, hk'2]
+    · exact Nat.mul_pos hg hk'1
+    · nlinarith [hmul, hk'2]
+  · -- left inverse
+    intro k hk
+    obtain ⟨-, hk1, -⟩ := mem_allShifts.1 hk
+    exact Nat.mul_div_cancel' (Nat.gcd_dvd_right n k)
+  · -- right inverse
+    rintro ⟨g, k'⟩ hp
+    simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
+    obtain ⟨⟨hgn, -⟩, hk'⟩ := hp
+    obtain ⟨-, -, -, hcop⟩ := mem_shifts.1 hk'
+    have hg : 0 < g := Nat.pos_of_dvd_of_pos hgn hn
+    have hmul : g * (n / g) = n := Nat.mul_div_cancel' hgn
+    have hgcd : Nat.gcd n (g * k') = g := by
+      conv_lhs => rw [← hmul]
+      rw [Nat.gcd_mul_left, hcop, mul_one]
+    simp only [hgcd]
+    congr 1
+    rw [Nat.mul_div_cancel_left _ hg]
+  · intro k _
+    rfl
+
+/-- The remainder sums, aggregated over the gcd. -/
+theorem sum_remSum_allShifts {n : ℕ} (hn : 0 < n) :
+    ∑ k ∈ allShifts n, remSum n k
+      = ∑ g ∈ n.divisors, g * ∑ k' ∈ shifts (n / g), remSum (n / g) k' := by
+  rw [show (∑ g ∈ n.divisors, g * ∑ k' ∈ shifts (n / g), remSum (n / g) k')
+      = ∑ g ∈ n.divisors, ∑ k' ∈ shifts (n / g), g * remSum (n / g) k' from
+    Finset.sum_congr rfl fun g _ => Finset.mul_sum _ _ _]
+  rw [← sum_allShifts_eq hn (fun g k' => g * remSum (n / g) k')]
+  refine Finset.sum_congr rfl fun k hk => ?_
+  have h1 : Nat.gcd n k * (n / Nat.gcd n k) = n := Nat.mul_div_cancel' (Nat.gcd_dvd_left n k)
+  have h2 : Nat.gcd n k * (k / Nat.gcd n k) = k := Nat.mul_div_cancel' (Nat.gcd_dvd_right n k)
+  have hm := remSum_mul (k / Nat.gcd n k) (n / Nat.gcd n k) (Nat.gcd n k)
+  rw [h1, h2] at hm
+  exact hm
+
+/-- The gcds, aggregated over the gcd. -/
+theorem sum_gcd_allShifts {n : ℕ} (hn : 0 < n) :
+    ∑ k ∈ allShifts n, Nat.gcd n k = ∑ g ∈ n.divisors, g * (shifts (n / g)).card := by
+  rw [sum_allShifts_eq hn (fun g _ => g)]
+  refine Finset.sum_congr rfl fun g _ => ?_
+  rw [Finset.sum_const, smul_eq_mul, mul_comm]
+
+/-- **Equation (eq. heilbron), aggregated form.**
+
+Summing the Euclidean remainder sums over *all* shifts the algorithm recurses
+on — not only those coprime to `n` — equals the sum of `gcd(n,k)` over the same
+range plus a divisor-weighted sum over Heilbronn's quadruples.
+
+This is the coprime form summed over `g = gcd(n,k)`.  The paper writes the
+second term as a single sum over quadruples constrained only by
+`gcd(a,a') = 1`; that regrouping is `sum_quadruplesAll` below. -/
+theorem heilbron_aggregated {n : ℕ} (hn : 0 < n) :
+    ∑ k ∈ allShifts n, remSum n k
+      = (∑ k ∈ allShifts n, Nat.gcd n k)
+        + ∑ g ∈ n.divisors, g * ∑ q ∈ quadruples (n / g), q.1 := by
+  rw [sum_remSum_allShifts hn, sum_gcd_allShifts hn, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun g _ => ?_
+  rw [heilbron_coprime (n / g), Nat.mul_add]
+
+/-! ## The quadruples of (eq. heilbron)
+
+The paper's right-hand side sums `b` over quadruples constrained only by
+`gcd(a,a') = 1`.  Classifying those by `e = gcd(b,b')` regroups them into the
+divisor-weighted sum over fully coprime quadruples. -/
+
+/-- The quadruples of (eq. heilbron): only `gcd(a,a') = 1` is imposed. -/
+def quadruplesAll (n : ℕ) : Finset (ℕ × ℕ × ℕ × ℕ) :=
+  ((Finset.range (n + 1)) ×ˢ (Finset.range (n + 1)) ×ˢ (Finset.range (n + 1))
+      ×ˢ (Finset.range (n + 1))).filter
+    (fun q => 1 ≤ q.2.2.1 ∧ q.2.2.1 < q.1 ∧ 1 ≤ q.2.2.2 ∧ q.2.2.2 < q.2.1
+      ∧ Nat.gcd q.1 q.2.2.1 = 1 ∧ n = q.1 * q.2.1 + q.2.2.1 * q.2.2.2)
+
+theorem mem_quadruplesAll {n a b a' b' : ℕ} :
+    (a, b, a', b') ∈ quadruplesAll n ↔
+      (a ≤ n ∧ b ≤ n ∧ a' ≤ n ∧ b' ≤ n) ∧ 1 ≤ a' ∧ a' < a ∧ 1 ≤ b' ∧ b' < b
+        ∧ Nat.gcd a a' = 1 ∧ n = a * b + a' * b' := by
+  simp [quadruplesAll, Finset.mem_filter, Finset.mem_product, and_assoc]
+
+/-- **Classifying the quadruples by `gcd(b,b')`.** -/
+theorem sum_snd_quadruplesAll {n : ℕ} (hn : 0 < n) :
+    ∑ q ∈ quadruplesAll n, q.2.1
+      = ∑ e ∈ n.divisors, e * ∑ p ∈ quadruples (n / e), p.2.1 := by
+  rw [show (∑ e ∈ n.divisors, e * ∑ p ∈ quadruples (n / e), p.2.1)
+      = ∑ e ∈ n.divisors, ∑ p ∈ quadruples (n / e), e * p.2.1 from
+    Finset.sum_congr rfl fun e _ => Finset.mul_sum _ _ _, Finset.sum_sigma']
+  refine Finset.sum_bij'
+    (i := fun q _ => (⟨Nat.gcd q.2.1 q.2.2.2,
+        (q.1, q.2.1 / Nat.gcd q.2.1 q.2.2.2, q.2.2.1,
+          q.2.2.2 / Nat.gcd q.2.1 q.2.2.2)⟩ : (_ : ℕ) × (ℕ × ℕ × ℕ × ℕ)))
+    (j := fun p _ => (p.2.1, p.1 * p.2.2.1, p.2.2.2.1, p.1 * p.2.2.2.2))
+    ?_ ?_ ?_ ?_ ?_
+  · -- forward
+    rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨⟨-, -, -, -⟩, ha1, ha2, hb1, hb2, hga, hsum⟩ := mem_quadruplesAll.1 hq
+    have he : 0 < Nat.gcd b b' := Nat.gcd_pos_of_pos_left _ (by omega)
+    have heb : Nat.gcd b b' ∣ b := Nat.gcd_dvd_left _ _
+    have heb' : Nat.gcd b b' ∣ b' := Nat.gcd_dvd_right _ _
+    have hen : Nat.gcd b b' ∣ n := by
+      rw [hsum]
+      exact Dvd.dvd.add (Dvd.dvd.mul_left heb a) (Dvd.dvd.mul_left heb' a')
+    have hne : n / Nat.gcd b b' = a * (b / Nat.gcd b b') + a' * (b' / Nat.gcd b b') := by
+      rw [Nat.div_eq_iff_eq_mul_left he hen, hsum, Nat.add_mul, Nat.mul_assoc,
+        Nat.mul_assoc, Nat.div_mul_cancel heb, Nat.div_mul_cancel heb']
+    simp only [Finset.mem_sigma, Nat.mem_divisors]
+    refine ⟨⟨hen, hn.ne'⟩, mem_quadruples.2 ⟨?_, ha1, ha2, ?_, ?_, hga, ?_, hne⟩⟩
+    · refine quadruple_le ha1 ha2 ?_ ?_ hne
+      · exact (Nat.one_le_div_iff he).2 (Nat.le_of_dvd (by omega) heb')
+      · exact Nat.div_lt_div_of_lt_of_dvd heb hb2
+    · exact (Nat.one_le_div_iff he).2 (Nat.le_of_dvd (by omega) heb')
+    · exact Nat.div_lt_div_of_lt_of_dvd heb hb2
+    · exact Nat.coprime_div_gcd_div_gcd he
+  · -- backward
+    rintro ⟨e, a, b1, a', b1'⟩ hp
+    simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
+    obtain ⟨⟨hen, -⟩, hq⟩ := hp
+    obtain ⟨-, ha1, ha2, hb1, hb2, hga, -, hsum⟩ := mem_quadruples.1 hq
+    have he : 0 < e := Nat.pos_of_dvd_of_pos hen hn
+    have hmul : e * (n / e) = n := Nat.mul_div_cancel' hen
+    have hsum' : n = a * (e * b1) + a' * (e * b1') := by
+      rw [← hmul, hsum]; ring
+    rw [mem_quadruplesAll]
+    have hp1 : 1 ≤ e * b1' := Nat.mul_pos he hb1
+    have hp2 : e * b1' < e * b1 := by nlinarith
+    exact ⟨quadruple_le ha1 ha2 hp1 hp2 hsum', ha1, ha2, hp1, hp2, hga, hsum'⟩
+  · -- left inverse
+    rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨-, -, -, hb1, hb2, -, -⟩ := mem_quadruplesAll.1 hq
+    have he : 0 < Nat.gcd b b' := Nat.gcd_pos_of_pos_left _ (by omega)
+    have e1 : Nat.gcd b b' * (b / Nat.gcd b b') = b :=
+      Nat.mul_div_cancel' (Nat.gcd_dvd_left _ _)
+    have e2 : Nat.gcd b b' * (b' / Nat.gcd b b') = b' :=
+      Nat.mul_div_cancel' (Nat.gcd_dvd_right _ _)
+    rw [e1, e2]
+  · -- right inverse
+    rintro ⟨e, a, b1, a', b1'⟩ hp
+    simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
+    obtain ⟨⟨hen, -⟩, hq⟩ := hp
+    obtain ⟨-, -, -, hb1, hb2, -, hcop, -⟩ := mem_quadruples.1 hq
+    have he : 0 < e := Nat.pos_of_dvd_of_pos hen hn
+    have hgcd : Nat.gcd (e * b1) (e * b1') = e := by
+      rw [Nat.gcd_mul_left, hcop, mul_one]
+    simp only [hgcd, Nat.mul_div_cancel_left _ he]
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨-, -, -, hb1, hb2, -, -⟩ := mem_quadruplesAll.1 hq
+    have he : 0 < Nat.gcd b b' := Nat.gcd_pos_of_pos_left _ (by omega)
+    exact (Nat.mul_div_cancel' (Nat.gcd_dvd_left b b')).symm
+
+/-- **Equation (eq. heilbron).**
+
+Summing the Euclidean remainder sums over all shifts the block cycle algorithm
+recurses on equals the sum of `gcd(n,k)` over the same range, plus the sum of
+`b` over the quadruples constrained only by `gcd(a,a') = 1`.
+
+This is the paper's labelled identity, the passage from move counts to lattice
+point counts. -/
+theorem heilbron {n : ℕ} (hn : 0 < n) :
+    ∑ k ∈ allShifts n, remSum n k
+      = (∑ k ∈ allShifts n, Nat.gcd n k) + ∑ q ∈ quadruplesAll n, q.2.1 := by
+  rw [heilbron_aggregated hn, sum_snd_quadruplesAll hn]
+  congr 1
+  exact Finset.sum_congr rfl fun e _ => by rw [sum_fst_eq_sum_snd]
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
@@ -970,6 +1180,15 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
   (∑ k ∈ shifts n, remSum n k) = (shifts n).card + ∑ q ∈ quadruples n, q.1)
 -- The remainder sum scales: Euclid on `(dn, dk)` is `d` times Euclid on `(n,k)`.
 #guard remSum 42 18 = 3 * remSum 14 6
+-- Equation (eq. heilbron) itself, checked numerically.
+#guard (List.range 22).all (fun m => let n := m + 1
+  (∑ k ∈ allShifts n, remSum n k)
+    = (∑ k ∈ allShifts n, Nat.gcd n k) + ∑ q ∈ quadruplesAll n, q.2.1)
+-- The aggregated Heilbronn identity, checked numerically.
+#guard (List.range 25).all (fun m => let n := m + 1
+  (∑ k ∈ allShifts n, remSum n k)
+    = (∑ k ∈ allShifts n, Nat.gcd n k)
+      + ∑ g ∈ n.divisors, g * ∑ q ∈ quadruples (n / g), q.1)
 #guard (List.range 12).all (fun n => (List.range 12).all (fun k =>
   (List.range 5).all (fun d => remSum (d * n) (d * k) = d * remSum n k)))
 
