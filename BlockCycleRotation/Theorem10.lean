@@ -26,6 +26,8 @@ irrationality.
 import BlockCycleRotation.Theorem13
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+import Mathlib.Analysis.BoxIntegral.UnitPartition
+import Mathlib.Analysis.BoxIntegral.Integrability
 
 namespace BlockCycleRotation
 
@@ -638,124 +640,203 @@ theorem fBar_aestronglyMeasurable : AEStronglyMeasurable fBar volume := by
     Measure.restrict_eq_self_of_ae_mem ae_continuousAt_fBar
   rwa [h2] at h1
 
-/-! ## Riemann sums
+/-! ## Theorem 8, second half: Riemann integrability
 
-Mathlib's `∫` is the Lebesgue integral, so "the Riemann sums converge to the
-integral" needs an argument.  The step functions `x ↦ f(⌊nx⌋/n)` converge to `f`
-at every point of continuity, hence a.e., and are bounded by `4`, so dominated
-convergence applies. -/
+The paper's Theorem 8 concludes that `f` is *Riemann integrable*.  In Mathlib
+that is `BoxIntegral.HasIntegral I IntegrationParams.Riemann`, i.e. convergence
+of the tagged-partition sums over all subdivisions whose mesh is below a
+constant threshold.  The Riemann–Lebesgue criterion
+`BoxIntegral.AEContinuous.hasBoxIntegral` supplies it from boundedness and a.e.
+continuity, and identifies the value with the Lebesgue integral. -/
 
-/-- The step function is measurable: it factors through `⌊n·x⌋ : ℤ`. -/
-theorem measurable_step (n : ℕ) :
-    Measurable (fun x : ℝ => fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ))) := by
-  have h1 : Measurable (fun x : ℝ => ⌊(n : ℝ) * x⌋) :=
-    Int.measurable_floor.comp (measurable_const_mul _)
-  exact (measurable_of_countable (fun j : ℤ => fBar ((j : ℝ) / (n : ℝ)))).comp h1
+open BoxIntegral
 
-/-- On `[k/n, (k+1)/n)` the step function is the constant `f(k/n)`. -/
-theorem step_eq_const {n k : ℕ} (hn : 0 < n) {x : ℝ}
-    (h1 : (k : ℝ) / (n : ℝ) ≤ x) (h2 : x < ((k : ℝ) + 1) / (n : ℝ)) :
-    ((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ) = (k : ℝ) / (n : ℝ) := by
+/-- The unit box `[0,1]`, as a box in `Fin 1 → ℝ`. -/
+def unitBox : Box (Fin 1) := ⟨fun _ => 0, fun _ => 1, fun _ => by norm_num⟩
+
+/-- `f` as a function of one coordinate. -/
+noncomputable def FBar (v : Fin 1 → ℝ) : ℝ := fBar (v 0)
+
+theorem coe_unitBox : (unitBox : Set (Fin 1 → ℝ)) = (fun v : Fin 1 → ℝ => v 0) ⁻¹' Set.Ioc 0 1 := by
+  ext v
+  rw [Box.mem_coe, Box.mem_def]
+  constructor
+  · intro h; exact h 0
+  · intro h i
+    have : i = 0 := Subsingleton.elim _ _
+    rw [this]; exact h
+
+theorem measurePreserving_eval :
+    MeasureTheory.MeasurePreserving (fun v : Fin 1 → ℝ => v 0) volume volume := by
+  have h := MeasureTheory.volume_preserving_funUnique (Fin 1) ℝ
+  exact h
+
+theorem ae_continuousAt_FBar :
+    ∀ᵐ v : Fin 1 → ℝ, ContinuousAt FBar v := by
+  have hmeas : MeasurableSet {x : ℝ | ¬ Irrational x} := by
+    have : {x : ℝ | ¬ Irrational x} = Set.range ((↑) : ℚ → ℝ) := by
+      ext x
+      simp only [Set.mem_setOf_eq, Irrational, not_not]
+    rw [this]
+    exact (Set.countable_range _).measurableSet
+  have hnull : volume {x : ℝ | ¬ Irrational x} = 0 := by
+    have := ae_irrational
+    rw [Filter.eventually_iff, mem_ae_iff] at this
+    exact this
+  have hpre : volume ((fun v : Fin 1 → ℝ => v 0) ⁻¹' {x : ℝ | ¬ Irrational x}) = 0 := by
+    rw [measurePreserving_eval.measure_preimage hmeas.nullMeasurableSet]
+    exact hnull
+  rw [Filter.eventually_iff, mem_ae_iff]
+  refine measure_mono_null (fun v hv => ?_) hpre
+  simp only [Set.mem_compl_iff, Set.mem_setOf_eq] at hv ⊢
+  intro hirr
+  exact hv (ContinuousAt.comp (g := fBar) (f := fun w : Fin 1 → ℝ => w 0)
+    (continuousAt_fBar hirr) (continuous_apply (0 : Fin 1)).continuousAt)
+
+set_option maxHeartbeats 1000000 in
+-- The Riemann-Lebesgue criterion carries a large elaboration burden.
+/-- **Theorem 8, second half.**  `f` is Riemann integrable on `[0,1]`, with
+Riemann integral equal to its Lebesgue integral. -/
+theorem fBar_hasBoxIntegral :
+    HasIntegral unitBox IntegrationParams.Riemann FBar
+      (BoxAdditiveMap.toSMul (MeasureTheory.Measure.toBoxAdditive volume))
+      (∫ v in (unitBox : Set (Fin 1 → ℝ)), FBar v) := by
+  refine AEContinuous.hasBoxIntegral (volume : MeasureTheory.Measure (Fin 1 → ℝ))
+    ⟨4, fun x _ => ?_⟩ ae_continuousAt_FBar IntegrationParams.Riemann
+  rw [Real.norm_eq_abs]
+  exact abs_fBar_le _
+
+/-- The Riemann integral of `f` over the unit box is `∫₀¹ f`. -/
+theorem integral_unitBox :
+    ∫ v in (unitBox : Set (Fin 1 → ℝ)), FBar v = ∫ x in (0 : ℝ)..1, fBar x := by
+  rw [coe_unitBox, intervalIntegral.integral_of_le (by norm_num : (0 : ℝ) ≤ 1)]
+  exact measurePreserving_eval.setIntegral_preimage_emb
+    (MeasurableEquiv.funUnique (Fin 1) ℝ).measurableEmbedding fBar _
+
+/-! ### Instantiating Riemann integrability at the evenly spaced subdivision -/
+
+/-- The boxes of the uniform subdivision of `[0,1]` are indexed by `0,…,n-1`. -/
+theorem admissibleIndex_unitBox (n : ℕ) [NeZero n] :
+    unitPartition.admissibleIndex n unitBox
+      = (Finset.range n).image (fun j : ℕ => (fun _ : Fin 1 => (j : ℤ))) := by
+  have hn : 0 < n := Nat.pos_of_neZero n
   have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
-  rw [div_le_iff₀ hnR] at h1
-  rw [lt_div_iff₀ hnR] at h2
-  have hfl : ⌊(n : ℝ) * x⌋ = (k : ℤ) := by
-    rw [Int.floor_eq_iff]
+  ext ν
+  rw [unitPartition.mem_admissibleIndex_iff, Box.le_iff_bounds, Finset.mem_image]
+  simp only [unitPartition.box_lower, unitPartition.box_upper, unitBox, Pi.le_def]
+  constructor
+  · rintro ⟨hl, hu⟩
+    have h1 : (0 : ℝ) ≤ (ν 0 : ℝ) / (n : ℝ) := hl 0
+    have h2 : ((ν 0 : ℝ) + 1) / (n : ℝ) ≤ 1 := hu 0
+    rw [le_div_iff₀ hnR, zero_mul] at h1
+    rw [div_le_one hnR] at h2
+    have h1' : (0 : ℤ) ≤ ν 0 := by exact_mod_cast h1
+    have h2' : ν 0 + 1 ≤ (n : ℤ) := by exact_mod_cast h2
+    refine ⟨(ν 0).toNat, Finset.mem_range.2 (by omega), ?_⟩
+    funext i
+    have : i = 0 := Subsingleton.elim _ _
+    rw [this]
+    omega
+  · rintro ⟨j, hj, rfl⟩
+    rw [Finset.mem_range] at hj
+    have hjR : (j : ℝ) + 1 ≤ (n : ℝ) := by exact_mod_cast hj
     constructor
-    · push_cast; linarith
-    · push_cast; linarith
-  rw [hfl]
-  push_cast
+    · intro i; positivity
+    · intro i
+      rw [div_le_one hnR]
+      push_cast
+      linarith
+
+/-- The integral sum of the uniform subdivision is the evenly spaced Riemann sum. -/
+theorem integralSum_prepartition (n : ℕ) [NeZero n] :
+    integralSum FBar (BoxAdditiveMap.toSMul (MeasureTheory.Measure.toBoxAdditive volume))
+        (unitPartition.prepartition n unitBox)
+      = (∑ j ∈ Finset.range n, fBar (((j : ℝ) + 1) / (n : ℝ))) / (n : ℝ) := by
+  classical
+  have hn : 0 < n := Nat.pos_of_neZero n
+  have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  rw [integralSum]
+  have hboxes : (unitPartition.prepartition n unitBox).boxes
+      = Finset.image (fun ν => unitPartition.box n ν) (unitPartition.admissibleIndex n unitBox) :=
+    rfl
+  rw [hboxes, Finset.sum_image (fun x _ y _ h => unitPartition.box_injective n h),
+    admissibleIndex_unitBox n,
+    Finset.sum_image (fun x hx y hy h => by
+      have := congrFun h (0 : Fin 1)
+      simpa using this)]
+  rw [Finset.sum_div]
+  refine Finset.sum_congr rfl fun j hj => ?_
+  have hν : (fun _ : Fin 1 => (j : ℤ)) ∈ unitPartition.admissibleIndex n unitBox := by
+    rw [admissibleIndex_unitBox n]
+    exact Finset.mem_image.2 ⟨j, hj, rfl⟩
+  rw [unitPartition.prepartition_tag n hν]
+  have hvol : (MeasureTheory.Measure.toBoxAdditive volume)
+      (unitPartition.box n (fun _ : Fin 1 => (j : ℤ))) = 1 / (n : ℝ) := by
+    rw [MeasureTheory.Measure.toBoxAdditive_apply, MeasureTheory.measureReal_def,
+      unitPartition.volume_box]
+    simp
+  rw [BoxAdditiveMap.toSMul_apply, hvol]
+  have htag : FBar (unitPartition.tag n (fun _ : Fin 1 => (j : ℤ)))
+      = fBar (((j : ℝ) + 1) / (n : ℝ)) := by
+    rw [FBar, unitPartition.tag_apply]
+    push_cast
+    ring_nf
+  rw [htag, smul_eq_mul]
   ring
 
-/-- The integral of the step function is the Riemann sum. -/
-theorem integral_step_eq {n : ℕ} (hn : 0 < n) :
-    ∫ x in (0 : ℝ)..1, fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ))
-      = (∑ k ∈ Finset.range n, fBar ((k : ℝ) / (n : ℝ))) / (n : ℝ) := by
+theorem unitBox_hasIntegralVertices : hasIntegralVertices unitBox :=
+  ⟨fun _ => 0, fun _ => 1, fun _ => by simp [unitBox], fun _ => by simp [unitBox]⟩
+
+theorem fBar_zero : fBar 0 = 1 := by
+  rw [fBar_eq_fCost (le_refl 0) (by norm_num), fCost]
+  norm_num [psi_zero]
+
+theorem fBar_one : fBar 1 = 1 := by
+  rw [fBar_eq_fCost (by norm_num) (le_refl 1), fCost]
+  norm_num [psi_zero]
+
+theorem sum_shift_eq {n : ℕ} (hn : 0 < n) :
+    ∑ j ∈ Finset.range n, fBar (((j : ℝ) + 1) / (n : ℝ))
+      = ∑ k ∈ Finset.range n, fBar ((k : ℝ) / (n : ℝ)) := by
   have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
-  have hFmeas : Measurable (fun x : ℝ => fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ))) :=
-    measurable_step n
-  have hcast : ∀ k : ℕ, ((k + 1 : ℕ) : ℝ) = (k : ℝ) + 1 := by intro k; push_cast; ring
-  have hlt : ∀ k : ℕ, (k : ℝ) / (n : ℝ) < ((k + 1 : ℕ) : ℝ) / (n : ℝ) := by
-    intro k
-    rw [div_lt_div_iff₀ hnR hnR, hcast]
-    nlinarith
-  have hae : ∀ k : ℕ, ∀ᵐ x, x ∈ Set.uIoc ((k : ℝ) / (n : ℝ)) (((k + 1 : ℕ) : ℝ) / (n : ℝ)) →
-      fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ)) = fBar ((k : ℝ) / (n : ℝ)) := by
-    intro k
-    filter_upwards [MeasureTheory.compl_mem_ae_iff.2
-      (measure_singleton (((k + 1 : ℕ) : ℝ) / (n : ℝ)))] with x hx hmem
-    rw [Set.uIoc_of_le (le_of_lt (hlt k)), Set.mem_Ioc] at hmem
-    refine congrArg fBar (step_eq_const hn (le_of_lt hmem.1) ?_)
-    have h2 : x < ((k + 1 : ℕ) : ℝ) / (n : ℝ) := lt_of_le_of_ne hmem.2 hx
-    rwa [hcast k] at h2
-  have hint : ∀ k : ℕ, IntervalIntegrable
-      (fun x : ℝ => fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ))) volume
-      ((k : ℝ) / (n : ℝ)) (((k + 1 : ℕ) : ℝ) / (n : ℝ)) := by
-    intro k
-    constructor <;>
-      exact Measure.integrableOn_of_bounded (measure_Ioc_lt_top).ne
-        hFmeas.aestronglyMeasurable
-        (Filter.Eventually.of_forall fun x => by rw [Real.norm_eq_abs]; exact abs_fBar_le _)
-  have hpiece : ∀ k : ℕ,
-      (∫ x in ((k : ℝ) / (n : ℝ))..(((k + 1 : ℕ) : ℝ) / (n : ℝ)),
-        fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ)))
-        = fBar ((k : ℝ) / (n : ℝ)) / (n : ℝ) := by
-    intro k
-    rw [intervalIntegral.integral_congr_ae (hae k), intervalIntegral.integral_const]
-    have hdiff : ((k + 1 : ℕ) : ℝ) / (n : ℝ) - (k : ℝ) / (n : ℝ) = 1 / (n : ℝ) := by
-      rw [hcast k]; field_simp; ring
-    rw [hdiff]
-    ring
-  have hsum := intervalIntegral.sum_integral_adjacent_intervals
-    (a := fun k : ℕ => (k : ℝ) / (n : ℝ))
-    (f := fun x : ℝ => fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ))) (n := n) (fun k _ => hint k)
-  have ha0 : ((0 : ℕ) : ℝ) / (n : ℝ) = 0 := by simp
-  have han : ((n : ℕ) : ℝ) / (n : ℝ) = 1 := by field_simp
-  rw [ha0, han] at hsum
-  rw [← hsum, Finset.sum_congr rfl (fun k _ => hpiece k), ← Finset.sum_div]
+  have hcast : ∀ j : ℕ, (((j + 1 : ℕ) : ℝ)) / (n : ℝ) = ((j : ℝ) + 1) / (n : ℝ) := by
+    intro j; push_cast; ring
+  have h := Finset.sum_range_succ' (fun k : ℕ => fBar ((k : ℝ) / (n : ℝ))) n
+  have h2 := Finset.sum_range_succ (fun k : ℕ => fBar ((k : ℝ) / (n : ℝ))) n
+  have h0 : fBar (((0 : ℕ) : ℝ) / (n : ℝ)) = 1 := by norm_num [fBar_zero]
+  have h1 : fBar (((n : ℕ) : ℝ) / (n : ℝ)) = 1 := by
+    rw [div_self (ne_of_gt hnR)]; exact fBar_one
+  rw [h0] at h
+  rw [h1] at h2
+  have hleft : ∑ j ∈ Finset.range n, fBar ((((j + 1 : ℕ)) : ℝ) / (n : ℝ))
+      = ∑ j ∈ Finset.range n, fBar (((j : ℝ) + 1) / (n : ℝ)) :=
+    Finset.sum_congr rfl fun j _ => by rw [hcast j]
+  rw [← hleft]
+  linarith [h, h2]
 
-theorem tendsto_floor_div (x : ℝ) :
-    Tendsto (fun n : ℕ => ((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ)) atTop (𝓝 x) := by
-  have h1 : Tendsto (fun n : ℕ => x - 1 / (n : ℝ)) atTop (𝓝 x) := by
-    have h : Tendsto (fun n : ℕ => 1 / (n : ℝ)) atTop (𝓝 0) := tendsto_one_div_atTop_nhds_zero_nat
-    have h2 : Tendsto (fun n : ℕ => x - 1 / (n : ℝ)) atTop (𝓝 (x - 0)) :=
-      Filter.Tendsto.sub tendsto_const_nhds h
-    rwa [sub_zero] at h2
-  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' h1 tendsto_const_nhds ?_ ?_
-  · filter_upwards [eventually_gt_atTop 0] with n hn
-    have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
-    rw [le_div_iff₀ hnR]
-    have h := Int.sub_one_lt_floor ((n : ℝ) * x)
-    have hexp : (x - 1 / (n : ℝ)) * (n : ℝ) = x * (n : ℝ) - 1 := by field_simp
-    rw [hexp]
-    nlinarith [h]
-  · filter_upwards [eventually_gt_atTop 0] with n hn
-    have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
-    rw [div_le_iff₀ hnR]
-    have h := Int.floor_le ((n : ℝ) * x)
-    linarith
-
-theorem tendsto_integral_step :
-    Tendsto (fun n : ℕ => ∫ x in (0 : ℝ)..1, fBar (((⌊(n : ℝ) * x⌋ : ℤ) : ℝ) / (n : ℝ)))
-      atTop (𝓝 (∫ x in (0 : ℝ)..1, fBar x)) := by
-  simp only [intervalIntegral.integral_of_le (by norm_num : (0 : ℝ) ≤ 1)]
-  refine MeasureTheory.tendsto_integral_of_dominated_convergence (fun _ => (4 : ℝ))
-    (fun n => (measurable_step n).aestronglyMeasurable) ?_ ?_ ?_
-  · exact MeasureTheory.integrableOn_const (hs := measure_Ioc_lt_top.ne)
-  · intro n
-    exact Filter.Eventually.of_forall fun x => by
-      rw [Real.norm_eq_abs]; exact abs_fBar_le _
-  · filter_upwards [MeasureTheory.ae_restrict_of_ae ae_irrational] with x hx
-    exact (continuousAt_fBar hx).tendsto.comp (tendsto_floor_div x)
-
-/-- **The Riemann sums of `f` converge to its integral.** -/
+/-- **The evenly spaced Riemann sums converge**, by instantiating Riemann
+integrability at the uniform subdivision. -/
 theorem tendsto_riemann_fBar :
     Tendsto (fun n : ℕ => (∑ k ∈ Finset.range n, fBar ((k : ℝ) / (n : ℝ))) / (n : ℝ))
       atTop (𝓝 (∫ x in (0 : ℝ)..1, fBar x)) := by
-  refine tendsto_integral_step.congr' ?_
-  filter_upwards [eventually_gt_atTop 0] with n hn
-  exact integral_step_eq hn
+  rw [← integral_unitBox]
+  refine Metric.tendsto_atTop.mpr fun ε hε => ?_
+  obtain ⟨r, hr₁, hr₂⟩ := (hasIntegral_iff.mp fBar_hasBoxIntegral) (ε / 2) (half_pos hε)
+  refine ⟨max 1 ⌈((r 0 0 : ℝ))⁻¹⌉₊, fun n hn => ?_⟩
+  have hn1 : 1 ≤ n := le_trans (le_max_left _ _) hn
+  have hn0 : 0 < n := hn1
+  have : NeZero n := ⟨by omega⟩
+  rw [← sum_shift_eq hn0, ← integralSum_prepartition n]
+  refine lt_of_le_of_lt (hr₂ 0 _ ⟨?_, fun _ => ?_, fun h => ?_, fun h => ?_⟩
+    (unitPartition.prepartition_isPartition _ unitBox_hasIntegralVertices))
+    (half_lt_self_iff.mpr hε)
+  · rw [show r 0 = fun _ => r 0 0 from funext_iff.mpr (hr₁ 0 rfl)]
+    apply unitPartition.prepartition_isSubordinate n unitBox
+    rw [one_div, inv_le_comm₀ (by exact_mod_cast hn0) (r 0 0).prop]
+    exact le_trans (Nat.le_ceil _) (Nat.cast_le.mpr (le_trans (le_max_right _ _) hn))
+  · exact unitPartition.prepartition_isHenstock n unitBox
+  · simp only [IntegrationParams.Riemann, Bool.false_eq_true] at h
+  · simp only [IntegrationParams.Riemann, Bool.false_eq_true] at h
 
 /-! ## The `gcd` term is negligible -/
 
