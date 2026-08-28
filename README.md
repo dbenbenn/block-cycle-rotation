@@ -56,7 +56,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Euler's continuant identity | (gives `n = ab + a'b'`) | `K_append` | ✅ proved |
 | Continuants are palindromic | Heilbronn 1969 | `K_reverse` | ✅ proved |
 | Consecutive continuants coprime | (gives `gcd(a,a') = 1`) | `K_coprime` | ✅ proved |
-| Heilbronn's bijection itself | §4, Heilbronn 1969 | — | 🚧 the remaining gate |
+| Size conditions `a > a' ≥ 1` | Heilbronn 1969 | `K_dropLast_lt'`, `K_tail_lt'` | ✅ proved |
+| Heilbronn, forward direction | Heilbronn 1969 | `heilbronn_forward` | ✅ proved |
+| Heilbronn, injectivity + surjectivity | §4, Heilbronn 1969 | — | 🚧 the remaining gate |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | `exists_card_divisors_le` | ✅ proved |
 | Möbius/character decomposition | §4 | — | 🚧 planned |
 | Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |

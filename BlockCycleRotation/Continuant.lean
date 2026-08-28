@@ -102,6 +102,125 @@ theorem K_coprime : ∀ l : List ℕ, Nat.gcd (K l) (K l.dropLast) = 1 := by
         Nat.gcd_add_mul_left_left, Nat.gcd_comm]
       exact ih
 
+/-! ## Size conditions
+
+Heilbronn's quadruples satisfy `a > a' ≥ 1` and `b > b' ≥ 1`, where `a'` is the
+continuant of the truncated prefix and `b'` that of the truncated suffix.  These
+follow from positivity together with the two truncation inequalities below. -/
+
+/-- Continuants of lists of positive entries are positive. -/
+theorem K_pos : ∀ l : List ℕ, (∀ c ∈ l, 1 ≤ c) → 1 ≤ K l := by
+  intro l
+  induction l using K.induct with
+  | case1 => intro _; simp
+  | case2 c => intro h; exact h c (by simp)
+  | case3 c₀ c₁ cs ih1 ih2 =>
+    intro h
+    have h1 := ih1 (fun x hx => h x (List.mem_cons_of_mem c₀ hx))
+    have h2 := ih2 (fun x hx => h x (List.mem_cons_of_mem c₀ (List.mem_cons_of_mem c₁ hx)))
+    have hc0 : 1 ≤ c₀ := h c₀ (by simp)
+    rw [K_cons_cons]
+    nlinarith
+
+/-- Dropping the last entry strictly decreases the continuant, provided at least
+two entries remain in play. -/
+theorem K_dropLast_lt : ∀ l : List ℕ, 2 ≤ l.length → (∀ c ∈ l, 1 ≤ c) →
+    K l.dropLast < K l := by
+  intro l
+  induction l using List.reverseRecOn with
+  | nil => intro h _; simp at h
+  | append_singleton m c _ =>
+    intro hlen hpos
+    have hm : m ≠ [] := by
+      rintro rfl
+      simp at hlen
+    have hdl : (m ++ [c]).dropLast = m := by simp
+    have hsub : ∀ x ∈ m, x ∈ m ++ [c] := fun x hx => List.mem_append.2 (Or.inl hx)
+    have hc1 : 1 ≤ c := hpos c (by simp)
+    have hmp : 1 ≤ K m := K_pos m (fun x hx => hpos x (hsub x hx))
+    have hmd : 1 ≤ K m.dropLast :=
+      K_pos _ (fun x hx => hpos x (hsub x (List.dropLast_subset m hx)))
+    rw [K_concat m hm c, hdl]
+    nlinarith
+
+/-- Dropping the first entry strictly decreases the continuant.  This is the
+mirror image of `K_dropLast_lt`, via `K_reverse`. -/
+theorem K_tail_lt (l : List ℕ) (hlen : 2 ≤ l.length) (hpos : ∀ c ∈ l, 1 ≤ c) :
+    K l.tail < K l := by
+  have hrev : (l.reverse).dropLast = (l.tail).reverse := by
+    rcases l with _ | ⟨a, t⟩
+    · simp
+    · simp
+  have hlen' : 2 ≤ l.reverse.length := by simpa using hlen
+  have hpos' : ∀ c ∈ l.reverse, 1 ≤ c := by
+    intro c hc
+    exact hpos c (List.mem_reverse.1 hc)
+  have h := K_dropLast_lt l.reverse hlen' hpos'
+  rwa [hrev, K_reverse, K_reverse] at h
+
+/-- The prefix continuants are coprime, mirrored to suffixes. -/
+theorem K_coprime_tail (l : List ℕ) : Nat.gcd (K l) (K l.tail) = 1 := by
+  have hrev : (l.reverse).dropLast = (l.tail).reverse := by
+    rcases l with _ | ⟨a, t⟩ <;> simp
+  have h := K_coprime l.reverse
+  rwa [hrev, K_reverse, K_reverse] at h
+
+/-- `K l.dropLast < K l`, allowing a one-element list provided its entry is at
+least `2` — which is Heilbronn's condition `2 ≤ c₀`. -/
+theorem K_dropLast_lt' {l : List ℕ} (hne : l ≠ []) (hpos : ∀ c ∈ l, 1 ≤ c)
+    (hsingle : l.length = 1 → 2 ≤ K l) : K l.dropLast < K l := by
+  rcases Nat.lt_or_ge l.length 2 with hlen | hlen
+  · have h1 : l.length = 1 := by
+      have hne' : l.length ≠ 0 := by simpa using hne
+      omega
+    obtain ⟨c, hc⟩ := List.length_eq_one_iff.1 h1
+    subst hc
+    have h2 := hsingle h1
+    simp at h2 ⊢
+    omega
+  · exact K_dropLast_lt l hlen hpos
+
+/-- `K l.tail < K l`, allowing a one-element list provided its entry is at least
+`2` — Heilbronn's condition `2 ≤ c_l`. -/
+theorem K_tail_lt' {l : List ℕ} (hne : l ≠ []) (hpos : ∀ c ∈ l, 1 ≤ c)
+    (hsingle : l.length = 1 → 2 ≤ K l) : K l.tail < K l := by
+  rcases Nat.lt_or_ge l.length 2 with hlen | hlen
+  · have h1 : l.length = 1 := by
+      have hne' : l.length ≠ 0 := by simpa using hne
+      omega
+    obtain ⟨c, hc⟩ := List.length_eq_one_iff.1 h1
+    subst hc
+    have h2 := hsingle h1
+    simp at h2 ⊢
+    omega
+  · exact K_tail_lt l hlen hpos
+
+/-! ## Heilbronn's correspondence, forward direction
+
+Splitting an expansion `n = K (l₁ ++ l₂)` at an interior point produces the
+quadruple
+
+  `a = K l₁`,  `b = K l₂`,  `a' = K l₁.dropLast`,  `b' = K l₂.tail`,
+
+and the theorem below is that this quadruple satisfies every condition defining
+the target set of Heilbronn's bijection. -/
+
+/-- **Heilbronn's correspondence, forward direction.**  The quadruple obtained by
+splitting an expansion satisfies `n = a·b + a'·b'`, the size conditions
+`a > a' ≥ 1` and `b > b' ≥ 1`, and the coprimality conditions. -/
+theorem heilbronn_forward {l₁ l₂ : List ℕ} (h₁ : l₁ ≠ []) (h₂ : l₂ ≠ [])
+    (hpos₁ : ∀ c ∈ l₁, 1 ≤ c) (hpos₂ : ∀ c ∈ l₂, 1 ≤ c)
+    (hfirst : l₁.length = 1 → 2 ≤ K l₁) (hlast : l₂.length = 1 → 2 ≤ K l₂) :
+    K (l₁ ++ l₂) = K l₁ * K l₂ + K l₁.dropLast * K l₂.tail ∧
+      K l₁.dropLast < K l₁ ∧ 1 ≤ K l₁.dropLast ∧
+      K l₂.tail < K l₂ ∧ 1 ≤ K l₂.tail ∧
+      Nat.gcd (K l₁) (K l₁.dropLast) = 1 ∧
+      Nat.gcd (K l₂) (K l₂.tail) = 1 := by
+  refine ⟨K_append l₁ l₂ h₁ h₂, K_dropLast_lt' h₁ hpos₁ hfirst, ?_,
+    K_tail_lt' h₂ hpos₂ hlast, ?_, K_coprime l₁, K_coprime_tail l₂⟩
+  · exact K_pos _ (fun x hx => hpos₁ x (List.dropLast_subset l₁ hx))
+  · exact K_pos _ (fun x hx => hpos₂ x (List.tail_subset l₂ hx))
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
@@ -113,5 +232,7 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
 #guard (K ([2, 3] ++ [4, 5]) = K [2, 3] * K [4, 5] + K [2] * K [5])
 #guard K [2, 3, 4].reverse = K [2, 3, 4]
 #guard Nat.gcd (K [2, 3, 4]) (K [2, 3, 4].dropLast) = 1
+#guard K [2, 3, 4].dropLast < K [2, 3, 4]
+#guard K [2, 3, 4].tail < K [2, 3, 4]
 
 end BlockCycleRotation
