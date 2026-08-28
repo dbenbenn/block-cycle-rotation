@@ -347,4 +347,218 @@ theorem relation {n k : ℕ} (hn : 0 < n) (hk : k ≤ n) :
   rw [mul_add, mul_one, hpsi]
   linarith [hcostR]
 
+/-! ## Theorem 8: continuity at the irrationals
+
+`In` and `Out` are continuous wherever `1/x` is not an integer, and `In`
+preserves irrationality.  So each partial sum of the series is continuous at an
+irrational point, and the uniform convergence transfers continuity to `ψ`. -/
+
+theorem irrational_ne_zero {x : ℝ} (h : Irrational x) : x ≠ 0 := by
+  intro hx
+  exact Irrational.ne_int h 0 (by simp [hx])
+
+theorem irrational_one_div {x : ℝ} (h : Irrational x) : Irrational (1 / x) := by
+  rw [one_div]
+  exact Irrational.inv h
+
+theorem irrational_fract {x : ℝ} (h : Irrational x) : Irrational (Int.fract x) := by
+  rw [Int.fract]
+  exact Irrational.sub_intCast h _
+
+/-- **`In` preserves irrationality.** -/
+theorem irrational_Inn {x : ℝ} (h : Irrational x) : Irrational (Inn x) := by
+  have hx0 : x ≠ 0 := irrational_ne_zero h
+  have hg : Irrational (Int.fract (1 / x)) := irrational_fract (irrational_one_div h)
+  have hgnn : (0 : ℝ) ≤ Int.fract (1 / x) := Int.fract_nonneg _
+  have hglt : Int.fract (1 / x) < 1 := Int.fract_lt_one _
+  unfold Inn
+  rw [if_neg hx0]
+  rintro ⟨q, hq⟩
+  -- `g/(1+g) = q` forces `g = q/(1-q)`, which is rational
+  have hden : (0 : ℝ) < 1 + Int.fract (1 / x) := by linarith
+  have hqlt : (q : ℝ) < 1 := by
+    rw [hq, div_lt_one hden]
+    linarith
+  have hq1 : (1 : ℝ) - (q : ℝ) ≠ 0 := by linarith
+  refine hg ⟨q / (1 - q), ?_⟩
+  have hmul : (q : ℝ) * (1 + Int.fract (1 / x)) = Int.fract (1 / x) := by
+    rw [hq]
+    field_simp
+  push_cast
+  rw [div_eq_iff (by exact_mod_cast hq1)]
+  linarith [hmul]
+
+theorem iterate_Inn_irrational {x : ℝ} (h : Irrational x) (m : ℕ) :
+    Irrational (Inn^[m] x) := by
+  induction m with
+  | zero => exact h
+  | succ j ih => rw [Function.iterate_succ_apply']; exact irrational_Inn ih
+
+theorem continuousAt_Inn {x : ℝ} (h : Irrational x) : ContinuousAt Inn x := by
+  have hx0 : x ≠ 0 := irrational_ne_zero h
+  have hne : 1 / x ≠ ((⌊1 / x⌋ : ℤ) : ℝ) := Irrational.ne_int (irrational_one_div h) _
+  have hcinv : ContinuousAt (fun y : ℝ => 1 / y) x := continuousAt_const.div continuousAt_id hx0
+  have hcomp : ContinuousAt (fun y : ℝ => Int.fract (1 / y)) x :=
+    (continuousAt_fract hne).comp hcinv
+  have hgnn : (0 : ℝ) ≤ Int.fract (1 / x) := Int.fract_nonneg _
+  have hden : (1 : ℝ) + Int.fract (1 / x) ≠ 0 := by positivity
+  have hform : ContinuousAt
+      (fun y : ℝ => Int.fract (1 / y) / (1 + Int.fract (1 / y))) x :=
+    hcomp.div (continuousAt_const.add hcomp) hden
+  refine hform.congr ?_
+  filter_upwards [isOpen_ne.mem_nhds hx0] with y hy
+  unfold Inn
+  rw [if_neg hy]
+
+theorem continuousAt_Outt {x : ℝ} (h : Irrational x) : ContinuousAt Outt x := by
+  have hx0 : x ≠ 0 := irrational_ne_zero h
+  have hne : 1 / x ≠ ((⌊1 / x⌋ : ℤ) : ℝ) := Irrational.ne_int (irrational_one_div h) _
+  have hcinv : ContinuousAt (fun y : ℝ => 1 / y) x := continuousAt_const.div continuousAt_id hx0
+  have hcomp : ContinuousAt (fun y : ℝ => Int.fract (1 / y)) x :=
+    (continuousAt_fract hne).comp hcinv
+  have hform : ContinuousAt (fun y : ℝ => y * (1 + Int.fract (1 / y))) x :=
+    continuousAt_id.mul (continuousAt_const.add hcomp)
+  refine hform.congr ?_
+  filter_upwards [isOpen_ne.mem_nhds hx0] with y hy
+  unfold Outt
+  rw [if_neg hy]
+
+theorem continuousAt_iterate_Inn {x : ℝ} (h : Irrational x) (m : ℕ) :
+    ContinuousAt (fun y => Inn^[m] y) x := by
+  induction m with
+  | zero => exact continuousAt_id
+  | succ j ih =>
+    have hj : ContinuousAt Inn (Inn^[j] x) := continuousAt_Inn (iterate_Inn_irrational h j)
+    have heq : (fun y => Inn^[j + 1] y) = (fun y => Inn (Inn^[j] y)) := by
+      funext y
+      rw [Function.iterate_succ_apply']
+    rw [heq]
+    exact hj.comp ih
+
+theorem continuousAt_prod_Outt {x : ℝ} (h : Irrational x) (i : ℕ) :
+    ContinuousAt (fun y => ∏ m ∈ Finset.range i, Outt (Inn^[m] y)) x := by
+  induction i with
+  | zero => simpa using continuousAt_const
+  | succ j ih =>
+    have heq : (fun y => ∏ m ∈ Finset.range (j + 1), Outt (Inn^[m] y))
+        = (fun y => (∏ m ∈ Finset.range j, Outt (Inn^[m] y)) * Outt (Inn^[j] y)) := by
+      funext y
+      rw [Finset.prod_range_succ]
+    rw [heq]
+    exact ih.mul ((continuousAt_Outt (iterate_Inn_irrational h j)).comp
+      (continuousAt_iterate_Inn h j))
+
+theorem continuousAt_psiTerm {x : ℝ} (h : Irrational x) (i : ℕ) :
+    ContinuousAt (fun y => psiTerm y i) x := by
+  unfold psiTerm
+  exact (continuousAt_const.mul (continuousAt_prod_Outt h i)).mul (continuousAt_iterate_Inn h i)
+
+/-- The partial sums of the series for `ψ`. -/
+noncomputable def psiPartial (N : ℕ) (x : ℝ) : ℝ := ∑ i ∈ Finset.range N, psiTerm x i
+
+theorem continuousAt_psiPartial {x : ℝ} (h : Irrational x) (N : ℕ) :
+    ContinuousAt (psiPartial N) x := by
+  induction N with
+  | zero =>
+    have h0 : psiPartial 0 = fun _ : ℝ => (0 : ℝ) := by
+      funext y
+      simp [psiPartial]
+    rw [h0]
+    exact continuousAt_const
+  | succ j ih =>
+    have heq : psiPartial (j + 1) = fun y => psiPartial j y + psiTerm y j := by
+      funext y
+      rw [psiPartial, psiPartial, Finset.sum_range_succ]
+    rw [heq]
+    exact ih.add (continuousAt_psiTerm h j)
+
+/-- The tail bound: `|ψ - ψ_N| ≤ 3·(2/3)^N` uniformly on `[0,1/2]`. -/
+theorem psi_sub_partial_le {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) (N : ℕ) :
+    |psi x - psiPartial N x| ≤ 3 * (2 / 3 : ℝ) ^ N := by
+  have hs := psi_summable hx0 hx
+  have hsplit : psiPartial N x + ∑' i, psiTerm x (i + N) = psi x := by
+    rw [psiPartial, psi]
+    exact hs.sum_add_tsum_nat_add N
+  have hshift : Summable (fun i => psiTerm x (i + N)) := (summable_nat_add_iff N).2 hs
+  have hgeo : Summable (fun i : ℕ => (2 / 3 : ℝ) ^ (i + N)) := by
+    exact (summable_nat_add_iff N).2 (summable_geometric_of_lt_one (by norm_num) (by norm_num))
+  have hnn : 0 ≤ ∑' i, psiTerm x (i + N) :=
+    tsum_nonneg fun i => psiTerm_nonneg hx0 hx _
+  have hub : ∑' i, psiTerm x (i + N) ≤ ∑' i : ℕ, (2 / 3 : ℝ) ^ (i + N) :=
+    hshift.tsum_le_tsum (fun i => psiTerm_le hx0 hx _) hgeo
+  have hval : ∑' i : ℕ, (2 / 3 : ℝ) ^ (i + N) = 3 * (2 / 3 : ℝ) ^ N := by
+    have : ∀ i : ℕ, (2 / 3 : ℝ) ^ (i + N) = (2 / 3 : ℝ) ^ N * (2 / 3 : ℝ) ^ i := by
+      intro i; rw [pow_add]; ring
+    rw [tsum_congr this, tsum_mul_left,
+      tsum_geometric_of_lt_one (by norm_num) (by norm_num)]
+    norm_num
+    ring
+  rw [abs_le]
+  constructor <;> linarith [hval ▸ hub, hnn, hsplit]
+
+/-- **Theorem 8.**  `ψ` is continuous at every irrational point of `(0,1/2)`. -/
+theorem continuousAt_psi {x : ℝ} (hirr : Irrational x) (hx0 : 0 < x) (hx : x < 1 / 2) :
+    ContinuousAt psi x := by
+  rw [Metric.continuousAt_iff]
+  intro ε hε
+  obtain ⟨N, hN⟩ := exists_pow_lt_of_lt_one (by positivity : (0 : ℝ) < ε / 9)
+    (by norm_num : (2 / 3 : ℝ) < 1)
+  have hcont := continuousAt_psiPartial hirr N
+  rw [Metric.continuousAt_iff] at hcont
+  obtain ⟨δ₁, hδ₁, hδ₁'⟩ := hcont (ε / 3) (by linarith)
+  refine ⟨min δ₁ (min x (1 / 2 - x)), by positivity, fun y hy => ?_⟩
+  have hy1 : dist y x < δ₁ := lt_of_lt_of_le hy (min_le_left _ _)
+  have hy2 : dist y x < x := lt_of_lt_of_le hy (le_trans (min_le_right _ _) (min_le_left _ _))
+  have hy3 : dist y x < 1 / 2 - x :=
+    lt_of_lt_of_le hy (le_trans (min_le_right _ _) (min_le_right _ _))
+  rw [Real.dist_eq, abs_lt] at hy2 hy3
+  have hyy0 : (0 : ℝ) ≤ y := by linarith [hy2.1]
+  have hyy : y ≤ 1 / 2 := by linarith [hy3.2]
+  have hA := psi_sub_partial_le hyy0 hyy N
+  have hB := psi_sub_partial_le (le_of_lt hx0) (le_of_lt hx) N
+  have hC : dist (psiPartial N y) (psiPartial N x) < ε / 3 := hδ₁' hy1
+  rw [Real.dist_eq] at hC ⊢
+  have hsplit : psi y - psi x = (psi y - psiPartial N y)
+      + (psiPartial N y - psiPartial N x) + (psiPartial N x - psi x) := by ring
+  have habs : |psi y - psi x| ≤ |psi y - psiPartial N y| + |psiPartial N y - psiPartial N x|
+      + |psiPartial N x - psi x| := by
+    have t1 := abs_add_le (psi y - psiPartial N y) (psiPartial N y - psiPartial N x)
+    have t2 := abs_add_le ((psi y - psiPartial N y) + (psiPartial N y - psiPartial N x))
+      (psiPartial N x - psi x)
+    rw [hsplit]
+    linarith
+  have hB' : |psiPartial N x - psi x| = |psi x - psiPartial N x| := abs_sub_comm _ _
+  have hpow : (3 : ℝ) * (2 / 3 : ℝ) ^ N < ε / 3 := by linarith
+  linarith [habs, hA, hB, hC, hB', hpow]
+
+/-- **`f` is continuous at every irrational point of `(0,1)`.** -/
+theorem continuousAt_fCost {x : ℝ} (hirr : Irrational x) (hx0 : 0 < x) (hx : x < 1) :
+    ContinuousAt fCost x := by
+  have hne : x ≠ 1 / 2 := by
+    intro h
+    exact Irrational.ne_rat hirr (1 / 2) (by rw [h]; norm_num)
+  have hmin : min x (1 - x) < 1 / 2 := by
+    rcases lt_or_gt_of_ne hne with h | h
+    · rw [min_eq_left (by linarith)]; exact h
+    · rw [min_eq_right (by linarith)]; linarith
+  have hmin0 : 0 < min x (1 - x) := by
+    rw [lt_min_iff]
+    exact ⟨hx0, by linarith⟩
+  have hmirr : Irrational (min x (1 - x)) := by
+    rcases le_total x (1 - x) with h | h
+    · rw [min_eq_left h]; exact hirr
+    · rw [min_eq_right h]
+      have h1 : Irrational (x - 1) := by
+        have := Irrational.sub_intCast hirr 1
+        simpa using this
+      have h2 : (1 : ℝ) - x = -(x - 1) := by ring
+      rw [h2]
+      exact Irrational.neg h1
+  have hc : ContinuousAt (fun y : ℝ => min y (1 - y)) x :=
+    continuousAt_id.min (continuousAt_const.sub continuousAt_id)
+  have hcomp : ContinuousAt (fun y : ℝ => psi (min y (1 - y))) x :=
+    ContinuousAt.comp (g := psi) (continuousAt_psi hmirr hmin0 hmin) hc
+  unfold fCost
+  exact continuousAt_const.add hcomp
+
 end BlockCycleRotation
