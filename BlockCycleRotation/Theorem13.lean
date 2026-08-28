@@ -16,6 +16,7 @@ Everything after that is aggregation.
 -/
 
 import BlockCycleRotation.Constant
+import BlockCycleRotation.Average
 
 namespace BlockCycleRotation
 
@@ -514,5 +515,234 @@ theorem R_isBigO {ε : ℝ} (hε : 0 < ε) :
   calc (C0 * (n : ℝ) ^ (ε / 2)) * (K1 * (n : ℝ) ^ (3 / 2 + ε / 2))
       = K1 * C0 * ((n : ℝ) ^ (ε / 2) * (n : ℝ) ^ (3 / 2 + ε / 2)) := by ring
     _ = K1 * C0 * (n : ℝ) ^ (3 / 2 + ε) := by rw [hpow]
+
+/-! ## The remainder sums
+
+Equation (heilbron) turns `R(n)` into `∑_{k} remSum(n,k)` at the cost of
+`∑_k gcd(n,k) ≤ n·d(n) = O(n^{1+ε})`. -/
+
+/-- **`∑_{2k ≤ n} remSum(n,k) = C·n² + O(n^{3/2+ε})`.** -/
+theorem sum_remSum_isBigO {ε : ℝ} (hε : 0 < ε) :
+    ∃ K : ℝ, 0 < K ∧ ∀ n : ℕ, 0 < n →
+      |((∑ k ∈ allShifts n, remSum n k : ℕ) : ℝ) - cConst * (n : ℝ) ^ 2|
+        ≤ K * (n : ℝ) ^ (3 / 2 + ε) := by
+  obtain ⟨K1, hK1, hR⟩ := R_isBigO hε
+  obtain ⟨C0, hC0, hCd⟩ := exists_card_divisors_le hε
+  refine ⟨K1 + C0, by positivity, fun n hn => ?_⟩
+  have hnR : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hnpos : (0 : ℝ) < (n : ℝ) := by linarith
+  have hRcast : ((Rquad n : ℤ) : ℝ) = ((∑ q ∈ quadruplesAll n, q.2.1 : ℕ) : ℝ) := by
+    unfold Rquad; push_cast; ring
+  have heil : ((∑ k ∈ allShifts n, remSum n k : ℕ) : ℝ)
+      = ((∑ k ∈ allShifts n, Nat.gcd n k : ℕ) : ℝ)
+        + ((∑ q ∈ quadruplesAll n, q.2.1 : ℕ) : ℝ) := by
+    exact_mod_cast heilbron hn
+  have hgcd : ((∑ k ∈ allShifts n, Nat.gcd n k : ℕ) : ℝ) ≤ (n : ℝ) * (n.divisors.card : ℝ) := by
+    exact_mod_cast sum_gcd_le hn
+  have hgcdnn : (0 : ℝ) ≤ ((∑ k ∈ allShifts n, Nat.gcd n k : ℕ) : ℝ) := by positivity
+  have hbound : (n : ℝ) * (n.divisors.card : ℝ) ≤ C0 * (n : ℝ) ^ (3 / 2 + ε) := by
+    have h1 : (n : ℝ) * (n.divisors.card : ℝ) ≤ (n : ℝ) * (C0 * (n : ℝ) ^ ε) :=
+      mul_le_mul_of_nonneg_left (hCd n hn.ne') (by linarith)
+    have h2 : (n : ℝ) * (C0 * (n : ℝ) ^ ε) = C0 * (n : ℝ) ^ (1 + ε) := by
+      rw [Real.rpow_add hnpos, Real.rpow_one]; ring
+    have h3 : (n : ℝ) ^ (1 + ε) ≤ (n : ℝ) ^ (3 / 2 + ε) :=
+      Real.rpow_le_rpow_of_exponent_le hnR (by linarith)
+    nlinarith [hC0]
+  have hRb := hR n hn
+  rw [heil, ← hRcast]
+  have htri := abs_add_le (((∑ k ∈ allShifts n, Nat.gcd n k : ℕ) : ℝ))
+    (((Rquad n : ℤ) : ℝ) - cConst * (n : ℝ) ^ 2)
+  rw [abs_of_nonneg hgcdnn] at htri
+  have heq : ((∑ k ∈ allShifts n, Nat.gcd n k : ℕ) : ℝ) + ((Rquad n : ℤ) : ℝ)
+        - cConst * (n : ℝ) ^ 2
+      = ((∑ k ∈ allShifts n, Nat.gcd n k : ℕ) : ℝ)
+        + (((Rquad n : ℤ) : ℝ) - cConst * (n : ℝ) ^ 2) := by ring
+  rw [heq]
+  linarith [htri, hRb, hgcd, hbound]
+
+/-! ## The symmetry `M(n,k) = M(n,n-k)`
+
+The algorithm's cost at shift `k` depends only on `min k (n-k)`, so summing
+over all `0 ≤ k < n` double-counts every shift `1 ≤ j` with `2j ≤ n`, except
+the midpoint `j = n/2` when `n` is even. -/
+
+theorem allShifts_eq_filter {n : ℕ} (hn : 0 < n) :
+    allShifts n = (Finset.Ico 1 n).filter (fun k => 2 * k ≤ n) := by
+  ext k
+  rw [mem_allShifts, Finset.mem_filter, Finset.mem_Ico]
+  omega
+
+theorem card_allShifts (n : ℕ) : (allShifts n).card = n / 2 := by
+  have h : allShifts n = Finset.Icc 1 (n / 2) := by
+    ext k
+    rw [mem_allShifts, Finset.mem_Icc]
+    omega
+  rw [h, Nat.card_Icc]
+  omega
+
+/-- **The double count.** -/
+theorem sum_min_eq {n : ℕ} (hn : 0 < n) (f : ℕ → ℕ) :
+    (∑ k ∈ Finset.Ico 1 n, f (min k (n - k))) + (if 2 ∣ n then f (n / 2) else 0)
+      = 2 * ∑ j ∈ allShifts n, f j := by
+  classical
+  rw [allShifts_eq_filter hn]
+  have hsplit : ∑ k ∈ Finset.Ico 1 n, f (min k (n - k))
+      = (∑ k ∈ (Finset.Ico 1 n).filter (fun k => 2 * k ≤ n), f (min k (n - k)))
+        + ∑ k ∈ (Finset.Ico 1 n).filter (fun k => ¬ (2 * k ≤ n)), f (min k (n - k)) :=
+    (Finset.sum_filter_add_sum_filter_not _ _ _).symm
+  have hAval : ∑ k ∈ (Finset.Ico 1 n).filter (fun k => 2 * k ≤ n), f (min k (n - k))
+      = ∑ k ∈ (Finset.Ico 1 n).filter (fun k => 2 * k ≤ n), f k := by
+    refine Finset.sum_congr rfl fun k hk => ?_
+    rw [Finset.mem_filter, Finset.mem_Ico] at hk
+    congr 1
+    omega
+  have hBval : ∑ k ∈ (Finset.Ico 1 n).filter (fun k => ¬ (2 * k ≤ n)), f (min k (n - k))
+      = ∑ j ∈ (Finset.Ico 1 n).filter (fun k => 2 * k < n), f j := by
+    refine Finset.sum_bij' (i := fun k _ => n - k) (j := fun k _ => n - k) ?_ ?_ ?_ ?_ ?_
+    · intro k hk
+      rw [Finset.mem_filter, Finset.mem_Ico] at hk ⊢
+      omega
+    · intro k hk
+      rw [Finset.mem_filter, Finset.mem_Ico] at hk ⊢
+      omega
+    · intro k hk
+      rw [Finset.mem_filter, Finset.mem_Ico] at hk
+      omega
+    · intro k hk
+      rw [Finset.mem_filter, Finset.mem_Ico] at hk
+      omega
+    · intro k hk
+      rw [Finset.mem_filter, Finset.mem_Ico] at hk
+      congr 1
+      omega
+  have hAA' : ∑ k ∈ (Finset.Ico 1 n).filter (fun k => 2 * k ≤ n), f k
+      = (∑ j ∈ (Finset.Ico 1 n).filter (fun k => 2 * k < n), f j)
+        + (if 2 ∣ n then f (n / 2) else 0) := by
+    have hs := (Finset.sum_filter_add_sum_filter_not
+      ((Finset.Ico 1 n).filter (fun k => 2 * k ≤ n)) (fun k => 2 * k < n) f).symm
+    rw [hs, Finset.filter_filter, Finset.filter_filter]
+    congr 1
+    · exact Finset.sum_congr (Finset.filter_congr fun k hk => by
+        rw [Finset.mem_Ico] at hk; omega) (fun _ _ => rfl)
+    · by_cases hev : 2 ∣ n
+      · have he : (Finset.Ico 1 n).filter (fun k => 2 * k ≤ n ∧ ¬ (2 * k < n)) = {n / 2} := by
+          ext k
+          rw [Finset.mem_filter, Finset.mem_Ico, Finset.mem_singleton]
+          omega
+        rw [he, Finset.sum_singleton, if_pos hev]
+      · have he : (Finset.Ico 1 n).filter (fun k => 2 * k ≤ n ∧ ¬ (2 * k < n)) = ∅ := by
+          ext k
+          rw [Finset.mem_filter, Finset.mem_Ico]
+          simp only [Finset.notMem_empty, iff_false]
+          omega
+        rw [he, Finset.sum_empty, if_neg hev]
+  rw [hsplit, hAval, hBval, hAA']
+  ring
+
+/-- **The total cost over all shifts.** -/
+theorem sum_algCost_eq {n : ℕ} (hn : 0 < n) :
+    (∑ k ∈ Finset.range n, algCost n k) + (if 2 ∣ n then cost n (n / 2) else 0)
+      = 2 * ∑ j ∈ allShifts n, cost n j := by
+  have h0 : algCost n 0 = 0 := by
+    unfold algCost
+    simp [cost_zero]
+  rw [Finset.range_eq_Ico, Finset.sum_eq_sum_Ico_succ_bot hn, h0, zero_add]
+  exact sum_min_eq hn (cost n)
+
+/-- **The cost over the shifts, via `cost + gcd = n + 2·remSum`.** -/
+theorem sum_cost_allShifts {n : ℕ} (hn : 0 < n) :
+    (∑ j ∈ allShifts n, cost n j) + ∑ j ∈ allShifts n, Nat.gcd n j
+      = (n / 2) * n + 2 * ∑ j ∈ allShifts n, remSum n j := by
+  rw [← Finset.sum_add_distrib]
+  have hc : ∀ j ∈ allShifts n, cost n j + Nat.gcd n j = n + 2 * remSum n j :=
+    fun j _ => cost_add_gcd j n
+  rw [Finset.sum_congr rfl hc, Finset.sum_add_distrib, Finset.sum_const, card_allShifts,
+    smul_eq_mul, Finset.mul_sum]
+
+/-! ## Theorem 13 -/
+
+/-- **Theorem 13.**  `avgCost n = D·n + O(n^{1/2+ε})` with `D = 1 + 4C ≈ 1.85`. -/
+theorem theorem13 {ε : ℝ} (hε : 0 < ε) :
+    ∃ K : ℝ, 0 < K ∧ ∀ n : ℕ, 0 < n →
+      |avgCost n - dConst * (n : ℝ)| ≤ K * (n : ℝ) ^ (1 / 2 + ε) := by
+  obtain ⟨K1, hK1, hS⟩ := sum_remSum_isBigO hε
+  obtain ⟨C0, hC0, hCd⟩ := exists_card_divisors_le hε
+  refine ⟨4 * K1 + 2 * C0 + 4, by positivity, fun n hn => ?_⟩
+  have hnR : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hnpos : (0 : ℝ) < (n : ℝ) := by linarith
+  have hpow : (1 : ℝ) ≤ (n : ℝ) ^ (1 / 2 + ε : ℝ) := Real.one_le_rpow hnR (by linarith)
+  -- the three ingredients, in `ℝ`
+  set corr : ℕ := if 2 ∣ n then cost n (n / 2) else 0 with hcorr
+  have hcorrle : corr ≤ 3 * n := by
+    rw [hcorr]
+    split_ifs with h
+    · exact cost_le_three_mul (by omega)
+    · omega
+  have hA : (∑ k ∈ Finset.range n, (algCost n k : ℝ)) + (corr : ℝ)
+      = 2 * ∑ j ∈ allShifts n, (cost n j : ℝ) := by
+    exact_mod_cast sum_algCost_eq hn
+  have hB : (∑ j ∈ allShifts n, (cost n j : ℝ)) + ((∑ j ∈ allShifts n, Nat.gcd n j : ℕ) : ℝ)
+      = ((n / 2 : ℕ) : ℝ) * (n : ℝ) + 2 * ((∑ j ∈ allShifts n, remSum n j : ℕ) : ℝ) := by
+    exact_mod_cast sum_cost_allShifts hn
+  set S : ℝ := ((∑ j ∈ allShifts n, remSum n j : ℕ) : ℝ) with hSdef
+  set G : ℝ := ((∑ j ∈ allShifts n, Nat.gcd n j : ℕ) : ℝ) with hGdef
+  have hGnn : (0 : ℝ) ≤ G := by rw [hGdef]; positivity
+  have hcorrnn : (0 : ℝ) ≤ (corr : ℝ) := by positivity
+  have hcorrR : (corr : ℝ) ≤ 3 * (n : ℝ) := by exact_mod_cast hcorrle
+  have hGle : G ≤ (n : ℝ) * (C0 * (n : ℝ) ^ ε) := by
+    have h1 : G ≤ (n : ℝ) * (n.divisors.card : ℝ) := by
+      rw [hGdef]; exact_mod_cast sum_gcd_le hn
+    have h2 : (n : ℝ) * (n.divisors.card : ℝ) ≤ (n : ℝ) * (C0 * (n : ℝ) ^ ε) :=
+      mul_le_mul_of_nonneg_left (hCd n hn.ne') (by linarith)
+    linarith
+  -- the rounding of `n/2`
+  have hhalf : |2 * ((n / 2 : ℕ) : ℝ) * (n : ℝ) - (n : ℝ) ^ 2| ≤ (n : ℝ) := by
+    have h1 : 2 * (n / 2) ≤ n := by omega
+    have h2 : n ≤ 2 * (n / 2) + 1 := by omega
+    have h1R : 2 * ((n / 2 : ℕ) : ℝ) ≤ (n : ℝ) := by exact_mod_cast h1
+    have h2R : (n : ℝ) ≤ 2 * ((n / 2 : ℕ) : ℝ) + 1 := by exact_mod_cast h2
+    rw [abs_le]
+    constructor <;> nlinarith
+  -- assemble the numerator
+  have hnum : (∑ k ∈ Finset.range n, (algCost n k : ℝ)) - dConst * (n : ℝ) ^ 2
+      = (2 * ((n / 2 : ℕ) : ℝ) * (n : ℝ) - (n : ℝ) ^ 2)
+        + 4 * (S - cConst * (n : ℝ) ^ 2) - 2 * G - (corr : ℝ) := by
+    rw [dConst]
+    nlinarith [hA, hB]
+  have hSb := hS n hn
+  have key : ∀ x y z w b1 b2 b3 b4 : ℝ,
+      |x| ≤ b1 → |y| ≤ b2 → 0 ≤ z → z ≤ b3 → 0 ≤ w → w ≤ b4 →
+      |x + y - z - w| ≤ b1 + b2 + b3 + b4 := by
+    intro x y z w b1 b2 b3 b4 h1 h2 h3 h4 h5 h6
+    have e : x + y - z - w = x + y + -z + -w := by ring
+    rw [e]
+    calc |x + y + -z + -w| ≤ |x + y + -z| + |(-w)| := abs_add_le _ _
+      _ ≤ (|x + y| + |(-z)|) + |(-w)| := by linarith [abs_add_le (x + y) (-z)]
+      _ ≤ ((|x| + |y|) + |(-z)|) + |(-w)| := by linarith [abs_add_le x y]
+      _ = |x| + |y| + z + w := by
+          rw [abs_neg, abs_neg, abs_of_nonneg h3, abs_of_nonneg h5]
+      _ ≤ b1 + b2 + b3 + b4 := by linarith
+  have hy : |4 * (S - cConst * (n : ℝ) ^ 2)| ≤ 4 * (K1 * (n : ℝ) ^ (3 / 2 + ε)) := by
+    rw [abs_mul, abs_of_nonneg (by norm_num : (0:ℝ) ≤ 4)]
+    linarith [hSb]
+  have hnumb : |(∑ k ∈ Finset.range n, (algCost n k : ℝ)) - dConst * (n : ℝ) ^ 2|
+      ≤ (n : ℝ) + 4 * (K1 * (n : ℝ) ^ (3 / 2 + ε)) + 2 * ((n : ℝ) * (C0 * (n : ℝ) ^ ε))
+        + 3 * (n : ℝ) := by
+    rw [hnum]
+    exact key _ _ _ _ _ _ _ _ hhalf hy (by linarith) (by linarith) hcorrnn hcorrR
+  -- divide by `n`
+  have havg : avgCost n - dConst * (n : ℝ)
+      = ((∑ k ∈ Finset.range n, (algCost n k : ℝ)) - dConst * (n : ℝ) ^ 2) / (n : ℝ) := by
+    rw [avgCost]
+    field_simp
+  rw [havg, abs_div, abs_of_nonneg (le_of_lt hnpos), div_le_iff₀ hnpos]
+  refine hnumb.trans ?_
+  have hr1 : (n : ℝ) ^ (3 / 2 + ε : ℝ) = (n : ℝ) ^ (1 / 2 + ε : ℝ) * (n : ℝ) := by
+    rw [show (3 / 2 + ε : ℝ) = (1 / 2 + ε) + 1 by ring, Real.rpow_add hnpos, Real.rpow_one]
+  have hr2 : (n : ℝ) ^ (ε : ℝ) ≤ (n : ℝ) ^ (1 / 2 + ε : ℝ) :=
+    Real.rpow_le_rpow_of_exponent_le hnR (by linarith)
+  rw [hr1]
+  nlinarith [mul_nonneg (mul_nonneg (sub_nonneg.2 hr2) hnpos.le) hC0.le,
+    mul_nonneg (sub_nonneg.2 hpow) hnpos.le, hK1, hnpos, hpow]
 
 end BlockCycleRotation

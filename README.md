@@ -130,9 +130,18 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Cut-off lower bound `m ≤ 16d·N²` | Lemma 17 | `cutoff_lower`, `sqrt_le_cutoff` | ✅ proved |
 | **Per-divisor error `≤ (8+2C)·n^{3/2}`** | Lemma 17 | `Eterm_le` | ✅ **proved** |
 | **Lemma 17, `O(n^{3/2+ε})` form** | Lemma 17 | `lemma17_isBigO` | ✅ **proved** |
-| Theorem 13 | Thm 13 | — | 🚧 remaining |
-| Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
-| `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
+| Cut-off on the bulk branch | Lemmas 18–19 | `gtBound_bulk_eq` | ✅ proved |
+| **Estimate at one coprime pair** | Lemmas 18–19 | `bulk_pair_estimate` | ✅ **proved** |
+| Bulk triple sum, by pairs | Lemmas 18–19 | `gtTriples_bulk_decompose` | ✅ proved |
+| **Estimate at one divisor** | Lemmas 18–19 | `divisor_estimate` | ✅ **proved** |
+| **`G₁ + G₂ + G₃`: `Q_gt = G₁ + O(…)`** | Lemmas 18–19 | `Qgt_sub_G1_le` | ✅ **proved** |
+| **`Q(n) = C·n²·∑ 1/d² + O(n^{3/2+ε})`** | Thm 13 | `Q_isBigO` | ✅ **proved** |
+| Möbius inversion of `∑_{d∣n} d²` | Thm 13 | `moebius_main` | ✅ proved |
+| **`R(n) = C·n² + O(n^{3/2+ε})`** | Thm 13 | `R_isBigO` | ✅ **proved** |
+| **`∑_{2k≤n} remSum = C·n² + O(…)`** | Thm 13 | `sum_remSum_isBigO` | ✅ **proved** |
+| Symmetry `M(n,k) = M(n,n−k)` | Thm 13 | `sum_min_eq`, `sum_algCost_eq` | ✅ proved |
+| Cost over shifts via `cost + gcd` | Thm 13 | `sum_cost_allShifts` | ✅ proved |
+| **Theorem 13, `D = 1 + 4C ≈ 1.85`** | Thm 13 | `theorem13` | ✅ **proved** |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13, §4 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` assembly | Lemmas 17–19 | — | 🚧 remaining |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | `exists_card_divisors_le` | ✅ proved |
@@ -255,11 +264,11 @@ as standard, absent from Mathlib), Bernoulli's inequality, and the correctness
 of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
-**Not attempted.** Theorem 13 itself, which combines `lemma17_isBigO` (the `G₁`
-main term) with `error_isBigO` (the `G₂ + G₃` bound) — both halves are proved,
-but they have not been assembled into the paper's statement. Also Remark 21's
-rewriting of `C` in terms of `ζ(3)`, which needs Euler's `ζ(2,1) = ζ(3)`;
-Theorem 10's limit; and the benchmarks of §5.
+**Not attempted.** Remark 21's rewriting of `C` in terms of `ζ(3)`, which needs
+Euler's `ζ(2,1) = ζ(3)`; Theorem 10's limit (`avgCost n / n → D` also follows
+from `theorem13`, but the paper's `∫₀¹ ρ` representation does not); the remark
+on averaging over all `1 ≤ k ≤ n`; and the benchmarks of §5.
 
-In short: the paper's structural results are formalised, Lemma 17 is proved in
-its stated `O(n^{3/2+ε})` form, and both halves of Theorem 13 are in hand.
+In short: Theorem 13 — the paper's main theorem — is proved, sorry-free, in the
+form `avgCost n = D·n + O(n^{1/2+ε})` with `D = 1 + 4C` and `C` the explicit
+convergent double series of eq. (const-c).
