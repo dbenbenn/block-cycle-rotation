@@ -154,11 +154,84 @@ theorem sum_snd_quadruplesQ_eq_triples {n : ℕ} (hn : 0 < n) :
     show b = (n - a' * b') / a
     rw [h, Nat.mul_div_cancel_left _ ha]
 
+/-! ## The triple sum
+
+Combining the divisor layer `Q(n) = ∑_{d ∣ n} R(n/d)` with the `b`-elimination
+applied to each `R(n/d)` gives the paper's triple sum: over divisors `d ∣ n`,
+over coprime pairs `a > a' ≥ 1`, and over `b'` in an arithmetic progression. -/
+
+/-- The triples with `gcd(a,a') = 1`. -/
+def coprimeTriples (n : ℕ) : Finset (ℕ × ℕ × ℕ) :=
+  (triples n).filter (fun t => Nat.gcd t.1 t.2.1 = 1)
+
+theorem mem_coprimeTriples {n a a' b' : ℕ} :
+    (a, a', b') ∈ coprimeTriples n ↔
+      ((a ≤ n ∧ a' ≤ n ∧ b' ≤ n) ∧ 1 ≤ a' ∧ a' < a ∧ 1 ≤ b'
+        ∧ (a + a') * b' < n ∧ a ∣ (n - a' * b')) ∧ Nat.gcd a a' = 1 := by
+  simp [coprimeTriples, Finset.mem_filter, mem_triples]
+
+/-- The `b`-elimination for the coprime quadruples. -/
+theorem sum_snd_quadruplesAll_eq {n : ℕ} (hn : 0 < n) :
+    ∑ q ∈ quadruplesAll n, q.2.1
+      = ∑ t ∈ coprimeTriples n, (n - t.2.1 * t.2.2) / t.1 := by
+  refine Finset.sum_bij'
+    (i := fun q _ => (q.1, q.2.2.1, q.2.2.2))
+    (j := fun t _ => (t.1, (n - t.2.1 * t.2.2) / t.1, t.2.1, t.2.2)) ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨⟨hab, hbb, ha'b, hb'b⟩, ha1, ha2, hb1, hb2, hgcd, hsum⟩ := mem_quadruplesAll.1 hq
+    have hdvd : a ∣ (n - a' * b') := ⟨b, by omega⟩
+    have hlt : (a + a') * b' < n := by nlinarith
+    show (a, a', b') ∈ coprimeTriples n
+    rw [mem_coprimeTriples]
+    exact ⟨⟨⟨hab, ha'b, hb'b⟩, ha1, ha2, hb1, hlt, hdvd⟩, hgcd⟩
+  · rintro ⟨a, a', b'⟩ ht
+    obtain ⟨⟨⟨han, ha'n, hb'n⟩, ha1, ha2, hb1, hlt, hdvd⟩, hgcd⟩ := mem_coprimeTriples.1 ht
+    have ha : 0 < a := by omega
+    have hab : a * ((n - a' * b') / a) = n - a' * b' := Nat.mul_div_cancel' hdvd
+    have hle : a' * b' ≤ n := by nlinarith
+    have hsum : n = a * ((n - a' * b') / a) + a' * b' := by omega
+    have hbb : b' < (n - a' * b') / a := by
+      have h1 : a * b' < a * ((n - a' * b') / a) := by rw [hab]; nlinarith
+      exact Nat.lt_of_mul_lt_mul_left h1
+    show (a, (n - a' * b') / a, a', b') ∈ quadruplesAll n
+    rw [mem_quadruplesAll]
+    exact ⟨quadruple_le ha1 ha2 hb1 hbb hsum, ha1, ha2, hb1, hbb, hgcd, hsum⟩
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨-, ha1, ha2, hb1, hb2, -, hsum⟩ := mem_quadruplesAll.1 hq
+    have ha : 0 < a := by omega
+    have h : n - a' * b' = a * b := by omega
+    show (a, (n - a' * b') / a, a', b') = (a, b, a', b')
+    rw [h, Nat.mul_div_cancel_left _ ha]
+  · rintro ⟨a, a', b'⟩ _
+    rfl
+  · rintro ⟨a, b, a', b'⟩ hq
+    obtain ⟨-, ha1, ha2, hb1, hb2, -, hsum⟩ := mem_quadruplesAll.1 hq
+    have ha : 0 < a := by omega
+    have h : n - a' * b' = a * b := by omega
+    show b = (n - a' * b') / a
+    rw [h, Nat.mul_div_cancel_left _ ha]
+
+/-- **The triple sum.**  `Q(n)` as a sum over divisors `d ∣ n`, coprime pairs
+`a > a' ≥ 1`, and `b'` subject to `(a+a')b' < n/d` and `n/d ≡ a'b' (mod a)`. -/
+theorem Q_eq_tripleSum {n : ℕ} (hn : 0 < n) :
+    ∑ q ∈ quadruplesQ n, q.2.1
+      = ∑ d ∈ n.divisors, ∑ t ∈ coprimeTriples (n / d), (n / d - t.2.1 * t.2.2) / t.1 := by
+  rw [sum_snd_quadruplesQ hn]
+  refine Finset.sum_congr rfl fun d hd => ?_
+  obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
+  have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+  have : 0 < n / d := Nat.div_pos (Nat.le_of_dvd hn hdn) hd0
+  exact sum_snd_quadruplesAll_eq this
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.
 #guard (List.range 22).all (fun m => let n := m + 1
   (∑ q ∈ quadruplesQ n, q.2.1) = ∑ t ∈ triples n, (n - t.2.1 * t.2.2) / t.1)
+-- The triple sum, checked numerically.
+#guard (List.range 18).all (fun m => let n := m + 1
+  (∑ q ∈ quadruplesQ n, q.2.1)
+    = ∑ d ∈ n.divisors, ∑ t ∈ coprimeTriples (n / d), (n / d - t.2.1 * t.2.2) / t.1)
 -- `∑ gcd(n,k) ≤ n · d(n)`.
 #guard (List.range 30).all (fun m => let n := m + 1
   (∑ k ∈ allShifts n, Nat.gcd n k) ≤ n * n.divisors.card)

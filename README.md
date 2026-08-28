@@ -84,7 +84,11 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | `∑ gcd(n,k) ≤ n·d(n)` | §4 | `sum_gcd_le` | ✅ proved |
 | Equation (invquant) | Eq. (invquant) | `invquant` | ✅ proved |
 | `b`-elimination to triples | §4 | `sum_snd_quadruplesQ_eq_triples` | ✅ proved |
+| Coprime `b`-elimination | §4 | `sum_snd_quadruplesAll_eq` | ✅ proved |
+| **The triple sum** | §4 | `Q_eq_tripleSum` | ✅ **proved** |
+| Symmetrisation `b > a` | §4 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` estimates | Lemmas 17–19 | — | 🚧 remaining |
+| Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13, §4 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` assembly | Lemmas 17–19 | — | 🚧 remaining |
