@@ -1021,6 +1021,120 @@ theorem middle_layer {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
   push_cast at this
   linarith
 
+/-! ## The outer layer
+
+Summing the middle-layer bound over the divisors `d ∣ n`, with `m = n/d`.
+Bounding each factor by its value at `d = 1` costs only a factor `d(n)`, which
+the divisor bound absorbs. -/
+
+/-- **The outer layer.** -/
+theorem outer_layer {n : ℕ} (hn : 0 < n) :
+    ∑ d ∈ n.divisors,
+        ((Nat.sqrt ((n / d - 1) / d) : ℝ) + 1)
+          * (3 * ((n / d : ℕ) : ℝ) * (1 + Real.log ((n / d : ℕ) : ℝ)))
+      ≤ (n.divisors.card : ℝ)
+          * (((Nat.sqrt n : ℝ) + 1) * (3 * (n : ℝ) * (1 + Real.log n))) := by
+  calc ∑ d ∈ n.divisors,
+        ((Nat.sqrt ((n / d - 1) / d) : ℝ) + 1)
+          * (3 * ((n / d : ℕ) : ℝ) * (1 + Real.log ((n / d : ℕ) : ℝ)))
+      ≤ ∑ _d ∈ n.divisors,
+          (((Nat.sqrt n : ℝ) + 1) * (3 * (n : ℝ) * (1 + Real.log n))) := by
+        refine Finset.sum_le_sum fun d hd => ?_
+        obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
+        have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+        have hm : 0 < n / d := Nat.div_pos (Nat.le_of_dvd hn hdn) hd0
+        have hmn : n / d ≤ n := Nat.div_le_self _ _
+        have hm' : (1 : ℝ) ≤ ((n / d : ℕ) : ℝ) := by exact_mod_cast hm
+        have hmn' : ((n / d : ℕ) : ℝ) ≤ (n : ℝ) := by exact_mod_cast hmn
+        have hlognn : (0 : ℝ) ≤ Real.log ((n / d : ℕ) : ℝ) := Real.log_nonneg hm'
+        have hlog : Real.log ((n / d : ℕ) : ℝ) ≤ Real.log (n : ℝ) :=
+          Real.log_le_log (by linarith) hmn'
+        have hs : Nat.sqrt ((n / d - 1) / d) ≤ Nat.sqrt n := by
+          refine Nat.sqrt_le_sqrt ?_
+          calc (n / d - 1) / d ≤ n / d - 1 := Nat.div_le_self _ _
+            _ ≤ n := by omega
+        have h1 : ((Nat.sqrt ((n / d - 1) / d) : ℝ) + 1) ≤ ((Nat.sqrt n : ℝ) + 1) := by
+          have hc : (Nat.sqrt ((n / d - 1) / d) : ℝ) ≤ (Nat.sqrt n : ℝ) := by
+            exact_mod_cast hs
+          linarith
+        have h2 : (3 * ((n / d : ℕ) : ℝ) * (1 + Real.log ((n / d : ℕ) : ℝ)))
+            ≤ (3 * (n : ℝ) * (1 + Real.log n)) := by nlinarith
+        have hnn2 : (0 : ℝ) ≤ (3 * ((n / d : ℕ) : ℝ) * (1 + Real.log ((n / d : ℕ) : ℝ))) := by
+          nlinarith
+        exact mul_le_mul h1 h2 hnn2 (by positivity)
+    _ = (n.divisors.card : ℝ)
+          * (((Nat.sqrt n : ℝ) + 1) * (3 * (n : ℝ) * (1 + Real.log n))) := by
+        rw [Finset.sum_const, nsmul_eq_mul]
+
+/-- **The three layers combined: `O(n^{3/2+ε})`.**
+
+The aggregate of the per-pair error bounds, summed over pairs and divisors, is
+`O(n^{3/2+ε})` — the bound Lemmas 18 and 19 of the paper establish for
+`G₂ + G₃`. -/
+theorem error_isBigO {ε : ℝ} (hε : 0 < ε) :
+    ∃ C : ℝ, 0 < C ∧ ∀ n : ℕ, 0 < n →
+      (n.divisors.card : ℝ) * (((Nat.sqrt n : ℝ) + 1) * (3 * (n : ℝ) * (1 + Real.log n)))
+        ≤ C * (n : ℝ) ^ (3 / 2 + ε) := by
+  obtain ⟨C0, hC0, hCd⟩ := exists_card_divisors_le (half_pos hε)
+  refine ⟨12 * C0 * (1 + 2 / ε), by positivity, fun n hn => ?_⟩
+  have hn' : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hnpos : (0 : ℝ) < (n : ℝ) := by linarith
+  have hhalf : (0 : ℝ) < ε / 2 := half_pos hε
+  -- `√n ≤ n^{1/2}`
+  have hsqrt : ((Nat.sqrt n : ℝ) + 1) ≤ 2 * (n : ℝ) ^ ((1 : ℝ) / 2) := by
+    have h1 : (Nat.sqrt n : ℝ) ≤ Real.sqrt (n : ℝ) := by
+      refine (Real.le_sqrt (by positivity) (by positivity)).2 ?_
+      have hsq : Nat.sqrt n * Nat.sqrt n ≤ n := by
+        have h2 := Nat.sqrt_le' n
+        rwa [pow_two] at h2
+      have hcast : ((Nat.sqrt n : ℕ) : ℝ) * ((Nat.sqrt n : ℕ) : ℝ) ≤ (n : ℝ) := by
+        exact_mod_cast hsq
+      nlinarith [hcast]
+    have h2 : (1 : ℝ) ≤ Real.sqrt (n : ℝ) := by
+      rw [show (1 : ℝ) = Real.sqrt 1 by simp]
+      exact Real.sqrt_le_sqrt hn'
+    rw [Real.sqrt_eq_rpow] at h1 h2
+    linarith
+  -- `1 + log n ≤ (1 + 2/ε)·n^{ε/2}`
+  have hlogb : 1 + Real.log n ≤ (1 + 2 / ε) * (n : ℝ) ^ (ε / 2) := by
+    have h := Real.log_le_rpow_div hnpos.le hhalf
+    have hge : (1 : ℝ) ≤ (n : ℝ) ^ (ε / 2) := Real.one_le_rpow hn' hhalf.le
+    have hdiv : (n : ℝ) ^ (ε / 2) / (ε / 2) = (2 / ε) * (n : ℝ) ^ (ε / 2) := by
+      field_simp
+    rw [hdiv] at h
+    nlinarith
+  have hd := hCd n hn.ne'
+  have hdnn : (0 : ℝ) ≤ (n.divisors.card : ℝ) := by positivity
+  have hrpow : (n : ℝ) ^ (3 / 2 + ε)
+      = (n : ℝ) ^ (ε / 2) * ((n : ℝ) ^ ((1 : ℝ) / 2) * ((n : ℝ) * (n : ℝ) ^ (ε / 2))) := by
+    rw [show ((n : ℝ) * (n : ℝ) ^ (ε / 2)) = (n : ℝ) ^ ((1 : ℝ) + ε / 2) from by
+      rw [Real.rpow_add hnpos, Real.rpow_one]]
+    rw [← Real.rpow_add hnpos, ← Real.rpow_add hnpos]
+    congr 1
+    ring
+  rw [hrpow]
+  have hlognn : (0 : ℝ) ≤ Real.log n := Real.log_nonneg hn'
+  have hC : (3 * (n : ℝ) * (1 + Real.log n))
+      ≤ 3 * (n : ℝ) * ((1 + 2 / ε) * (n : ℝ) ^ (ε / 2)) :=
+    mul_le_mul_of_nonneg_left hlogb (by positivity)
+  have hBC : ((Nat.sqrt n : ℝ) + 1) * (3 * (n : ℝ) * (1 + Real.log n))
+      ≤ (2 * (n : ℝ) ^ ((1 : ℝ) / 2))
+          * (3 * (n : ℝ) * ((1 + 2 / ε) * (n : ℝ) ^ (ε / 2))) :=
+    mul_le_mul hsqrt hC (by positivity) (by positivity)
+  refine (mul_le_mul hd hBC (by positivity) (by positivity)).trans ?_
+  have heq : (C0 * (n : ℝ) ^ (ε / 2))
+        * ((2 * (n : ℝ) ^ ((1 : ℝ) / 2))
+          * (3 * (n : ℝ) * ((1 + 2 / ε) * (n : ℝ) ^ (ε / 2))))
+      = 6 * C0 * (1 + 2 / ε)
+          * ((n : ℝ) ^ (ε / 2) * ((n : ℝ) ^ ((1 : ℝ) / 2) * ((n : ℝ) * (n : ℝ) ^ (ε / 2)))) := by
+    ring
+  rw [heq]
+  have hpos : (0 : ℝ)
+      ≤ (n : ℝ) ^ (ε / 2) * ((n : ℝ) ^ ((1 : ℝ) / 2) * ((n : ℝ) * (n : ℝ) ^ (ε / 2))) := by
+    positivity
+  have hfac : (0 : ℝ) ≤ C0 * (1 + 2 / ε) := by positivity
+  nlinarith [mul_nonneg hfac hpos]
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.

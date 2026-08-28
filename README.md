@@ -101,7 +101,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Pairs decomposed by first component | §4 | `sum_coprimePairs_filter` | ✅ proved |
 | Admissible `a` number `≤ √((m−1)/d)` | §4 | `card_a_le` | ✅ proved |
 | **Middle estimation layer** | Lemmas 18–19 | `middle_layer` | ✅ **proved** |
-| Outer layer: sum over `d ∣ n` | Lemmas 18–19 | — | 🚧 remaining |
+| **Outer estimation layer** | Lemmas 18–19 | `outer_layer` | ✅ **proved** |
+| **Aggregate error `O(n^{3/2+ε})`** | Lemmas 18–19 | `error_isBigO` | ✅ **proved** |
 | `G₁`, Theorem 13, constant `D` | Thm 13 | — | 🚧 out of reach |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
