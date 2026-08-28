@@ -51,6 +51,14 @@ theorem two_sub_two_cos (θ : ℝ) : 2 - 2 * Real.cos θ = 4 * Real.sin (θ / 2)
   rw [show 2 * (θ / 2) = θ by ring] at h
   nlinarith [Real.sin_sq_add_cos_sq (θ / 2)]
 
+/-- `‖e θ - 1‖ = 2 |sin (θ/2)|`, the exact form of the chord length. -/
+theorem norm_e_sub_one_eq (θ : ℝ) : ‖e θ - 1‖ = 2 * |Real.sin (θ / 2)| := by
+  have hsq : ‖e θ - 1‖ ^ 2 = (2 * |Real.sin (θ / 2)|) ^ 2 := by
+    rw [norm_e_sub_one_sq, two_sub_two_cos, mul_pow, sq_abs]
+    ring
+  have h := congrArg Real.sqrt hsq
+  rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (by positivity)] at h
+
 /-- The easy half of Observation 15: `‖e θ - 1‖ ≤ |θ|`. -/
 theorem norm_e_sub_one_le (θ : ℝ) : ‖e θ - 1‖ ≤ |θ| := by
   have habs : |θ / 2| = |θ| / 2 := by rw [abs_div, abs_two]
@@ -103,30 +111,38 @@ theorem e_ne_one {θ : ℝ} (h0 : θ ≠ 0) (h : |θ| ≤ π) : e θ ≠ 1 := by
 
 This is the trivial bound: the sum telescopes to a quotient whose numerator has
 norm at most `2`, and the denominator is bounded below by Jordan's inequality. -/
+theorem norm_geom_sum_le' {θ : ℝ} (hne : e θ ≠ 1) (B T : ℕ) :
+    ‖∑ j ∈ Finset.Ico B T, e θ ^ j‖ ≤ 2 / ‖e θ - 1‖ := by
+  have hpos : 0 < ‖e θ - 1‖ := norm_pos_iff.2 (sub_ne_zero.2 hne)
+  rcases le_or_gt B T with hBT | hBT
+  · rw [geom_sum_Ico hne hBT, norm_div]
+    have hnum : ‖e θ ^ T - e θ ^ B‖ ≤ 2 := by
+      calc ‖e θ ^ T - e θ ^ B‖ ≤ ‖e θ ^ T‖ + ‖e θ ^ B‖ := norm_sub_le _ _
+        _ = 2 := by rw [norm_e_pow, norm_e_pow]; norm_num
+    gcongr
+  · rw [Finset.Ico_eq_empty (by omega), Finset.sum_empty, norm_zero]
+    positivity
+
+/-- **Observation 15, geometric sum.**  For `0 < |θ| ≤ π`,
+`‖∑_{B ≤ j < T} e(jθ)‖ ≤ π / |θ|`.
+
+This is the trivial bound: the sum telescopes to a quotient whose numerator has
+norm at most `2`, and the denominator is bounded below by Jordan's inequality. -/
 theorem norm_geom_sum_le {θ : ℝ} (h0 : θ ≠ 0) (h : |θ| ≤ π) (B T : ℕ) :
     ‖∑ j ∈ Finset.Ico B T, e θ ^ j‖ ≤ π / |θ| := by
   have hpi := Real.pi_pos
   have hθpos : 0 < |θ| := abs_pos.2 h0
-  rcases le_or_gt B T with hBT | hBT
-  · rw [geom_sum_Ico (e_ne_one h0 h) hBT, norm_div]
-    have hnum : ‖e θ ^ T - e θ ^ B‖ ≤ 2 := by
-      calc ‖e θ ^ T - e θ ^ B‖ ≤ ‖e θ ^ T‖ + ‖e θ ^ B‖ := norm_sub_le _ _
-        _ = 2 := by rw [norm_e_pow, norm_e_pow]; norm_num
-    have hden : 2 / π * |θ| ≤ ‖e θ - 1‖ := mul_abs_le_norm_e_sub_one h
-    have hdenpos : 0 < ‖e θ - 1‖ := by
-      have : 0 < 2 / π * |θ| := by positivity
-      linarith
-    rw [div_le_div_iff₀ hdenpos hθpos]
-    -- `‖num‖ · |θ| ≤ 2 · |θ| ≤ π · ‖e θ - 1‖`
-    have hstep1 : 2 * |θ| ≤ π * ‖e θ - 1‖ := by
-      have hmul := mul_le_mul_of_nonneg_left hden hpi.le
-      calc 2 * |θ| = π * (2 / π * |θ|) := by field_simp
-        _ ≤ π * ‖e θ - 1‖ := hmul
-    have hstep2 : ‖e θ ^ T - e θ ^ B‖ * |θ| ≤ 2 * |θ| :=
-      mul_le_mul_of_nonneg_right hnum hθpos.le
+  have hden : 2 / π * |θ| ≤ ‖e θ - 1‖ := mul_abs_le_norm_e_sub_one h
+  have hdenpos : 0 < ‖e θ - 1‖ := by
+    have : 0 < 2 / π * |θ| := by positivity
     linarith
-  · rw [Finset.Ico_eq_empty (by omega), Finset.sum_empty, norm_zero]
-    positivity
+  refine (norm_geom_sum_le' (e_ne_one h0 h) B T).trans ?_
+  rw [div_le_div_iff₀ hdenpos hθpos]
+  have hstep : 2 * |θ| ≤ π * ‖e θ - 1‖ := by
+    have hmul := mul_le_mul_of_nonneg_left hden hpi.le
+    calc 2 * |θ| = π * (2 / π * |θ|) := by field_simp
+      _ ≤ π * ‖e θ - 1‖ := hmul
+  linarith
 
 /-- **Observation 15, weighted sum.**  For `0 < |θ| ≤ π`,
 `‖∑_{1 ≤ j < T} j · e(jθ)‖ ≤ (T - 1) · π / |θ|`.
