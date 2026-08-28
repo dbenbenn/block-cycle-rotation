@@ -157,6 +157,12 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Uniform distribution on `[0,1/2]` | Cor. to Thm 8 | `unifHalf` | ✅ defined |
 | Moments of all orders exist | Cor. to Thm 8 | `integrable_fCost_pow` | ✅ proved |
 | **`E[f(X)^j] = (∫₀^{1/2} f^j)/(1/2)`** | Cor. to Thm 8 | `moment_fCost` | ✅ **proved** |
+| Segments `segᵢ`, buffered cost `f_β` | Rem. (buffer) | `seg`, `psiBuf`, `fCostBuf` | ✅ defined |
+| **Recursion, eq. (def-mu-nu)** | Rem. (buffer) | `psiBuf_rec` | ✅ **proved** |
+| The buffer never hurts, `f_β ≤ f` | Cor. item 1 | `fCostBuf_le_fCost` | ✅ proved |
+| Monotone in the buffer size | Cor. item 1 | `psiBuf_antitone` | ✅ proved |
+| **Buffer helps though no segment fits** | Rem. (buffer) | `buffer_helps` | ✅ **proved** |
+| Figure's `1.25` at a 50% buffer | Fig. 6 caption | `expected_cost_half_buffer` | ✅ proved |
 | Summand rewriting | Remark 21 | `gTerm_eq` | ✅ proved |
 | `ζ(3)` removes the coprimality | Remark 21 | `tsum_gTerm_eq`, `zeta3_mul_cConst` | ✅ proved |
 | Telescoping `∑_k [1/k − 1/(n+k)] = H_n` | Remark 21 | `tsum_telescope` | ✅ proved |
@@ -287,8 +293,10 @@ bound `d(n) = O(n^ε)` (cited as standard, absent from Mathlib), Bernoulli's
 inequality, and the correctness of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
-**Not attempted.** The remark on averaging over all `1 ≤ k ≤ n`, the buffered
-variant `f_β` of the closing remark, and the benchmarks of §5. The bound proved
+**Not attempted.** The remark on averaging over all `1 ≤ k ≤ n`, the
+identification of `ψ` as the limit `lim_{β→0+} ψ_β` (the series definition is
+used instead, and `ψ - ψ_β ≤ 3·(2/3)^T` is proved), and the benchmarks of §5.
+The bound proved
 for `f` is `f ≤ 4`, from the crude `∑ (2/3)^i = 3` for the series; the paper's
 sharp maximum `f = 3`, attained at `1 - φ`, is not formalised (nothing needs
 it).

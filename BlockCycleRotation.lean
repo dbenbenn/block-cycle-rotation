@@ -15,3 +15,4 @@ import BlockCycleRotation.Constant
 import BlockCycleRotation.Theorem13
 import BlockCycleRotation.Remark21
 import BlockCycleRotation.Theorem10
+import BlockCycleRotation.Buffer
