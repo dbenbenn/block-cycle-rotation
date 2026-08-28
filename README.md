@@ -33,15 +33,19 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Lemma 12: algorithm ↔ Euclid | Lemma 12 | `remSum_congr_mod` | ✅ proved |
 | Eq. (12): move count | Eq. (12) | `cost_add_gcd` | ✅ proved |
 | Worst case, for the algorithm | Thm A | `cost_le_three_mul` | ✅ proved |
+| Euclid step on Fibonacci pairs | Obs. 6 | `fib_mod_fib` | ✅ proved |
+| `remSum F_{m+1} F_m = F_{m+2} − 2` | Obs. 6 | `remSum_fib_consec` | ✅ proved |
+| `gcd(F_{m+2}, F_m) = 1` | Obs. 6 | `gcd_fib_add_two` | ✅ proved |
+| **Obs. 6: Fibonacci worst case `3n − 5`** | Obs. 6 | `remSum_fib`, `moveCount_fib` | ✅ **proved** |
 | Block cycle step is correct | §2, Fig. 1 | `rotate_block_step` | ✅ proved |
 | Algorithm on lists | §2 | `BlockCycleRotation.bcRotate` | ✅ defined |
 | It computes the rotation | §2 | `bcRotate_eq_rotate` | ✅ proved |
-| Continuous cost `Ψ`, scaling | §3 | — | 🚧 planned |
 | Average cost `avgCost` | Thm 13 | `BlockCycleRotation.avgCost` | ✅ defined |
 | Average `≤ 3n` | (worst case) | `avgCost_le_three_mul` | ✅ proved |
 | Obs. 15: Jordan on the circle | Obs. 15 | `mul_abs_le_norm_e_sub_one` | ✅ proved |
 | Obs. 15: geometric sum bound | Obs. 15 | `norm_geom_sum_le` | ✅ proved |
 | Obs. 15: weighted sum bound | Obs. 15 | `norm_weighted_geom_sum_le` | ✅ proved |
+| Obs. 15: weighted sum, paper's constants | Obs. 15 | `weighted_geom_sum_closed`, `norm_weighted_geom_sum_le_sharp` | ✅ proved |
 | Chord length `‖e θ − 1‖ = 2\|sin(θ/2)\|` | Obs. 15 | `norm_e_sub_one_eq` | ✅ proved |
 | Root-of-unity chord bound | §4 | `four_mul_min_div_le_norm` | ✅ proved |
 | Sums at roots of unity | §4 | `norm_geom_sum_root_le` | ✅ proved |
@@ -135,6 +139,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Bulk triple sum, by pairs | Lemmas 18–19 | `gtTriples_bulk_decompose` | ✅ proved |
 | **Estimate at one divisor** | Lemmas 18–19 | `divisor_estimate` | ✅ **proved** |
 | **`G₁ + G₂ + G₃`: `Q_gt = G₁ + O(…)`** | Lemmas 18–19 | `Qgt_sub_G1_le` | ✅ **proved** |
+| Decomposition `G₁ + G₂ + G₃` | Lemmas 17–19 | `innerActual_decompose` | ✅ proved |
+| **Lemma 18: `G₂(n) = O(n^{3/2+ε})`** | Lemma 18 | `abs_G2term_le`, `lemma_g_two` | ✅ **proved** |
+| **Lemma 19: `G₃(n) = O(n^{3/2+ε})`** | Lemma 19 | `abs_G3term_le`, `lemma_g_three` | ✅ **proved** |
 | **`Q(n) = C·n²·∑ 1/d² + O(n^{3/2+ε})`** | Thm 13 | `Q_isBigO` | ✅ **proved** |
 | Möbius inversion of `∑_{d∣n} d²` | Thm 13 | `moebius_main` | ✅ proved |
 | **`R(n) = C·n² + O(n^{3/2+ε})`** | Thm 13 | `R_isBigO` | ✅ **proved** |
@@ -164,6 +171,16 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Monotone in the buffer size | Cor. item 1 | `psiBuf_antitone` | ✅ proved |
 | **Buffer helps though no segment fits** | Rem. (buffer) | `buffer_helps` | ✅ **proved** |
 | Figure's `1.25` at a 50% buffer | Fig. 6 caption | `expected_cost_half_buffer` | ✅ proved |
+| **Buffered cost `μ(N,ℓ,β)`** | Eq. (continuous) | `muCost` | ✅ **defined** |
+| Eq. (def-mu-nu), both branches | Eq. (def-mu-nu) | `muCost_rec_of_le`, `muCost_rec_of_gt` | ✅ proved |
+| Observation `μ(N,ℓ,β) ≤ 3N` | Obs. (§3) | `muCost_le_three_mul` | ✅ proved |
+| Cor. item 1: `μ` decreases in `β` | Cor. item 1 | `muCost_antitone` | ✅ proved |
+| Cor. item 2: `μ(λN,λℓ,λβ) = λμ(N,ℓ,β)` | Cor. item 2 | `muCost_homogeneous` | ✅ proved |
+| `f_β(ℓ) = μ(1,ℓ,β)` | Rem. (buffer) | `muCost_one` | ✅ proved |
+| **Eq. (integral): buffered move count** | Eq. (integral) | `costB` | ✅ **defined** |
+| **Cor. item 3: `Cost(n,k,β) ≤ μ(n,k,β)`** | Cor. item 3 | `costB_le_muCost` | ✅ **proved** |
+| Eq. (integral) at `β = 0` is Lemma 12 | §2–3 | `costB_eq_moveCount` | ✅ proved |
+| Cor. item 3, unbuffered limit | Cor. item 3 | `cost_le_muCost` | ✅ proved |
 | **Segments halve every two steps** | §3 | `seg_add_two_le` | ✅ **proved** |
 | **`ψ = lim_{β→0⁺} ψ_β`, with `ψ − ψ_β ≤ 8β`** | §3 | `tendsto_psiBuf` | ✅ **proved** |
 | **Reflection `remSum n k = k + remSum n (n−k)`** | Rem. (all shifts) | `remSum_reflect` | ✅ **proved** |
@@ -185,13 +202,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | **Euler's `ζ(2,1) = ζ(3)`** | Remark 21 (cited) | `euler_zeta21` | ✅ **proved** |
 | **Eq. (const-c-alternative)** | Remark 21 | `cConst_eq_alternative` | ✅ **proved** |
 | Truncations bound `C`, `D` above | Remark 21 | `cConst_le_truncation`, `dConst_le_truncation` | ✅ proved |
-| Theorem 13, constant `D = 1 + 4C` | Thm 13, §4 | — | 🚧 remaining |
-| `G₁ + G₂ + G₃` assembly | Lemmas 17–19 | — | 🚧 remaining |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | `exists_card_divisors_le` | ✅ proved |
-| Möbius/character decomposition | §4 | — | 🚧 planned |
-| Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |
-| Error term `O(n^(1/2+ε))` | Thm 13 | — | 🚧 planned |
-| Constant `D = 1 + 4C` via MZVs | §4 | — | 🚧 planned |
 
 ### A note on the worst-case proof
 
@@ -219,7 +230,10 @@ left step keeps `k` and shortens the list, the mirrored step decreases `k`.
 
 Observation 6 works out a left segment of length 8 and a right segment of
 length 13 — that is `n = 21`, `k = 8` — with remainder sequence `8, 5, 3, 2, 1`
-and a cost of 58 moves. Both are checked by `#guard` in `Euclid.lean`.
+and a cost of 58 moves. Both are checked by `#guard` in `Euclid.lean`. The
+observation's general claim, that the Fibonacci pairs `k = F_m`, `n = F_{m+2}`
+cost `3∑_{j≤m} F_j − 2 = 3n − 3gcd(n,k) − 2` moves, is `moveCount_fib`: those
+pairs sit exactly two moves below the worst case of Theorem A.
 
 ## Tier 3: the error term
 
@@ -268,14 +282,12 @@ instantiates the phases from `sum_e_root`, giving the estimate itself:
 Replacing a sum over an arithmetic progression by its expected value costs a
 harmonic sum, i.e. `O(log a)`.
 
-No square-root cancellation is used anywhere. What remains for Theorem 13 is
-long rather than deep — there is no missing theorem to invent, just a great many
-explicit estimates to carry out. The divisor bound, which Mathlib does not
-provide, is proved in `DivisorBound.lean`: for each `ε > 0` there is `C` with
-`d(n) ≤ C·n^ε`, by splitting the primes dividing `n` at `p^ε = 2`. Remaining: Möbius inversion over divisors (in Mathlib), additive
-character orthogonality (in Mathlib, `AddChar.sum_eq_ite`), harmonic sums (in
-Mathlib), and then the assembly of `G₁ + G₂ + G₃`. The one genuine gap is the
-divisor bound `d(n) = O(n^ε)`, which is elementary but absent from Mathlib.
+No square-root cancellation is used anywhere. The divisor bound, which Mathlib
+does not provide, is proved in `DivisorBound.lean`: for each `ε > 0` there is
+`C` with `d(n) ≤ C·n^ε`, by splitting the primes dividing `n` at `p^ε = 2`.
+With that in hand the three pieces of §4 are complete: `lemma17` (the main term
+and the constant `C`), `lemma_g_two` and `lemma_g_three` (the two error terms),
+and `theorem13` assembles them.
 
 ## Building
 
@@ -305,7 +317,11 @@ strengthening — `remSum n k + gcd n k ≤ 2k + n mod k` — because the paper'
 hypothesis `2k ≤ n` is not inherited by the recursion. `norm_sum_twisted_le`
 is proved for arbitrary unit-modulus weights and specialised afterwards, and
 `norm_geom_sum_le'` drops the `|θ| ≤ π` hypothesis so that it applies at roots
-of unity.
+of unity. Observation 15's weighted bound is available both in the paper's
+form, `π²/(2θ²) + (T−1)π/(2|θ|)` (`norm_weighted_geom_sum_le_sharp`), and in a
+simpler `(T−1)π/|θ|` form (`norm_weighted_geom_sum_le`); the estimation chain
+of Lemma 19 uses the latter, which is what the character argument needs and
+which yields the same `log a`.
 
 **Proved here but not in the paper.** Euler's `ζ(2,1) = ζ(3)`, which Remark 21
 cites and Mathlib does not have (no multiple-zeta-value theory), the divisor
@@ -315,12 +331,14 @@ proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
 **Not attempted.** The benchmarks of §5, which are C++ listings and wall-clock
 timings on a named CPU — empirical claims with no mathematical content a proof
-assistant can certify. Also the remark's "standard deviation about 0.50": the
-moment machinery is there (`moment_fCost`), but no certified bound on the
-variance is proved. The measure-theoretic
+assistant can certify. Also the remark's "standard deviation about 0.50", which
+the paper itself obtains by numerical approximation rather than proof: the
+moment machinery is there (`moment_fCost`, `integrable_fCost_pow`), but no
+certified bound on the variance is proved. The measure-theoretic
 development uses the crude `f ≤ 4` (from `∑ (2/3)^i = 3`); the sharp `f ≤ 3` is
 proved separately as `fCost_le_three`, but the paper's *attainment* of `3` at
-`1 - φ` is not formalised.
+`1 - φ` is not formalised. Remark (blend rotation) is a comparison with the
+literature, with nothing to certify.
 
 **Theorem 10 is proved independently of Theorem 13**, as the paper has it: from
 eq. (relation), the `O(n^{1+ε})` bound on `∑ gcd(n,k)`, and Riemann

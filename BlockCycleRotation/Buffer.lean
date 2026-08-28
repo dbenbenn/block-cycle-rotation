@@ -702,4 +702,11 @@ theorem costB_eq_moveCount : ∀ k n : ℕ, 2 * k ≤ n → costB n k 0 = moveCo
       rw [hmul, hg2, hr, hrs, hg1]
       omega
 
+/-- **Remark (buffered relative cost).**  `f_β(ℓ) = μ(1, ℓ, β)`: the per-element
+cost with a buffer of relative size `β` is the continuous cost of the unit
+problem. -/
+theorem muCost_one (l b : ℝ) : muCost 1 l b = fCostBuf b l := by
+  unfold muCost fCostBuf
+  norm_num
+
 end BlockCycleRotation
