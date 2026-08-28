@@ -4,3 +4,4 @@ import BlockCycleRotation.Algorithm
 import BlockCycleRotation.Rotate
 import BlockCycleRotation.ExpSum
 import BlockCycleRotation.Average
+import BlockCycleRotation.Characters

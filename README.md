@@ -42,6 +42,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Obs. 15: Jordan on the circle | Obs. 15 | `mul_abs_le_norm_e_sub_one` | ✅ proved |
 | Obs. 15: geometric sum bound | Obs. 15 | `norm_geom_sum_le` | ✅ proved |
 | Obs. 15: weighted sum bound | Obs. 15 | `norm_weighted_geom_sum_le` | ✅ proved |
+| Chord length `‖e θ − 1‖ = 2\|sin(θ/2)\|` | Obs. 15 | `norm_e_sub_one_eq` | ✅ proved |
+| Root-of-unity chord bound | §4 | `four_mul_min_div_le_norm` | ✅ proved |
+| Sums at roots of unity | §4 | `norm_geom_sum_root_le` | ✅ proved |
 | Divisor bound `d(n) = O(nᵋ)` | §4 | — | 🚧 not in Mathlib |
 | Möbius/character decomposition | §4 | — | 🚧 planned |
 | Limit `D = ∫₀¹ ρ` | Thm 10 | — | 🚧 planned |
@@ -87,8 +90,19 @@ The only analytic input is Observation 15, now formalised in `ExpSum.lean`:
 * the *trivial* bound on a geometric sum, `‖Σ_{B≤j<T} e(jθ)‖ ≤ π/|θ|`;
 * its weighted form, by the paper's double-counting argument.
 
+`Characters.lean` then supplies the quantitative input for removing a congruence
+condition `b ≡ c mod a` by additive characters: at a nontrivial `a`-th root of
+unity the chord length satisfies `‖e(2πm/a) − 1‖ ≥ 4·min(m, a−m)/a`, so
+
+```
+‖∑_{B ≤ j < T} e(2πmj/a)‖ ≤ a / (2·min(m, a−m)).
+```
+
+Summing `1/min(m, a−m)` over `0 < m < a` is what produces the `log a` in Lemma 18.
+
 No square-root cancellation is used anywhere. What remains for Theorem 13 is
-volume, not machinery: Möbius inversion over divisors (in Mathlib), additive
+long rather than deep — there is no missing theorem to invent, just a great many
+explicit estimates to carry out: Möbius inversion over divisors (in Mathlib), additive
 character orthogonality (in Mathlib, `AddChar.sum_eq_ite`), harmonic sums (in
 Mathlib), and then the assembly of `G₁ + G₂ + G₃`. The one genuine gap is the
 divisor bound `d(n) = O(n^ε)`, which is elementary but absent from Mathlib.
