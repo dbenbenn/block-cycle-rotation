@@ -127,7 +127,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | **Lemma 17, at a single divisor** | Lemma 17 | `lemma17_local` | ✅ **proved** |
 | **Lemma 17** | Lemma 17 | `lemma17` | ✅ **proved** (errors as `∑_d E d`) |
 | **Lemma 17, error instantiated** | Lemma 17 | `lemma17_final`, `Eterm` | ✅ **proved** |
-| Bounding `∑_d Eterm` by `O(n^{3/2+ε})` | Lemma 17 | — | 🚧 remaining |
+| Cut-off lower bound `m ≤ 16d·N²` | Lemma 17 | `cutoff_lower`, `sqrt_le_cutoff` | ✅ proved |
+| **Per-divisor error `≤ (8+2C)·n^{3/2}`** | Lemma 17 | `Eterm_le` | ✅ **proved** |
+| **Lemma 17, `O(n^{3/2+ε})` form** | Lemma 17 | `lemma17_isBigO` | ✅ **proved** |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
@@ -253,10 +255,11 @@ as standard, absent from Mathlib), Bernoulli's inequality, and the correctness
 of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
-**Not attempted.** Everything from Lemma 17 onwards: the `(a,a')` and `d ∣ n`
-layers of the triple sum, `G₁ + G₂ + G₃`, the error term of Theorem 13, the
-constant `D = 1 + 4C` and its multiple-zeta-value series, Theorem 10's limit,
-and the benchmarks of §5. This is the majority of §4 by length.
+**Not attempted.** Theorem 13 itself, which combines `lemma17_isBigO` (the `G₁`
+main term) with `error_isBigO` (the `G₂ + G₃` bound) — both halves are proved,
+but they have not been assembled into the paper's statement. Also Remark 21's
+rewriting of `C` in terms of `ζ(3)`, which needs Euler's `ζ(2,1) = ζ(3)`;
+Theorem 10's limit; and the benchmarks of §5.
 
-In short: the paper's structural results are formalised, and every tool its
-analytic conclusion needs is proved, but that conclusion itself is not.
+In short: the paper's structural results are formalised, Lemma 17 is proved in
+its stated `O(n^{3/2+ε})` form, and both halves of Theorem 13 are in hand.

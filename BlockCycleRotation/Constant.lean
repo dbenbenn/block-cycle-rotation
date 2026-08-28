@@ -602,4 +602,166 @@ theorem lemma17_final {n : ℕ} (hn : 0 < n) :
       ≤ ∑ d ∈ n.divisors, Eterm n d :=
   lemma17 hn (Eterm n) (fun d hd => lemma17_E hn d hd)
 
+/-! ## Bounding the total error
+
+The truncation term is `m²·3/(2N)` with `N = √(m/(2d))`, so a lower bound on `N`
+is needed.  The natural-number square root satisfies `q ≤ 4·(√q)²` for `q ≥ 1`,
+and `m < 4dq`, giving `m ≤ 16·d·N²` — equivalently `√m ≤ 4√d·N`, which turns
+`m²/N` into `4·m^{3/2}·√d`. -/
+
+/-- `q ≤ 4·(√q)²`. -/
+theorem le_four_mul_sqrt_sq {q : ℕ} (hq : 1 ≤ q) :
+    q ≤ 4 * (Nat.sqrt q * Nat.sqrt q) := by
+  have hs : 1 ≤ Nat.sqrt q := Nat.sqrt_pos.2 hq
+  have h := Nat.lt_succ_sqrt' q
+  nlinarith
+
+/-- **The cut-off is large enough.**  `m ≤ 16·d·N²`. -/
+theorem cutoff_lower {m d : ℕ} (hd : 0 < d) (h : 2 * d ≤ m) :
+    m ≤ 16 * d * (Nat.sqrt (m / (2 * d)) * Nat.sqrt (m / (2 * d))) := by
+  have hd2 : 0 < 2 * d := by omega
+  have hq1 : 1 ≤ m / (2 * d) := (Nat.one_le_div_iff hd2).2 h
+  have hlt : m < 2 * d * (m / (2 * d)) + 2 * d := by
+    have hdm := Nat.div_add_mod m (2 * d)
+    have hmod : m % (2 * d) < 2 * d := Nat.mod_lt m hd2
+    omega
+  have h4 : m / (2 * d) ≤ 4 * (Nat.sqrt (m / (2 * d)) * Nat.sqrt (m / (2 * d))) :=
+    le_four_mul_sqrt_sq hq1
+  nlinarith
+
+/-- **`√m ≤ 4√d·N`**, the real form of `cutoff_lower`. -/
+theorem sqrt_le_cutoff {m d : ℕ} (hd : 0 < d) (h : 2 * d ≤ m) :
+    Real.sqrt (m : ℝ)
+      ≤ 4 * Real.sqrt (d : ℝ) * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ) := by
+  have hN : (0 : ℝ) ≤ ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ) := by positivity
+  have hdR : (0 : ℝ) ≤ (d : ℝ) := by positivity
+  have hkey : (m : ℝ)
+      ≤ (4 * Real.sqrt (d : ℝ) * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ)) ^ 2 := by
+    have h1 : (m : ℝ) ≤ 16 * (d : ℝ)
+        * (((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ) * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ)) := by
+      exact_mod_cast cutoff_lower hd h
+    have hsq : Real.sqrt (d : ℝ) ^ 2 = (d : ℝ) := Real.sq_sqrt hdR
+    nlinarith [hsq, h1]
+  calc Real.sqrt (m : ℝ)
+      ≤ Real.sqrt ((4 * Real.sqrt (d : ℝ) * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ)) ^ 2) :=
+        Real.sqrt_le_sqrt hkey
+    _ = 4 * Real.sqrt (d : ℝ) * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ) :=
+        Real.sqrt_sq (by positivity)
+
+/-- `x^{3/2} = x·√x`. -/
+theorem rpow_three_halves {x : ℝ} (hx : 0 ≤ x) : x ^ (3 / 2 : ℝ) = x * Real.sqrt x := by
+  rw [Real.sqrt_eq_rpow, show (3 / 2 : ℝ) = 1 + 1 / 2 by norm_num,
+    Real.rpow_add' hx (by norm_num), Real.rpow_one]
+
+/-- **Every per-divisor error term is `O(n^{3/2})`.**
+
+In the bulk case `2d ≤ m` the two pieces are `(√((m-1)/d)+1)·d·m ≤ 2·n^{3/2}`
+(using `d·m = n`) and `m²·3/(2N) ≤ 6·n^{3/2}` (using `√m ≤ 4√d·N` and
+`m·√m·√d = m·√n`).  In the degenerate case `m < 2d` one has `m² < 2n`. -/
+theorem Eterm_le {n d : ℕ} (hn : 0 < n) (hd : d ∈ n.divisors) :
+    Eterm n d ≤ (8 + 2 * cConst) * ((n : ℝ) * Real.sqrt n) := by
+  obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
+  have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
+  have hCnn : (0 : ℝ) ≤ cConst := cConst_nonneg
+  have hnR : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hsn : (1 : ℝ) ≤ Real.sqrt n := by
+    rw [show (1 : ℝ) = Real.sqrt 1 by simp]
+    exact Real.sqrt_le_sqrt hnR
+  have hsqn : (0 : ℝ) ≤ Real.sqrt n := Real.sqrt_nonneg _
+  unfold Eterm
+  set m := n / d with hm
+  have hdm : d * m = n := Nat.mul_div_cancel' hdn
+  have hm0 : 0 < m := Nat.div_pos (Nat.le_of_dvd hn hdn) hd0
+  have hmn' : m ≤ n := Nat.div_le_self n d
+  have hmn : (m : ℝ) ≤ (n : ℝ) := by exact_mod_cast hmn'
+  have hmR : (0 : ℝ) ≤ (m : ℝ) := by positivity
+  have hdmR : (d : ℝ) * (m : ℝ) = (n : ℝ) := by exact_mod_cast hdm
+  split_ifs with hcase
+  · -- bulk case `2d ≤ m`
+    -- first piece: `√((m-1)/d) ≤ √n`
+    have hs : ((Nat.sqrt ((m - 1) / d) : ℕ) : ℝ) ≤ Real.sqrt n := by
+      have hnat : Nat.sqrt ((m - 1) / d) * Nat.sqrt ((m - 1) / d) ≤ n :=
+        calc Nat.sqrt ((m - 1) / d) * Nat.sqrt ((m - 1) / d) ≤ (m - 1) / d := Nat.sqrt_le _
+          _ ≤ m - 1 := Nat.div_le_self _ _
+          _ ≤ m := Nat.sub_le _ _
+          _ ≤ n := hmn'
+      refine (Real.le_sqrt (by positivity) (by positivity)).2 ?_
+      have hcast : ((Nat.sqrt ((m - 1) / d) : ℕ) : ℝ) * ((Nat.sqrt ((m - 1) / d) : ℕ) : ℝ)
+          ≤ (n : ℝ) := by exact_mod_cast hnat
+      nlinarith [hcast]
+    have hA : (((Nat.sqrt ((m - 1) / d) : ℕ) : ℝ) + 1) * ((d : ℝ) * (m : ℝ))
+        ≤ 2 * ((n : ℝ) * Real.sqrt n) := by
+      rw [hdmR]
+      nlinarith [hs, hsn, hnR]
+    -- second piece: the cut-off is at least `√m/(4√d)`
+    have hN1 : 1 ≤ Nat.sqrt (m / (2 * d)) :=
+      Nat.sqrt_pos.2 ((Nat.one_le_div_iff (by omega)).2 hcase)
+    have hNR : (1 : ℝ) ≤ ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ) := by exact_mod_cast hN1
+    have hcut := sqrt_le_cutoff hd0 hcase
+    have hsm : Real.sqrt (m : ℝ) * Real.sqrt (m : ℝ) = (m : ℝ) := Real.mul_self_sqrt hmR
+    have hsd : Real.sqrt (m : ℝ) * Real.sqrt (d : ℝ) = Real.sqrt n := by
+      rw [← Real.sqrt_mul hmR]
+      congr 1
+      rw [← hdmR]; ring
+    have hkey : (m : ℝ) * (m : ℝ)
+        ≤ 4 * ((m : ℝ) * (Real.sqrt n * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ))) := by
+      have h1 : (m : ℝ) * Real.sqrt (m : ℝ) * Real.sqrt (m : ℝ)
+          ≤ (m : ℝ) * Real.sqrt (m : ℝ)
+              * (4 * Real.sqrt (d : ℝ) * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ)) :=
+        mul_le_mul_of_nonneg_left hcut (by positivity)
+      have h2 : (m : ℝ) * Real.sqrt (m : ℝ) * Real.sqrt (m : ℝ) = (m : ℝ) * (m : ℝ) := by
+        rw [mul_assoc, hsm]
+      have h3 : (m : ℝ) * Real.sqrt (m : ℝ)
+            * (4 * Real.sqrt (d : ℝ) * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ))
+          = 4 * ((m : ℝ) * ((Real.sqrt (m : ℝ) * Real.sqrt (d : ℝ))
+              * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ))) := by ring
+      rw [h2, h3, hsd] at h1
+      exact h1
+    have hB : (m : ℝ) ^ 2 * (3 / (2 * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ)))
+        ≤ 6 * ((n : ℝ) * Real.sqrt n) := by
+      rw [mul_div_assoc', div_le_iff₀ (by positivity)]
+      have hslack : (0 : ℝ)
+          ≤ ((n : ℝ) - (m : ℝ)) * (Real.sqrt n * ((Nat.sqrt (m / (2 * d)) : ℕ) : ℝ)) :=
+        mul_nonneg (by linarith) (by positivity)
+      nlinarith [hkey, hslack]
+    nlinarith [hA, hB, mul_nonneg hCnn (mul_nonneg (by linarith : (0:ℝ) ≤ (n:ℝ)) hsqn)]
+  · -- degenerate case `m < 2d`
+    have hlt : m * m < 2 * n := by
+      have hm2 : m < 2 * d := by omega
+      calc m * m < 2 * d * m := (Nat.mul_lt_mul_right hm0).2 hm2
+        _ = 2 * n := by rw [← hdm]; ring
+    have hltR : (m : ℝ) ^ 2 < 2 * (n : ℝ) := by
+      rw [pow_two]; exact_mod_cast hlt
+    have h1 : (m : ℝ) ^ 2 * cConst ≤ (2 * (n : ℝ)) * cConst :=
+      mul_le_mul_of_nonneg_right hltR.le hCnn
+    have h2 : (0 : ℝ) ≤ cConst * ((n : ℝ) * (Real.sqrt n - 1)) :=
+      mul_nonneg hCnn (mul_nonneg (by linarith) (by linarith))
+    have h3 : (0 : ℝ) ≤ 8 * ((n : ℝ) * Real.sqrt n) :=
+      by positivity
+    nlinarith [h1, h2, h3]
+
+/-- **Lemma 17 in the paper's form.**  The total error is `O(n^{3/2+ε})`. -/
+theorem lemma17_isBigO {ε : ℝ} (hε : 0 < ε) :
+    ∃ K : ℝ, 0 < K ∧ ∀ n : ℕ, 0 < n →
+      |G1 n - cConst * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2|
+        ≤ K * (n : ℝ) ^ (3 / 2 + ε) := by
+  obtain ⟨C0, hC0, hCd⟩ := exists_card_divisors_le hε
+  refine ⟨(8 + 2 * cConst) * C0, mul_pos (by linarith [cConst_nonneg]) hC0, fun n hn => ?_⟩
+  have hnR : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hnpos : (0 : ℝ) < (n : ℝ) := by linarith
+  have hCnn : (0 : ℝ) ≤ cConst := cConst_nonneg
+  have h32 : (n : ℝ) * Real.sqrt n = (n : ℝ) ^ (3 / 2 : ℝ) :=
+    (rpow_three_halves (by positivity)).symm
+  refine (lemma17_final hn).trans ?_
+  refine (sum_divisors_le _ _ (fun d hd => Eterm_le hn hd)).trans ?_
+  have hd := hCd n hn.ne'
+  have hstep : (n.divisors.card : ℝ) * ((8 + 2 * cConst) * ((n : ℝ) * Real.sqrt n))
+      ≤ (C0 * (n : ℝ) ^ ε) * ((8 + 2 * cConst) * ((n : ℝ) * Real.sqrt n)) := by
+    refine mul_le_mul_of_nonneg_right hd ?_
+    have hs0 : (0 : ℝ) ≤ Real.sqrt n := Real.sqrt_nonneg _
+    exact mul_nonneg (by linarith) (mul_nonneg (by linarith) hs0)
+  refine hstep.trans ?_
+  rw [h32, Real.rpow_add hnpos]
+  exact le_of_eq (by ring)
+
 end BlockCycleRotation
