@@ -460,6 +460,91 @@ theorem continuousAt_psiTerm {x : ℝ} (h : Irrational x) (i : ℕ) :
 /-- The partial sums of the series for `ψ`. -/
 noncomputable def psiPartial (N : ℕ) (x : ℝ) : ℝ := ∑ i ∈ Finset.range N, psiTerm x i
 
+/-! ### The sharp bound `ψ ≤ 2`
+
+The paper's Observation `μ(N,ℓ,β) ≤ 3N` says the algorithm never uses more than
+three moves per element, i.e. `ψ ≤ 2`.  The series bound `∑ (2/3)ⁱ = 3` only
+gives `ψ ≤ 3`; the sharp value comes from the recursion, since
+`x + Out(x) = 2x + 1 - x⌊1/x⌋ ≤ 1` exactly because `⌊1/x⌋ ≥ 2` on `[0,1/2]`. -/
+
+theorem psiTerm_succ (x : ℝ) (i : ℕ) : psiTerm x (i + 1) = Outt x * psiTerm (Inn x) i := by
+  unfold psiTerm
+  rw [Finset.prod_range_succ']
+  have hit : ∀ m : ℕ, Inn^[m] (Inn x) = Inn^[m + 1] x := by
+    intro m
+    rw [← Function.iterate_succ_apply]
+  have hprod : ∏ m ∈ Finset.range i, Outt (Inn^[m] (Inn x))
+      = ∏ m ∈ Finset.range i, Outt (Inn^[m + 1] x) :=
+    Finset.prod_congr rfl fun m _ => by rw [hit]
+  rw [hprod, hit i, Function.iterate_zero_apply]
+  ring
+
+/-- **`x + Out(x) ≤ 1` on `[0,1/2]`.** -/
+theorem add_Outt_le_one {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) : x + Outt x ≤ 1 := by
+  unfold Outt
+  split_ifs with h
+  · rw [h]; norm_num
+  · have hx0' : 0 < x := lt_of_le_of_ne hx0 (Ne.symm h)
+    have h2 : (2 : ℝ) ≤ 1 / x := by
+      rw [le_div_iff₀ hx0']
+      linarith
+    have hm2 : (2 : ℝ) ≤ ((⌊1 / x⌋ : ℤ) : ℝ) := by
+      have : (2 : ℤ) ≤ ⌊1 / x⌋ := Int.le_floor.2 (by exact_mod_cast h2)
+      exact_mod_cast this
+    have heq : x * (1 + Int.fract (1 / x)) = 1 + x - ((⌊1 / x⌋ : ℤ) : ℝ) * x := by
+      rw [Int.fract]
+      field_simp
+      ring
+    rw [heq]
+    nlinarith
+
+/-- **`ψ_N ≤ 2` for every partial sum**, by induction along the recursion. -/
+theorem psiPartial_le_two : ∀ (N : ℕ) {x : ℝ}, 0 ≤ x → x ≤ 1 / 2 → psiPartial N x ≤ 2 := by
+  intro N
+  induction N with
+  | zero =>
+    intro x _ _
+    simp [psiPartial]
+  | succ M ih =>
+    intro x hx0 hx
+    have hIn0 : 0 ≤ Inn x := Inn_nonneg x
+    have hIn : Inn x ≤ 1 / 2 := le_of_lt (Inn_lt_half x)
+    have hrec : psiPartial (M + 1) x = 2 * x + Outt x * psiPartial M (Inn x) := by
+      rw [psiPartial, psiPartial, Finset.sum_range_succ']
+      have h0 : psiTerm x 0 = 2 * x := by
+        unfold psiTerm
+        simp
+      rw [h0, Finset.sum_congr rfl (fun i (_ : i ∈ Finset.range M) => psiTerm_succ x i),
+        ← Finset.mul_sum]
+      ring
+    have hIH := ih hIn0 hIn
+    have hOut : 0 ≤ Outt x := Outt_nonneg hx0
+    have hkey := add_Outt_le_one hx0 hx
+    rw [hrec]
+    nlinarith
+
+/-- **`ψ ≤ 2`**, the paper's `μ(N,ℓ) ≤ 3N` in relative form. -/
+theorem psi_le_two {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) : psi x ≤ 2 := by
+  refine Real.tsum_le_of_sum_le (psiTerm_nonneg hx0 hx) fun s => ?_
+  obtain ⟨N, hN⟩ : ∃ N, s ⊆ Finset.range N :=
+    ⟨s.sup id + 1, fun i hi => Finset.mem_range.2 (by
+      have := Finset.le_sup (f := id) hi
+      simp only [id] at this
+      omega)⟩
+  calc ∑ i ∈ s, psiTerm x i ≤ ∑ i ∈ Finset.range N, psiTerm x i :=
+        Finset.sum_le_sum_of_subset_of_nonneg hN (fun i _ _ => psiTerm_nonneg hx0 hx i)
+    _ ≤ 2 := psiPartial_le_two N hx0 hx
+
+/-- **`f ≤ 3`:** the algorithm uses at most three moves per element. -/
+theorem fCost_le_three {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1) : fCost x ≤ 3 := by
+  have hm0 : 0 ≤ min x (1 - x) := le_min hx0 (by linarith)
+  have hm : min x (1 - x) ≤ 1 / 2 := by
+    rcases le_total x (1 - x) with h | h
+    · rw [min_eq_left h]; linarith
+    · rw [min_eq_right h]; linarith
+  unfold fCost
+  linarith [psi_le_two hm0 hm]
+
 theorem continuousAt_psiPartial {x : ℝ} (h : Irrational x) (N : ℕ) :
     ContinuousAt (psiPartial N) x := by
   induction N with

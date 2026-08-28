@@ -148,6 +148,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | **`n·ψ(k/n) = 2·remSum(n,k)`** | Lemma 11 | `psi_rat` | ✅ **proved** |
 | **Equation (relation)** | §3 | `relation`, `fCost` | ✅ **proved** |
 | **Theorem 8: continuity at irrationals** | Thm 8 | `continuousAt_psi`, `continuousAt_fCost` | ✅ **proved** |
+| `μ(N,ℓ,β) ≤ 3N`, i.e. `f ≤ 3` | Obs. (§3) | `psi_le_two`, `fCost_le_three` | ✅ proved |
 | **Theorem 8: Riemann integrability** | Thm 8 | `fBar_hasBoxIntegral` | ✅ **proved** |
 | Evenly spaced Riemann sums | Thm 10 | `integralSum_prepartition`, `tendsto_riemann_fBar` | ✅ proved |
 | `∑_{k<n} gcd(n,k) = o(n²)` | Thm 10 | `sum_gcd_range_le` | ✅ proved |
@@ -316,10 +317,10 @@ proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 timings on a named CPU — empirical claims with no mathematical content a proof
 assistant can certify. Also the remark's "standard deviation about 0.50": the
 moment machinery is there (`moment_fCost`), but no certified bound on the
-variance is proved. The bound proved
-for `f` is `f ≤ 4`, from the crude `∑ (2/3)^i = 3` for the series; the paper's
-sharp maximum `f = 3`, attained at `1 - φ`, is not formalised (nothing needs
-it).
+variance is proved. The measure-theoretic
+development uses the crude `f ≤ 4` (from `∑ (2/3)^i = 3`); the sharp `f ≤ 3` is
+proved separately as `fCost_le_three`, but the paper's *attainment* of `3` at
+`1 - φ` is not formalised.
 
 **Theorem 10 is proved independently of Theorem 13**, as the paper has it: from
 eq. (relation), the `O(n^{1+ε})` bound on `∑ gcd(n,k)`, and Riemann
