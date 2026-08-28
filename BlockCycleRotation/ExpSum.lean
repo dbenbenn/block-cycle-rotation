@@ -186,4 +186,102 @@ theorem norm_weighted_geom_sum_le {θ : ℝ} (h0 : θ ≠ 0) (h : |θ| ≤ π) (
     _ = (T - 1 : ℕ) * (π / |θ|) := by
         rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul]
 
+/-! ### The sharp form of Observation 15
+
+The paper does not stop at the triangle inequality: after the double-counting
+step it evaluates the inner geometric sums in closed form,
+
+  `∑_{1≤j<T} j x^j = ((T-1) x^T - (x^T - x)/(x-1)) / (x-1)`,
+
+and reads off `π²/(2θ²) + (T-1)π/(2|θ|)`.  That is the bound stated in the
+paper, and it is what we prove here. -/
+
+theorem weighted_geom_sum_closed {θ : ℝ} (hne : e θ ≠ 1) (T : ℕ) (hT : 1 ≤ T) :
+    ∑ j ∈ Finset.Ico 1 T, (j : ℂ) * e θ ^ j
+      = ((T - 1 : ℕ) * e θ ^ T - (e θ ^ T - e θ) / (e θ - 1)) / (e θ - 1) := by
+  have key : ∑ j ∈ Finset.Ico 1 T, (j : ℂ) * e θ ^ j
+      = ∑ i ∈ Finset.Ico 1 T, ∑ j ∈ Finset.Ico i T, e θ ^ j := by
+    rw [Finset.sum_Ico_Ico_comm 1 T (fun _ j => e θ ^ j)]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul]
+    simp
+  have hx1 : e θ - 1 ≠ 0 := sub_ne_zero.2 hne
+  have hinner : ∀ i ∈ Finset.Ico 1 T,
+      ∑ j ∈ Finset.Ico i T, e θ ^ j = (e θ ^ T - e θ ^ i) / (e θ - 1) := by
+    intro i hi
+    exact geom_sum_Ico hne (Finset.mem_Ico.1 hi).2.le
+  rw [key, Finset.sum_congr rfl hinner]
+  have hsplit : ∑ i ∈ Finset.Ico 1 T, (e θ ^ T - e θ ^ i) / (e θ - 1)
+      = ((∑ _i ∈ Finset.Ico 1 T, e θ ^ T) - ∑ i ∈ Finset.Ico 1 T, e θ ^ i) / (e θ - 1) := by
+    rw [← Finset.sum_sub_distrib, Finset.sum_div]
+  rw [hsplit, Finset.sum_const, Nat.card_Ico, nsmul_eq_mul, geom_sum_Ico hne hT]
+  norm_num
+
+/-- **Observation 15, weighted sum, in the paper's sharp form.**
+For `0 < |θ| ≤ π`,
+`‖∑_{1 ≤ j < T} j · e(jθ)‖ ≤ π²/(2θ²) + (T-1)·π/(2|θ|)`. -/
+theorem norm_weighted_geom_sum_le_sharp {θ : ℝ} (h0 : θ ≠ 0) (h : |θ| ≤ π) (T : ℕ) :
+    ‖∑ j ∈ Finset.Ico 1 T, (j : ℂ) * e θ ^ j‖
+      ≤ π ^ 2 / (2 * θ ^ 2) + (T - 1 : ℕ) * π / (2 * |θ|) := by
+  have hpi := Real.pi_pos
+  have hθpos : 0 < |θ| := abs_pos.2 h0
+  have hθsq : 0 < θ ^ 2 := by positivity
+  have hne : e θ ≠ 1 := e_ne_one h0 h
+  have hx1 : e θ - 1 ≠ 0 := sub_ne_zero.2 hne
+  have hu : 0 < ‖e θ - 1‖ := norm_pos_iff.2 hx1
+  -- the chord bound `2|θ|/π ≤ ‖e θ - 1‖`, in the two forms we need
+  have hchord : 2 / π * |θ| ≤ ‖e θ - 1‖ := mul_abs_le_norm_e_sub_one h
+  have hinv : 1 / ‖e θ - 1‖ ≤ π / (2 * |θ|) := by
+    rw [div_le_div_iff₀ hu (by positivity)]
+    have : 2 / π * |θ| * π = 2 * |θ| := by field_simp
+    nlinarith [mul_le_mul_of_nonneg_right hchord hpi.le]
+  have hinvsq : 1 / ‖e θ - 1‖ ^ 2 ≤ π ^ 2 / (4 * θ ^ 2) := by
+    have h1 : (1 / ‖e θ - 1‖) ^ 2 ≤ (π / (2 * |θ|)) ^ 2 :=
+      pow_le_pow_left₀ (by positivity) hinv 2
+    have hsq : (2 * |θ|) ^ 2 = 4 * θ ^ 2 := by
+      rw [mul_pow, sq_abs]; norm_num
+    have h2 : (π / (2 * |θ|)) ^ 2 = π ^ 2 / (4 * θ ^ 2) := by
+      rw [div_pow, hsq]
+    rw [div_pow, h2] at h1
+    simpa using h1
+  rcases Nat.eq_zero_or_pos T with hT | hT
+  · subst hT
+    rw [show Finset.Ico 1 0 = (∅ : Finset ℕ) from Finset.Ico_eq_empty (by omega),
+      Finset.sum_empty, norm_zero]
+    have h2 : ((0 - 1 : ℕ) : ℝ) = 0 := by norm_num
+    rw [h2, zero_mul, zero_div, add_zero]
+    exact le_of_lt (div_pos (by positivity) (by linarith))
+  rw [weighted_geom_sum_closed hne T hT]
+  have hnum : ‖((T - 1 : ℕ) : ℂ) * e θ ^ T - (e θ ^ T - e θ) / (e θ - 1)‖
+      ≤ (T - 1 : ℕ) + 2 / ‖e θ - 1‖ := by
+    refine (norm_sub_le _ _).trans ?_
+    have h1 : ‖((T - 1 : ℕ) : ℂ) * e θ ^ T‖ = (T - 1 : ℕ) := by
+      rw [norm_mul, norm_e_pow, mul_one, Complex.norm_natCast]
+    have h2 : ‖(e θ ^ T - e θ) / (e θ - 1)‖ ≤ 2 / ‖e θ - 1‖ := by
+      rw [norm_div]
+      gcongr
+      calc ‖e θ ^ T - e θ‖ ≤ ‖e θ ^ T‖ + ‖e θ‖ := norm_sub_le _ _
+        _ = 2 := by rw [norm_e_pow, norm_e]; norm_num
+    linarith
+  rw [norm_div]
+  have hstep : ‖((T - 1 : ℕ) : ℂ) * e θ ^ T - (e θ ^ T - e θ) / (e θ - 1)‖ / ‖e θ - 1‖
+      ≤ ((T - 1 : ℕ) + 2 / ‖e θ - 1‖) / ‖e θ - 1‖ := by
+    gcongr
+  refine hstep.trans ?_
+  have hexp : ((T - 1 : ℕ) + 2 / ‖e θ - 1‖) / ‖e θ - 1‖
+      = (T - 1 : ℕ) * (1 / ‖e θ - 1‖) + 2 * (1 / ‖e θ - 1‖ ^ 2) := by
+    field_simp
+  rw [hexp]
+  have hA : ((T - 1 : ℕ) : ℝ) * (1 / ‖e θ - 1‖) ≤ ((T - 1 : ℕ) : ℝ) * (π / (2 * |θ|)) :=
+    mul_le_mul_of_nonneg_left hinv (by positivity)
+  have hB : 2 * (1 / ‖e θ - 1‖ ^ 2) ≤ 2 * (π ^ 2 / (4 * θ ^ 2)) :=
+    mul_le_mul_of_nonneg_left hinvsq (by norm_num)
+  have hBB : 2 * (π ^ 2 / (4 * θ ^ 2)) = π ^ 2 / (2 * θ ^ 2) := by
+    rw [eq_div_iff (by positivity : (2 : ℝ) * θ ^ 2 ≠ 0)]
+    field_simp
+    ring
+  have hAA : ((T - 1 : ℕ) : ℝ) * (π / (2 * |θ|)) = ((T - 1 : ℕ) : ℝ) * π / (2 * |θ|) := by
+    ring
+  linarith [hA, hB]
+
 end BlockCycleRotation
