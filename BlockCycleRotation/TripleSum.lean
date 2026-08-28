@@ -1187,6 +1187,37 @@ theorem small_two_mul_gt {m d a a' b' : ℕ} (h : (a, a', b') ∈ gtTriples m d)
   obtain ⟨⟨⟨-, -, ha2, -, -, -⟩, -⟩, -⟩ := mem_gtTriples.1 h
   nlinarith
 
+/-! ## Counting an arithmetic progression
+
+The divisibility condition `a ∣ m - a'·b'` puts `b'` in a single residue class
+modulo `a`, so within an interval of length `U` there are at most `U/a + 1` of
+them.  This factor of `1/a` is what makes the small part `O(m^{3/2})`: without
+it a crude count would be too large by exactly that factor. -/
+
+/-- **Counting a residue class in an interval.** -/
+theorem card_mod_filter_le {a U c : ℕ} (ha : 0 < a) :
+    (((Finset.Ico 1 U).filter (fun b => b % a = c)).card) ≤ U / a + 1 := by
+  classical
+  have hmap : ∀ b ∈ (Finset.Ico 1 U).filter (fun b => b % a = c),
+      b / a ∈ Finset.range (U / a + 1) := by
+    intro b hb
+    simp only [Finset.mem_filter, Finset.mem_Ico] at hb
+    simp only [Finset.mem_range, Nat.lt_succ_iff]
+    exact Nat.div_le_div_right (by omega)
+  have hinj : ∀ b₁ ∈ (Finset.Ico 1 U).filter (fun b => b % a = c),
+      ∀ b₂ ∈ (Finset.Ico 1 U).filter (fun b => b % a = c), b₁ / a = b₂ / a → b₁ = b₂ := by
+    intro b₁ h₁ b₂ h₂ heq
+    simp only [Finset.mem_filter] at h₁ h₂
+    have e₁ := Nat.div_add_mod b₁ a
+    have e₂ := Nat.div_add_mod b₂ a
+    rw [h₁.2] at e₁
+    rw [h₂.2] at e₂
+    rw [heq] at e₁
+    omega
+  calc (((Finset.Ico 1 U).filter (fun b => b % a = c)).card)
+      ≤ (Finset.range (U / a + 1)).card := Finset.card_le_card_of_injOn _ hmap hinj
+    _ = U / a + 1 := Finset.card_range _
+
 /-! ## Sanity checks -/
 
 -- The `b`-elimination, checked numerically.

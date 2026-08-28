@@ -112,6 +112,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Truncation error for `C` | Lemma 17 | `cConst_le_partial_add` | ✅ proved |
 | Bulk/small split condition | Lemma 17 | `gtBound_bulk`, `gtTriples_bulk_small` | ✅ proved |
 | Small branch: `2d·a² > m` | Lemma 17 | `small_two_mul_gt` | ✅ proved |
+| AP counting `≤ U/a + 1` | Lemma 17 | `card_mod_filter_le` | ✅ proved |
 | Lemma 17: small-part bound, truncation, assembly | Lemma 17 | — | 🚧 remaining |
 | Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
