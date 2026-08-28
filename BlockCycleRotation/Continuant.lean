@@ -750,6 +750,61 @@ theorem split_mem_quadruples {n k j : ℕ} (hk : k ∈ shifts n) (hj1 : 1 ≤ j)
   rw [mem_quadruples]
   exact ⟨quadruple_le h1 h2 h3 h4 hsum, h1, h2, h3, h4, h5, h6, hsum⟩
 
+/-! ## The expansion attached to a quadruple
+
+The inverse of the passage from splits to quadruples: given `(a, b, a', b')`,
+reassemble the expansion as `cf a a'` followed by the reverse of `cf b b'`.
+Reversing is what `K_reverse` licenses. -/
+
+theorem head?_append_of_ne_nil {l₁ l₂ : List ℕ} (h : l₁ ≠ []) :
+    (l₁ ++ l₂).head? = l₁.head? := by
+  rcases l₁ with _ | ⟨x, xs⟩
+  · exact absurd rfl h
+  · simp
+
+/-- The expansion attached to a quadruple. -/
+def quadExpansion (a b a' b' : ℕ) : List ℕ := cf a a' ++ (cf b b').reverse
+
+/-- **The expansion attached to a quadruple is the split it came from.**  It is
+a normalised expansion of `n`, and splitting it at `|cf a a'|` returns the two
+halves. -/
+theorem quadExpansion_spec {n a b a' b' : ℕ} (hq : (a, b, a', b') ∈ quadruples n) :
+    K (quadExpansion a b a' b') = n ∧ quadExpansion a b a' b' ≠ []
+      ∧ (∀ c ∈ quadExpansion a b a' b', 1 ≤ c)
+      ∧ (∀ x ∈ (quadExpansion a b a' b').head?, 2 ≤ x)
+      ∧ (∀ x ∈ (quadExpansion a b a' b').getLast?, 2 ≤ x)
+      ∧ (quadExpansion a b a' b').take (cf a a').length = cf a a'
+      ∧ (quadExpansion a b a' b').drop (cf a a').length = (cf b b').reverse
+      ∧ 1 ≤ (cf a a').length
+      ∧ (cf a a').length < (quadExpansion a b a' b').length := by
+  obtain ⟨-, ha1, ha2, hb1, hb2, hga, hgb, hsum⟩ := mem_quadruples.1 hq
+  obtain ⟨hKa, hKa'⟩ := K_cf a' a ha1 ha2 hga
+  obtain ⟨hnea, hposa, hheada⟩ := cf_spec a' a ha1 ha2 hga
+  obtain ⟨hKb, hKb'⟩ := K_cf b' b hb1 hb2 hgb
+  obtain ⟨hneb, hposb, hheadb⟩ := cf_spec b' b hb1 hb2 hgb
+  have hnebr : (cf b b').reverse ≠ [] := by simpa using hneb
+  have hKbr : K (cf b b').reverse = b := by rw [K_reverse]; exact hKb
+  have hKbr' : K ((cf b b').reverse).tail = b' := by
+    rw [reverse_tail_eq, K_reverse]; exact hKb'
+  have hlen : 1 ≤ (cf a a').length := List.length_pos_iff.2 hnea
+  refine ⟨?_, ?_, ?_, ?_, ?_, List.take_left, List.drop_left, hlen, ?_⟩
+  · rw [quadExpansion, K_append _ _ hnea hnebr, hKa, hKa', hKbr, hKbr', hsum]
+  · simp [quadExpansion, hnea]
+  · intro c hc
+    rcases List.mem_append.1 hc with h | h
+    · exact hposa c h
+    · exact hposb c (List.mem_reverse.1 h)
+  · intro x hx
+    rw [quadExpansion, head?_append_of_ne_nil hnea] at hx
+    exact hheada x hx
+  · intro x hx
+    rw [quadExpansion, List.getLast?_append_of_ne_nil _ hnebr,
+      List.getLast?_reverse] at hx
+    exact hheadb x hx
+  · rw [quadExpansion, List.length_append]
+    have hbl : 0 < (cf b b').reverse.length := List.length_pos_iff.2 hnebr
+    omega
+
 /-! ## Sanity checks
 
 `K(c₀,…,c_l)` is the numerator of the continued fraction `[c₀; c₁,…,c_l]`.
