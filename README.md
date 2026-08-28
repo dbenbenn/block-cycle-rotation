@@ -103,7 +103,10 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | **Middle estimation layer** | Lemmas 18–19 | `middle_layer` | ✅ **proved** |
 | **Outer estimation layer** | Lemmas 18–19 | `outer_layer` | ✅ **proved** |
 | **Aggregate error `O(n^{3/2+ε})`** | Lemmas 18–19 | `error_isBigO` | ✅ **proved** |
-| `G₁`, Theorem 13, constant `D` | Thm 13 | — | 🚧 out of reach |
+| Constant `C` of eq. (const-c) | Eq. (const-c) | `cTerm`, `cTerm_row_le` | ✅ defined, bounded |
+| Convergence of the series for `C` | Eq. (const-c) | — | 🚧 in progress |
+| Lemma g-one: the main term `G₁` | Lemma 17 | — | 🚧 remaining |
+| Theorem 13 | Thm 13 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13 | — | 🚧 remaining |
 | `G₁ + G₂ + G₃` → `O(n^{3/2+ε})` | Lemmas 17–19 | — | 🚧 remaining |
 | Theorem 13, constant `D = 1 + 4C` | Thm 13, §4 | — | 🚧 remaining |
