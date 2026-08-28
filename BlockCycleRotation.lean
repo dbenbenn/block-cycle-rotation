@@ -18,3 +18,4 @@ import BlockCycleRotation.Theorem10
 import BlockCycleRotation.Buffer
 import BlockCycleRotation.AllShifts
 import BlockCycleRotation.Bound
+import BlockCycleRotation.Numeric
