@@ -171,4 +171,120 @@ Observation 6: `n = 21`, `k = 8` costs 58 moves.  The recursion visits
 #guard (List.range 40).all (fun n => (List.range 40).all
   (fun k => cost n k + Nat.gcd n k = n + 2 * remSum n k))
 
+/-! ## The Fibonacci worst case
+
+Observation 6 says the worst case is approached along `k = F_m`, `n = F_{m+2}`,
+where the algorithm takes `3∑_{j≤m} F_j - 2 = 3n - 3gcd(n,k) - 2` moves.  Since
+`∑_{j≤m} F_j = F_{m+2} - 1` and `gcd(F_{m+2}, F_m) = 1`, that is `3n - 5`. -/
+
+theorem fib_two_le {j : ℕ} : 2 ≤ Nat.fib (j + 3) := by
+  have h : Nat.fib 3 ≤ Nat.fib (j + 3) := Nat.fib_mono (by omega)
+  have h3 : Nat.fib 3 = 2 := by decide
+  omega
+
+/-- One Euclidean step on consecutive Fibonacci numbers.  (Stated from index `2`
+upwards: at the very bottom `F₁ = F₂ = 1` and the pattern breaks.) -/
+theorem fib_mod_fib (j : ℕ) : Nat.fib (j + 4) % Nat.fib (j + 3) = Nat.fib (j + 2) := by
+  have hsplit : Nat.fib (j + 4) = Nat.fib (j + 2) + Nat.fib (j + 3) := Nat.fib_add_two
+  have hlt : Nat.fib (j + 2) < Nat.fib (j + 3) := Nat.fib_lt_fib_succ (n := j + 2) (by omega)
+  rw [hsplit, Nat.add_mod_right]
+  exact Nat.mod_eq_of_lt hlt
+
+/-- Consecutive Fibonacci numbers: `remSum F_{m+1} F_m = F_{m+2} - 2` for `m ≥ 2`. -/
+theorem remSum_fib_consec : ∀ j : ℕ, remSum (Nat.fib (j + 3)) (Nat.fib (j + 2)) =
+    Nat.fib (j + 4) - 2 := by
+  intro j
+  induction j with
+  | zero =>
+    have h2 : Nat.fib 2 = 1 := by decide
+    have h3 : Nat.fib 3 = 2 := by decide
+    have h4 : Nat.fib 4 = 3 := by decide
+    norm_num [h2, h3, h4, remSum_of_pos (k := 1) 2 (by norm_num)]
+  | succ J ih =>
+    have hfib0 : Nat.fib (J + 3) ≠ 0 := (Nat.fib_pos.2 (by omega)).ne'
+    have e1 : J + 1 + 2 = J + 3 := by omega
+    have e2 : J + 1 + 3 = J + 4 := by omega
+    have e3 : J + 1 + 4 = J + 5 := by omega
+    rw [e1, e2, e3]
+    rw [remSum_of_pos _ hfib0, fib_mod_fib J, ih]
+    have hadd : Nat.fib (J + 5) = Nat.fib (J + 3) + Nat.fib (J + 4) := by
+      have h : Nat.fib (J + 3 + 2) = Nat.fib (J + 3) + Nat.fib (J + 3 + 1) := Nat.fib_add_two
+      have e4 : J + 3 + 2 = J + 5 := by omega
+      have e5 : J + 3 + 1 = J + 4 := by omega
+      rw [e4, e5] at h
+      exact h
+    have hpos : 2 ≤ Nat.fib (J + 4) := by
+      have h : Nat.fib 3 ≤ Nat.fib (J + 4) := Nat.fib_mono (by omega)
+      have h3 : Nat.fib 3 = 2 := by decide
+      omega
+    omega
+
+/-- The paper's `n = F_{m+2}`, `k = F_m` case: `remSum = F_{m+2} - 2`. -/
+theorem remSum_fib (j : ℕ) :
+    remSum (Nat.fib (j + 4)) (Nat.fib (j + 2)) = Nat.fib (j + 4) - 2 := by
+  have hfib0 : Nat.fib (j + 2) ≠ 0 := (Nat.fib_pos.2 (by omega)).ne'
+  rcases Nat.eq_zero_or_pos j with hj | hj
+  · -- `j = 0`: here `F₂ = 1` divides `F₄ = 3` and the recursion stops at once.
+    subst hj
+    have h2 : Nat.fib 2 = 1 := by decide
+    have h4 : Nat.fib 4 = 3 := by decide
+    norm_num [h2, h4, remSum_of_pos (k := 1) 3 (by norm_num)]
+  · obtain ⟨i, rfl⟩ : ∃ i, j = i + 1 := ⟨j - 1, by omega⟩
+    have e2 : i + 1 + 2 = i + 3 := by omega
+    have e4 : i + 1 + 4 = i + 5 := by omega
+    rw [e2, e4]
+    have hfib0' : Nat.fib (i + 3) ≠ 0 := (Nat.fib_pos.2 (by omega)).ne'
+    have hsplit : Nat.fib (i + 5) = Nat.fib (i + 2) + 2 * Nat.fib (i + 3) := by
+      have h1 : Nat.fib (i + 3 + 2) = Nat.fib (i + 3) + Nat.fib (i + 3 + 1) := Nat.fib_add_two
+      have h2 : Nat.fib (i + 2 + 2) = Nat.fib (i + 2) + Nat.fib (i + 2 + 1) := Nat.fib_add_two
+      have a1 : i + 3 + 2 = i + 5 := by omega
+      have a2 : i + 3 + 1 = i + 4 := by omega
+      have a3 : i + 2 + 2 = i + 4 := by omega
+      have a4 : i + 2 + 1 = i + 3 := by omega
+      rw [a1, a2] at h1
+      rw [a3, a4] at h2
+      omega
+    have hlt : Nat.fib (i + 2) < Nat.fib (i + 3) := Nat.fib_lt_fib_succ (n := i + 2) (by omega)
+    have hmod : Nat.fib (i + 5) % Nat.fib (i + 3) = Nat.fib (i + 2) := by
+      rw [hsplit, Nat.mul_comm 2 (Nat.fib (i + 3)), Nat.add_mul_mod_self_left]
+      exact Nat.mod_eq_of_lt hlt
+    have hprev : remSum (Nat.fib (i + 3)) (Nat.fib (i + 2)) = Nat.fib (i + 4) - 2 :=
+      remSum_fib_consec i
+    have hpos : 2 ≤ Nat.fib (i + 4) := by
+      have h : Nat.fib 3 ≤ Nat.fib (i + 4) := Nat.fib_mono (by omega)
+      have h3 : Nat.fib 3 = 2 := by decide
+      omega
+    have hadd : Nat.fib (i + 5) = Nat.fib (i + 3) + Nat.fib (i + 4) := by
+      have h : Nat.fib (i + 3 + 2) = Nat.fib (i + 3) + Nat.fib (i + 3 + 1) := Nat.fib_add_two
+      have a1 : i + 3 + 2 = i + 5 := by omega
+      have a2 : i + 3 + 1 = i + 4 := by omega
+      rw [a1, a2] at h
+      exact h
+    rw [remSum_of_pos _ hfib0', hmod, hprev]
+    omega
+
+theorem gcd_fib_add_two (m : ℕ) : Nat.gcd (Nat.fib (m + 2)) (Nat.fib m) = 1 := by
+  have hsplit : Nat.fib (m + 2) = Nat.fib (m + 1) + Nat.fib m := by
+    rw [Nat.fib_add_two]; ring
+  rw [hsplit, gcd_add_left]
+  exact (Nat.fib_coprime_fib_succ m).symm
+
+/-- **Observation 6, the Fibonacci family.**  At `n = F_{m+2}`, `k = F_m` (`m ≥ 2`)
+the algorithm uses `3n - 5 = 3n - 3gcd(n,k) - 2` moves, two short of the
+worst-case bound `3n - 3gcd(n,k)` of Theorem A. -/
+theorem moveCount_fib (j : ℕ) :
+    moveCount (Nat.fib (j + 4)) (Nat.fib (j + 2)) = 3 * Nat.fib (j + 4) - 5 := by
+  have hg : Nat.gcd (Nat.fib (j + 4)) (Nat.fib (j + 2)) = 1 := by
+    have h := gcd_fib_add_two (m := j + 2)
+    have e : j + 2 + 2 = j + 4 := by omega
+    rwa [e] at h
+  have hr : remSum (Nat.fib (j + 4)) (Nat.fib (j + 2)) = Nat.fib (j + 4) - 2 := remSum_fib j
+  have hpos : 3 ≤ Nat.fib (j + 4) := by
+    have h : Nat.fib 4 ≤ Nat.fib (j + 4) := Nat.fib_mono (by omega)
+    have h4 : Nat.fib 4 = 3 := by decide
+    omega
+  unfold moveCount
+  rw [hg, hr]
+  omega
+
 end BlockCycleRotation
