@@ -364,7 +364,9 @@ bound `d(n) = O(n^ε)` (cited as standard, absent from Mathlib), Bernoulli's
 inequality, and the correctness of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
-**The cost recursion is not linked to the executable algorithm.** `bcRotate` is proved to compute the rotation, and `cost` is proved to satisfy the paper's bounds, but no theorem states that `cost n k` counts the moves `bcRotate` performs — they are independent definitions. The paper does not face this because it defines `m(n,k)` as the move count outright and analyses that one object. Closing the gap needs the in-place algorithm modelled as a sequence of element moves rather than as a list transformation; note also that `bcRotate` handles `k > n/2` by reversing the list, a step with no counterpart in the paper, so any such statement would be restricted to `2k ≤ n`.
+**Equation (1) is taken as a definition, not proved.** The paper introduces `Cost(n,k,b)` as *the number of moves the block cycle method needs* to rotate an array of length `n` by `k` using a buffer of size `b`, and then states equation (1) — the three-branch recursion — as something it *finds* to hold for `k ≤ n/2`. Here that recursion is the definition of `costB` (and `cost`), so the step from the operational move count to the recursion is assumed rather than established.
+
+`bcRotate` is proved to compute the rotation, and the cost recursion is proved to satisfy the paper's bounds, but no theorem connects them: nothing states that `cost n k` counts the moves `bcRotate` performs. Closing the gap means formalising equation (1) itself — modelling the in-place algorithm as a sequence of element moves and proving that count satisfies the recursion. Two constraints on any such statement: the paper's own hypothesis `k ≤ n/2`, and the fact that `bcRotate` handles `k > n/2` by reversing the list, a step with no counterpart in the paper.
 
 **Not attempted.** The benchmarks of §5, which are C++ listings and wall-clock
 timings on a named CPU — empirical claims with no mathematical content a proof
