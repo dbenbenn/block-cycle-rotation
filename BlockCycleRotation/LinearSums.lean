@@ -18,7 +18,7 @@ The resulting bound
 
   `‖∑_m w_m ∑_b (A + B·b) e(2πmb/a)‖ ≤ (‖A‖ + ‖B‖(T-1)) · a · ∑_{0<m<a} 1/m`
 
-carries the `log a` of Lemma 18 in its harmonic sum.
+carries the `log a` of Lemma 16 in its harmonic sum.
 -/
 
 import BlockCycleRotation.Orthogonality
@@ -66,7 +66,7 @@ theorem norm_linear_geom_sum_root_le {a m : ℕ} (h0 : 0 < m) (hma : m < a) (A B
 
 /-- **The error term of §4.**  Summing the inner sums over the nontrivial
 characters, against arbitrary weights of modulus at most one, costs a harmonic
-sum — this is where the `log a` of Lemma 18 comes from. -/
+sum — this is where the `log a` of Lemma 16 comes from. -/
 theorem norm_sum_twisted_le {a : ℕ} (A B : ℂ) (T : ℕ) (w : ℕ → ℂ) (hw : ∀ m, ‖w m‖ ≤ 1) :
     ‖∑ m ∈ Finset.Ico 1 a, w m * ∑ b ∈ Finset.Ico 1 T,
         (A + B * b) * e (2 * π * (m : ℝ) / a) ^ b‖

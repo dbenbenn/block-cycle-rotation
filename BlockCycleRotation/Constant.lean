@@ -10,7 +10,7 @@ C = ∑_{a > a' ≥ 1, gcd(a,a') = 1}  (2a + a') / (2 a² (a+a')²),
 an explicit double series over coprime pairs.  Its value is `≈ 0.2125`, and
 `D = 1 + 4C ≈ 1.85`.
 
-Note this is a plain convergent series: no integral is involved.  (Theorem 10 of
+Note this is a plain convergent series: no integral is involved.  (Theorem 9 of
 the paper separately identifies the limit as `∫₀¹ ρ`, but that representation
 plays no part in computing `C`.)  Remark 21 rewrites `C` using Euler's
 `ζ(2,1) = ζ(3)`; that rewriting is optional.
@@ -103,16 +103,16 @@ noncomputable def cConst : ℝ := ∑' p : ℕ × ℕ, cTerm p
 theorem cConst_nonneg : 0 ≤ cConst :=
   tsum_nonneg fun p => cTerm_nonneg p
 
-/-- **The constant `D = 1 + 4C`** of Theorem A and Theorem 13.
+/-- **The constant `D = 1 + 4C`** of Theorem A and Theorem 14.
 
 Numerically, truncating the series for `C` at `a ≤ 20000` gives
 `C ≈ 0.21138` and `D ≈ 1.8455`, consistent with the paper's `D ≈ 1.85`.
 (The tail is `O(1/N)`, so the truncation converges slowly.) -/
 noncomputable def dConst : ℝ := 1 + 4 * cConst
 
-/-! ## The summand of Lemma 17
+/-! ## The summand of Lemma 19
 
-The bulk part of `G₁` in the paper's proof of Lemma 17 has summand
+The bulk part of `G₁` in the paper's proof of Lemma 19 has summand
 
 ```
 n²/(d²a²(a+a'))  -  n²a'/(2a²d²(a+a')²)  =  (n²/d²) · (2a + a')/(2a²(a+a')²),
@@ -277,7 +277,7 @@ theorem cConst_le_bulk_add {m d N : ℕ} (hN : 0 < N)
   rw [Finset.sum_congr rfl heq]
 
 
-/-! ## The substitution of Lemma 17
+/-! ## The substitution of Lemma 19
 
 Substituting the paper's coefficients `A = d·a + m/a`, `B = -a'/a` and the real
 bound `V = m/(a+a')` into the main term `(1/a)(A·V + B·V²/2)` gives
@@ -435,7 +435,7 @@ theorem bulk_pairs_close {m d N : ℕ} (hN : 0 < N) (hd : 0 < d)
 
 For `d ∣ n` the natural-number quotient `n/d` is exact, so `m = n/d` gives
 `m² = n²/d²` and the main terms sum to `C·n²·∑_{d∣n} 1/d²` — the shape of
-Lemma 17.  The errors, of size `O((n/d)^{3/2}√d) = O(n^{3/2}/d)`, sum to
+Lemma 19.  The errors, of size `O((n/d)^{3/2}√d) = O(n^{3/2}/d)`, sum to
 `O(n^{3/2}·d(n))`. -/
 
 /-- **The main terms sum to `C·n²·∑_{d∣n} 1/d²`.** -/
@@ -476,13 +476,13 @@ theorem error_per_divisor_le {n d : ℕ} (hn : 0 < n) (hd : d ∈ n.divisors) :
   have hn32 : (0 : ℝ) ≤ (n : ℝ) ^ (3 / 2 : ℝ) := by positivity
   nlinarith [hexp, hn32]
 
-/-! ## Lemma 17
+/-! ## Lemma 19
 
 At a single divisor, the main term is `m²·C` up to the lower-order part and the
 truncation error.  Summing over `d ∣ n` then gives the statement of the paper's
-Lemma 17. -/
+Lemma 19. -/
 
-/-- **Lemma 17, at a single divisor.**
+/-- **Lemma 19, at a single divisor.**
 
 The main term for the divisor `d`, with `m = n/d`, differs from `m²·C` by at
 most the lower-order part plus the truncation error.  Taking
@@ -518,7 +518,7 @@ noncomputable def G1 (n : ℕ) : ℝ :=
       ((d : ℝ) * ((n / d : ℕ) : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ))
         + ((n / d : ℕ) : ℝ) ^ 2 * cTerm p)
 
-/-- **Lemma 17.**
+/-- **Lemma 19.**
 
 `G₁(n) = C·n²·∑_{d∣n} 1/d²` up to the sum of the per-divisor errors.  Each of
 those is bounded by `lemma17_local`, and by `error_per_divisor_le` and
@@ -570,7 +570,7 @@ theorem bulk_empty_of_small {m d : ℕ} (h : m < 6 * d) :
       _ ≤ d * a * (a + a') := Nat.mul_le_mul (Nat.mul_le_mul_left d ha2') haa
   omega
 
-/-- **The per-divisor error of Lemma 17.** -/
+/-- **The per-divisor error of Lemma 19.** -/
 noncomputable def Eterm (n d : ℕ) : ℝ :=
   if 2 * d ≤ n / d then
     ((Nat.sqrt ((n / d - 1) / d) : ℝ) + 1) * ((d : ℝ) * ((n / d : ℕ) : ℝ))
@@ -596,7 +596,7 @@ theorem lemma17_E {n : ℕ} (hn : 0 < n) (d : ℕ) (hd : d ∈ n.divisors) :
   · rw [if_neg hcase, bulk_empty_of_small (by omega), Finset.sum_empty, zero_sub, abs_neg,
       abs_of_nonneg (mul_nonneg (by positivity) cConst_nonneg)]
 
-/-- **Lemma 17, with the error instantiated.** -/
+/-- **Lemma 19, with the error instantiated.** -/
 theorem lemma17_final {n : ℕ} (hn : 0 < n) :
     |G1 n - cConst * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2|
       ≤ ∑ d ∈ n.divisors, Eterm n d :=
@@ -740,7 +740,7 @@ theorem Eterm_le {n d : ℕ} (hn : 0 < n) (hd : d ∈ n.divisors) :
       by positivity
     nlinarith [h1, h2, h3]
 
-/-- **Lemma 17 in the paper's form.**  The total error is `O(n^{3/2+ε})`. -/
+/-- **Lemma 19 in the paper's form.**  The total error is `O(n^{3/2+ε})`. -/
 theorem lemma17_isBigO {ε : ℝ} (hε : 0 < ε) :
     ∃ K : ℝ, 0 < K ∧ ∀ n : ℕ, 0 < n →
       |G1 n - cConst * (n : ℝ) ^ 2 * ∑ d ∈ n.divisors, 1 / (d : ℝ) ^ 2|

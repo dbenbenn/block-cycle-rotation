@@ -1,7 +1,7 @@
 /-
 # `D < 2`
 
-The remark after Theorem 13 says the expected number of moves per element is
+Remark 15 says the expected number of moves per element is
 less than `2`, so that on average the block cycle scheme beats trinity
 rotation, which "uses essentially `2n` moves".  That is `D = 1 + 4C < 2`,
 i.e. `C < 1/4`, and it needs a certified numerical bound on `C`.
