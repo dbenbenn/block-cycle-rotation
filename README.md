@@ -183,7 +183,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Corollary 6(2): `μ(λN,λℓ,λβ) = λμ(N,ℓ,β)` | Corollary 6(2) | `muCost_homogeneous` | ✅ proved |
 | `f_β(ℓ) = μ(1,ℓ,β)` | Remark 13 | `muCost_one` | ✅ proved |
 | **Eq. (integral): buffered move count** | Eq. (integral) | `costB` | ✅ **defined** |
-| **Corollary 6(3): `m(n,k,β) ≤ μ(n,k,β)`** | Corollary 6(3) | `costB_le_muCost` | ✅ **proved** |
+| **Corollary 6(3): `m(n,k,b) ≤ μ(n,k,b)`** | Corollary 6(3) | `costB_le_muCost` | ✅ **proved** |
 | Eq. (integral) at `β = 0` is Lemma 11 | §2–3 | `costB_eq_moveCount` | ✅ proved |
 | Corollary 6(3), unbuffered limit | Corollary 6(3) | `cost_le_muCost` | ✅ proved |
 | **Segments halve every two steps** | §3 | `seg_add_two_le` | ✅ **proved** |
@@ -293,6 +293,11 @@ does not provide, is proved in `DivisorBound.lean`: for each `ε > 0` there is
 With that in hand the three pieces of §4 are complete: `lemma17` (the main term
 and the constant `C`), `lemma_g_two` and `lemma_g_three` (the two error terms),
 and `theorem13` assembles them.
+
+**A note on the buffer arguments.** The paper defines $\mu(\nu,\kappa,\beta)$ with a *relative* buffer
+$\beta$, and Corollary 6 items (1) and (2) are stated in those variables; item (3) applies it at
+$(n,k,b)$ with the absolute buffer $b$, as `costB_le_muCost` does. Rows above write $\mu(N,\ell,\beta)$
+using the Lean argument names of `muCost`, which correspond to the paper's $\nu,\kappa,\beta$.
 
 **A note on the paper's argument order.** The paper writes the move count and the
 remainder sum with their arguments in both orders: equation (8) defines `m̄(n,k)`
