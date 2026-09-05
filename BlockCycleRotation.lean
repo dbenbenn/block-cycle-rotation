@@ -12,9 +12,9 @@ import BlockCycleRotation.DivisorBound
 import BlockCycleRotation.Continuant
 import BlockCycleRotation.TripleSum
 import BlockCycleRotation.Constant
-import BlockCycleRotation.Theorem13
+import BlockCycleRotation.Theorem14
 import BlockCycleRotation.Remark21
-import BlockCycleRotation.Theorem10
+import BlockCycleRotation.Theorem9
 import BlockCycleRotation.Buffer
 import BlockCycleRotation.AllShifts
 import BlockCycleRotation.Bound

@@ -11,7 +11,7 @@ avgCost n = D·n + O(n^{1/2+ε}),     D = 1 + 4C ≈ 1.85.
 to `O(n^{3/2+ε})` — and `TripleSum.lean` proves the error layers bounding
 `G₂ + G₃`.  What is still missing, and is supplied here, is the link between
 the two: the estimate at a single coprime pair, which says that the actual inner
-sum over `b'` differs from the `G₁` summand by at most the `G₂ + G₃` bound.
+sum over `y'` differs from the `G₁` summand by at most the `G₂ + G₃` bound.
 Everything after that is aggregation.
 -/
 
@@ -24,103 +24,103 @@ open Finset
 
 /-! ## The estimate at a single pair
 
-Fix `d`, `m = n/d`, and a coprime pair `a > a' ≥ 1` in the bulk, meaning
-`d·a·(a+a') ≤ m`.  By `gtBound_bulk_eq` the cut-off is then `K+1` with
-`K = ⌊(m-1)/(a+a')⌋`, and `K ≤ V ≤ K+1` for the paper's real cut-off
-`V = m/(a+a')`.  Three proved facts combine:
+Fix `d`, `m = n/d`, and a coprime pair `x > y ≥ 1` in the bulk, meaning
+`d·x·(x+y) ≤ m`.  By `yBound_bulk_eq` the cut-off is then `K+1` with
+`K = ⌊(m-1)/(x+y)⌋`, and `K ≤ V ≤ K+1` for the paper's real cut-off
+`V = m/(x+y)`.  Three proved facts combine:
 
 * `inner_gt_estimate` — removing the congruence condition costs
-  `(|A| + |B|·K)(1 + log a)`;
+  `(|A| + |B|·K)(1 + log x)`;
 * `main_term_vs_sum` — replacing the discrete sum by `A·V + B·V²/2` costs
   `|A| + |B|·V`;
-* `main_term_substitute` — the result is `d·m/(a+a') + m²·cTerm(a,a')`, the
+* `main_term_substitute` — the result is `d·m/(x+y) + m²·cTerm(x,y)`, the
   summand of `G₁`.
 
-Since `|A| = d·a + m/a` and `|B|·V ≤ m/a`, both costs are at most
-`W = d·a + 2m/a`, and the total is at most `2·W·(1 + log m)`. -/
+Since `|A| = d·x + m/x` and `|B|·V ≤ m/x`, both costs are at most
+`W = d·x + 2m/x`, and the total is at most `2·W·(1 + log m)`. -/
 
 set_option maxHeartbeats 1000000 in
 -- Three separate approximations are chained here, each with its own algebraic
 -- normalisation; the default budget is not enough.
 /-- **The estimate at a single bulk pair.** -/
-theorem bulk_pair_estimate {m d a a' : ℕ} (hm : 0 < m) (hd : 0 < d)
-    (ha' : 1 ≤ a') (haa : a' < a) (hgcd : Nat.gcd a a' = 1)
-    (hbulk : d * a * (a + a') ≤ m) :
-    |((∑ b' ∈ (Finset.Ico 1 (gtBound m d a a')).filter (fun b' => a ∣ (m - a' * b')),
-          (d * a + (m - a' * b') / a) : ℕ) : ℝ)
-        - ((d : ℝ) * (m : ℝ) / ((a : ℝ) + (a' : ℝ)) + (m : ℝ) ^ 2 * cTerm (a, a'))|
-      ≤ 2 * (((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / (a : ℝ)) * (1 + Real.log m) := by
-  have ha : 0 < a := by omega
-  have hs : 0 < a + a' := by omega
-  have hda2 : d * a * a < m := by nlinarith
-  have haleM : a ≤ m := by
+theorem bulk_pair_estimate {m d x y : ℕ} (hm : 0 < m) (hd : 0 < d)
+    (hy : 1 ≤ y) (haa : y < x) (hgcd : Nat.gcd x y = 1)
+    (hbulk : d * x * (x + y) ≤ m) :
+    |((∑ y' ∈ (Finset.Ico 1 (yBound m d x y)).filter (fun y' => x ∣ (m - y * y')),
+          (d * x + (m - y * y') / x) : ℕ) : ℝ)
+        - ((d : ℝ) * (m : ℝ) / ((x : ℝ) + (y : ℝ)) + (m : ℝ) ^ 2 * cTerm (x, y))|
+      ≤ 2 * (((d * x : ℕ) : ℝ) + 2 * (m : ℝ) / (x : ℝ)) * (1 + Real.log m) := by
+  have hx : 0 < x := by omega
+  have hs : 0 < x + y := by omega
+  have hda2 : d * x * x < m := by nlinarith
+  have haleM : x ≤ m := by
     refine le_trans ?_ hbulk
-    calc a = 1 * a * 1 := by ring
-      _ ≤ d * a * (a + a') := Nat.mul_le_mul (Nat.mul_le_mul hd (le_refl a)) hs
-  have hsm : a + a' ≤ m := by
+    calc x = 1 * x * 1 := by ring
+      _ ≤ d * x * (x + y) := Nat.mul_le_mul (Nat.mul_le_mul hd (le_refl x)) hs
+  have hsm : x + y ≤ m := by
     refine le_trans ?_ hbulk
-    calc a + a' = 1 * 1 * (a + a') := by ring
-      _ ≤ d * a * (a + a') := Nat.mul_le_mul (Nat.mul_le_mul hd ha) (le_refl _)
-  have haR : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast ha
-  have ha'R : (1 : ℝ) ≤ (a' : ℝ) := by exact_mod_cast ha'
-  have hsR : (0 : ℝ) < (a : ℝ) + (a' : ℝ) := by linarith
+    calc x + y = 1 * 1 * (x + y) := by ring
+      _ ≤ d * x * (x + y) := Nat.mul_le_mul (Nat.mul_le_mul hd hx) (le_refl _)
+  have haR : (1 : ℝ) ≤ (x : ℝ) := by exact_mod_cast hx
+  have hyR : (1 : ℝ) ≤ (y : ℝ) := by exact_mod_cast hy
+  have hsR : (0 : ℝ) < (x : ℝ) + (y : ℝ) := by linarith
   have hmR : (1 : ℝ) ≤ (m : ℝ) := by exact_mod_cast hm
   -- the cut-off
-  have hUeq : gtBound m d a a' = (m - 1) / (a + a') + 1 := gtBound_bulk_eq hd ha' haa hbulk
-  set K := (m - 1) / (a + a') with hKdef
-  set U := gtBound m d a a' with hUdef
+  have hUeq : yBound m d x y = (m - 1) / (x + y) + 1 := yBound_bulk_eq hd hy haa hbulk
+  set K := (m - 1) / (x + y) with hKdef
+  set U := yBound m d x y with hUdef
   have hU1 : 1 ≤ U := by rw [hUeq]; exact Nat.le_add_left 1 K
-  have hrange : ∀ b' ∈ Finset.Ico 1 U, a' * b' ≤ m := by
-    intro b' hb'
-    have := (mem_gtRange hm hs ha' hda2).1 hb'
+  have hrange : ∀ y' ∈ Finset.Ico 1 U, y * y' ≤ m := by
+    intro y' hy'
+    have := (mem_gtRange hm hs hy hda2).1 hy'
     omega
   -- the three approximations
-  obtain ⟨c, hc⟩ := inner_gt_estimate (m := m) (d := d) (a := a) (a' := a') ha hgcd U hrange
-  set A : ℝ := ((d * a : ℕ) : ℝ) + (m : ℝ) / (a : ℝ) with hA
-  set B : ℝ := -(a' : ℝ) / (a : ℝ) with hB
-  set V : ℝ := (m : ℝ) / ((a : ℝ) + (a' : ℝ)) with hV
-  have hsum : ∑ b' ∈ Finset.Ico 1 U, (A + B * (b' : ℝ))
+  obtain ⟨c, hc⟩ := inner_gt_estimate (m := m) (d := d) (x := x) (y := y) hx hgcd U hrange
+  set A : ℝ := ((d * x : ℕ) : ℝ) + (m : ℝ) / (x : ℝ) with hA
+  set B : ℝ := -(y : ℝ) / (x : ℝ) with hB
+  set V : ℝ := (m : ℝ) / ((x : ℝ) + (y : ℝ)) with hV
+  have hsum : ∑ y' ∈ Finset.Ico 1 U, (A + B * (y' : ℝ))
       = A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2 := by
     rw [sum_linear_Ico A B U hU1, hUeq]
     push_cast
     ring
   have hKV : (K : ℝ) ≤ V := by
     rw [hV, le_div_iff₀ hsR]
-    have h1 : K * (a + a') ≤ m := le_trans (Nat.div_mul_le_self _ _) (by omega)
-    have h2 : ((K * (a + a') : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast h1
+    have h1 : K * (x + y) ≤ m := le_trans (Nat.div_mul_le_self _ _) (by omega)
+    have h2 : ((K * (x + y) : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast h1
     push_cast at h2
     linarith
   have hVK : V ≤ (K : ℝ) + 1 := by
     rw [hV, div_le_iff₀ hsR]
-    have h1 : m - 1 < (K + 1) * (a + a') := by
-      have hdm := Nat.div_add_mod (m - 1) (a + a')
-      have hlt : (m - 1) % (a + a') < a + a' := Nat.mod_lt _ hs
+    have h1 : m - 1 < (K + 1) * (x + y) := by
+      have hdm := Nat.div_add_mod (m - 1) (x + y)
+      have hlt : (m - 1) % (x + y) < x + y := Nat.mod_lt _ hs
       nlinarith
-    have h2 : m ≤ (K + 1) * (a + a') := by omega
-    have h3 : (m : ℝ) ≤ (((K + 1) * (a + a') : ℕ) : ℝ) := by exact_mod_cast h2
+    have h2 : m ≤ (K + 1) * (x + y) := by omega
+    have h3 : (m : ℝ) ≤ (((K + 1) * (x + y) : ℕ) : ℝ) := by exact_mod_cast h2
     push_cast at h3
     linarith
   have hV1 : 1 ≤ V := by
     rw [hV, le_div_iff₀ hsR]
-    have : ((a + a' : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast hsm
+    have : ((x + y : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast hsm
     push_cast at this
     linarith
   have hmts := main_term_vs_sum A B V K hKV hVK hV1
-  have hsubst := main_term_substitute (m := m) (d := d) ha' haa hgcd
+  have hsubst := main_term_substitute (m := m) (d := d) hy haa hgcd
   -- absolute values of the coefficients
   have hAnn : (0 : ℝ) ≤ A := by rw [hA]; positivity
   have hAabs : |A| = A := abs_of_nonneg hAnn
-  have hBabs : |B| = (a' : ℝ) / (a : ℝ) := by
-    rw [hB, abs_div, abs_neg, abs_of_nonneg (by positivity : (0:ℝ) ≤ (a' : ℝ)),
-      abs_of_nonneg (by positivity : (0:ℝ) ≤ (a : ℝ))]
-  have hBV : |B| * V ≤ (m : ℝ) / (a : ℝ) := by
+  have hBabs : |B| = (y : ℝ) / (x : ℝ) := by
+    rw [hB, abs_div, abs_neg, abs_of_nonneg (by positivity : (0:ℝ) ≤ (y : ℝ)),
+      abs_of_nonneg (by positivity : (0:ℝ) ≤ (x : ℝ))]
+  have hBV : |B| * V ≤ (m : ℝ) / (x : ℝ) := by
     rw [hBabs, hV, div_mul_div_comm, div_le_div_iff₀ (by positivity) (by positivity)]
     nlinarith [mul_nonneg (mul_nonneg (by linarith : (0:ℝ) ≤ (m : ℝ))
-      (by linarith : (0:ℝ) ≤ (a : ℝ))) (by linarith : (0:ℝ) ≤ (a : ℝ))]
-  set W : ℝ := ((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / (a : ℝ) with hW
+      (by linarith : (0:ℝ) ≤ (x : ℝ))) (by linarith : (0:ℝ) ≤ (x : ℝ))]
+  set W : ℝ := ((d * x : ℕ) : ℝ) + 2 * (m : ℝ) / (x : ℝ) with hW
   have hAW : |A| + |B| * V ≤ W := by
     rw [hAabs, hA, hW]
-    have : (m : ℝ) / (a : ℝ) + (m : ℝ) / (a : ℝ) = 2 * (m : ℝ) / (a : ℝ) := by ring
+    have : (m : ℝ) / (x : ℝ) + (m : ℝ) / (x : ℝ) = 2 * (m : ℝ) / (x : ℝ) := by ring
     linarith [hBV]
   have hAWK : |A| + |B| * ((U - 1 : ℕ) : ℝ) ≤ W := by
     have hUK : ((U - 1 : ℕ) : ℝ) = (K : ℝ) := by
@@ -132,38 +132,38 @@ theorem bulk_pair_estimate {m d a a' : ℕ} (hm : 0 < m) (hd : 0 < d)
     linarith [hAW]
   -- assemble
   have hWnn : (0 : ℝ) ≤ W := by rw [hW]; positivity
-  have hloga : Real.log a ≤ Real.log m := Real.log_le_log (by linarith) (by exact_mod_cast haleM)
+  have hloga : Real.log x ≤ Real.log m := Real.log_le_log (by linarith) (by exact_mod_cast haleM)
   have hlogm : (0 : ℝ) ≤ Real.log m := Real.log_nonneg hmR
-  have hlogann : (0 : ℝ) ≤ Real.log a := Real.log_nonneg haR
-  have hstep1 : |((∑ b' ∈ (Finset.Ico 1 U).filter (fun b' => a ∣ (m - a' * b')),
-        (d * a + (m - a' * b') / a) : ℕ) : ℝ)
-      - (1 / (a : ℝ)) * (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2)|
-      ≤ W * (1 + Real.log a) := by
+  have hlogann : (0 : ℝ) ≤ Real.log x := Real.log_nonneg haR
+  have hstep1 : |((∑ y' ∈ (Finset.Ico 1 U).filter (fun y' => x ∣ (m - y * y')),
+        (d * x + (m - y * y') / x) : ℕ) : ℝ)
+      - (1 / (x : ℝ)) * (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2)|
+      ≤ W * (1 + Real.log x) := by
     rw [← hsum]
     refine hc.trans ?_
     exact mul_le_mul_of_nonneg_right hAWK (by linarith)
-  have hstep2 : |(1 / (a : ℝ)) * (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
-      - ((d : ℝ) * (m : ℝ) / ((a : ℝ) + (a' : ℝ)) + (m : ℝ) ^ 2 * cTerm (a, a'))| ≤ W := by
-    rw [← hsubst, ← mul_sub, abs_mul, abs_of_nonneg (by positivity : (0:ℝ) ≤ 1 / (a : ℝ))]
+  have hstep2 : |(1 / (x : ℝ)) * (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
+      - ((d : ℝ) * (m : ℝ) / ((x : ℝ) + (y : ℝ)) + (m : ℝ) ^ 2 * cTerm (x, y))| ≤ W := by
+    rw [← hsubst, ← mul_sub, abs_mul, abs_of_nonneg (by positivity : (0:ℝ) ≤ 1 / (x : ℝ))]
     have hinner : |(A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2) - (A * V + B * V ^ 2 / 2)|
         ≤ W := by
       rw [abs_sub_comm]
       exact hmts.trans hAW
-    have hia : 1 / (a : ℝ) ≤ 1 := by
+    have hia : 1 / (x : ℝ) ≤ 1 := by
       rw [div_le_one (by linarith)]; linarith
-    calc 1 / (a : ℝ) * |(A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2) - (A * V + B * V ^ 2 / 2)|
+    calc 1 / (x : ℝ) * |(A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2) - (A * V + B * V ^ 2 / 2)|
         ≤ 1 * W := mul_le_mul hia hinner (abs_nonneg _) (by norm_num)
       _ = W := one_mul W
-  calc |((∑ b' ∈ (Finset.Ico 1 U).filter (fun b' => a ∣ (m - a' * b')),
-          (d * a + (m - a' * b') / a) : ℕ) : ℝ)
-        - ((d : ℝ) * (m : ℝ) / ((a : ℝ) + (a' : ℝ)) + (m : ℝ) ^ 2 * cTerm (a, a'))|
-      ≤ W * (1 + Real.log a) + W := by
+  calc |((∑ y' ∈ (Finset.Ico 1 U).filter (fun y' => x ∣ (m - y * y')),
+          (d * x + (m - y * y') / x) : ℕ) : ℝ)
+        - ((d : ℝ) * (m : ℝ) / ((x : ℝ) + (y : ℝ)) + (m : ℝ) ^ 2 * cTerm (x, y))|
+      ≤ W * (1 + Real.log x) + W := by
         have := abs_add_le
-          (((∑ b' ∈ (Finset.Ico 1 U).filter (fun b' => a ∣ (m - a' * b')),
-              (d * a + (m - a' * b') / a) : ℕ) : ℝ)
-            - (1 / (a : ℝ)) * (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2))
-          ((1 / (a : ℝ)) * (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
-            - ((d : ℝ) * (m : ℝ) / ((a : ℝ) + (a' : ℝ)) + (m : ℝ) ^ 2 * cTerm (a, a')))
+          (((∑ y' ∈ (Finset.Ico 1 U).filter (fun y' => x ∣ (m - y * y')),
+              (d * x + (m - y * y') / x) : ℕ) : ℝ)
+            - (1 / (x : ℝ)) * (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2))
+          ((1 / (x : ℝ)) * (A * (K : ℝ) + B * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
+            - ((d : ℝ) * (m : ℝ) / ((x : ℝ) + (y : ℝ)) + (m : ℝ) ^ 2 * cTerm (x, y)))
         simp only [sub_add_sub_cancel] at this
         linarith [hstep1, hstep2]
     _ ≤ 2 * W * (1 + Real.log m) := by nlinarith
@@ -171,140 +171,140 @@ theorem bulk_pair_estimate {m d a a' : ℕ} (hm : 0 < m) (hd : 0 < d)
 /-! ## The paper's `G₁ + G₂ + G₃`
 
 The paper splits the inner sum at a coprime pair into three named pieces:
-`G₁` is the closed form `(1/a)(A·Y + B·Y²/2)` at the *real* cut-off `Y`, `G₂`
+`G₁` is the closed form `(1/x)(A·Y + B·Y²/2)` at the *real* cut-off `Y`, `G₂`
 is the rounding error against the discrete sum, and `G₃` is what the
 non-trivial characters contribute.  `bulk_pair_estimate` bounds `G₂ + G₃`
 together; the three are named here so that Lemmas 18 and 19 can be stated
 individually. -/
 
-/-- The paper's `A = d·a + m/a`. -/
-noncomputable def aCoeff (m d a : ℕ) : ℝ := ((d * a : ℕ) : ℝ) + (m : ℝ) / (a : ℝ)
+/-- The paper's `A = d·x + m/x`. -/
+noncomputable def aCoeff (m d x : ℕ) : ℝ := ((d * x : ℕ) : ℝ) + (m : ℝ) / (x : ℝ)
 
-/-- The paper's `B = -a'/a`. -/
-noncomputable def bCoeff (a a' : ℕ) : ℝ := -(a' : ℝ) / (a : ℝ)
+/-- The paper's `B = -y/x`. -/
+noncomputable def bCoeff (x y : ℕ) : ℝ := -(y : ℝ) / (x : ℝ)
 
-/-- The paper's cut-off `Y = m/(a+a')`, which on the bulk branch is the active
+/-- The paper's cut-off `Y = m/(x+y)`, which on the bulk branch is the active
 one of the two. -/
-noncomputable def yCut (m a a' : ℕ) : ℝ := (m : ℝ) / ((a : ℝ) + (a' : ℝ))
+noncomputable def yCut (m x y : ℕ) : ℝ := (m : ℝ) / ((x : ℝ) + (y : ℝ))
 
-/-- The discrete sum `∑_{1 ≤ b' < Y} (A + B·b')`. -/
-noncomputable def innerLinear (m d a a' : ℕ) : ℝ :=
-  ∑ b' ∈ Finset.Ico 1 (gtBound m d a a'), (aCoeff m d a + bCoeff a a' * (b' : ℝ))
+/-- The discrete sum `∑_{1 ≤ y' < Y} (A + B·y')`. -/
+noncomputable def innerLinear (m d x y : ℕ) : ℝ :=
+  ∑ y' ∈ Finset.Ico 1 (yBound m d x y), (aCoeff m d x + bCoeff x y * (y' : ℝ))
 
 /-- The actual inner sum over the arithmetic progression. -/
-noncomputable def innerActual (m d a a' : ℕ) : ℝ :=
-  ((∑ b' ∈ (Finset.Ico 1 (gtBound m d a a')).filter (fun b' => a ∣ (m - a' * b')),
-      (d * a + (m - a' * b') / a) : ℕ) : ℝ)
+noncomputable def innerActual (m d x y : ℕ) : ℝ :=
+  ((∑ y' ∈ (Finset.Ico 1 (yBound m d x y)).filter (fun y' => x ∣ (m - y * y')),
+      (d * x + (m - y * y') / x) : ℕ) : ℝ)
 
 /-- **`G₁`**, the main term at the real cut-off. -/
-noncomputable def G1term (m d a a' : ℕ) : ℝ :=
-  (1 / (a : ℝ)) * (aCoeff m d a * yCut m a a' + bCoeff a a' * yCut m a a' ^ 2 / 2)
+noncomputable def G1term (m d x y : ℕ) : ℝ :=
+  (1 / (x : ℝ)) * (aCoeff m d x * yCut m x y + bCoeff x y * yCut m x y ^ 2 / 2)
 
 /-- **`G₂`**, the rounding error. -/
-noncomputable def G2term (m d a a' : ℕ) : ℝ :=
-  (1 / (a : ℝ)) * innerLinear m d a a' - G1term m d a a'
+noncomputable def G2term (m d x y : ℕ) : ℝ :=
+  (1 / (x : ℝ)) * innerLinear m d x y - G1term m d x y
 
 /-- **`G₃`**, the contribution of the non-trivial characters. -/
-noncomputable def G3term (m d a a' : ℕ) : ℝ :=
-  innerActual m d a a' - (1 / (a : ℝ)) * innerLinear m d a a'
+noncomputable def G3term (m d x y : ℕ) : ℝ :=
+  innerActual m d x y - (1 / (x : ℝ)) * innerLinear m d x y
 
-/-- **The paper's decomposition** `Q(n,d,a,a') = G₁ + G₂ + G₃`. -/
-theorem innerActual_decompose (m d a a' : ℕ) :
-    innerActual m d a a' = G1term m d a a' + G2term m d a a' + G3term m d a a' := by
+/-- **The paper's decomposition** `Q(n,d,x,y) = G₁ + G₂ + G₃`. -/
+theorem innerActual_decompose (m d x y : ℕ) :
+    innerActual m d x y = G1term m d x y + G2term m d x y + G3term m d x y := by
   unfold G2term G3term
   ring
 
 /-- `G₁` is the summand of `G₁(n)`, by `main_term_substitute`. -/
-theorem G1term_eq {m d a a' : ℕ} (h1 : 1 ≤ a') (h2 : a' < a) (h3 : Nat.gcd a a' = 1) :
-    G1term m d a a'
-      = (d : ℝ) * (m : ℝ) / ((a : ℝ) + (a' : ℝ)) + (m : ℝ) ^ 2 * cTerm (a, a') := by
+theorem G1term_eq {m d x y : ℕ} (h1 : 1 ≤ y) (h2 : y < x) (h3 : Nat.gcd x y = 1) :
+    G1term m d x y
+      = (d : ℝ) * (m : ℝ) / ((x : ℝ) + (y : ℝ)) + (m : ℝ) ^ 2 * cTerm (x, y) := by
   unfold G1term aCoeff bCoeff yCut
   exact main_term_substitute h1 h2 h3
 
 /-- **The bound of Lemma 16 at one pair:** `|G₂| ≤ |A| + |B·Y|`. -/
-theorem abs_G2term_le {m d a a' : ℕ} (hm : 0 < m) (hd : 0 < d)
-    (ha' : 1 ≤ a') (haa : a' < a) (hbulk : d * a * (a + a') ≤ m) :
-    |G2term m d a a'| ≤ |aCoeff m d a| + |bCoeff a a'| * yCut m a a' := by
-  have ha : 0 < a := by omega
-  have haR : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast ha
-  have hs : a + a' ≤ m := by
+theorem abs_G2term_le {m d x y : ℕ} (hm : 0 < m) (hd : 0 < d)
+    (hy : 1 ≤ y) (haa : y < x) (hbulk : d * x * (x + y) ≤ m) :
+    |G2term m d x y| ≤ |aCoeff m d x| + |bCoeff x y| * yCut m x y := by
+  have hx : 0 < x := by omega
+  have haR : (1 : ℝ) ≤ (x : ℝ) := by exact_mod_cast hx
+  have hs : x + y ≤ m := by
     refine le_trans ?_ hbulk
-    calc a + a' = 1 * 1 * (a + a') := by ring
-      _ ≤ d * a * (a + a') := Nat.mul_le_mul (Nat.mul_le_mul hd ha) (le_refl _)
-  have hsR : (0 : ℝ) < (a : ℝ) + (a' : ℝ) := by
-    have : (0 : ℝ) < (a : ℝ) := by linarith
-    have : (0 : ℝ) ≤ (a' : ℝ) := by positivity
+    calc x + y = 1 * 1 * (x + y) := by ring
+      _ ≤ d * x * (x + y) := Nat.mul_le_mul (Nat.mul_le_mul hd hx) (le_refl _)
+  have hsR : (0 : ℝ) < (x : ℝ) + (y : ℝ) := by
+    have : (0 : ℝ) < (x : ℝ) := by linarith
+    have : (0 : ℝ) ≤ (y : ℝ) := by positivity
     linarith
-  have hUeq : gtBound m d a a' = (m - 1) / (a + a') + 1 := gtBound_bulk_eq hd ha' haa hbulk
-  set K := (m - 1) / (a + a') with hKdef
-  have hU1 : 1 ≤ gtBound m d a a' := by rw [hUeq]; exact Nat.le_add_left 1 K
-  have hsum : innerLinear m d a a'
-      = aCoeff m d a * (K : ℝ) + bCoeff a a' * ((K : ℝ) * ((K : ℝ) + 1)) / 2 := by
+  have hUeq : yBound m d x y = (m - 1) / (x + y) + 1 := yBound_bulk_eq hd hy haa hbulk
+  set K := (m - 1) / (x + y) with hKdef
+  have hU1 : 1 ≤ yBound m d x y := by rw [hUeq]; exact Nat.le_add_left 1 K
+  have hsum : innerLinear m d x y
+      = aCoeff m d x * (K : ℝ) + bCoeff x y * ((K : ℝ) * ((K : ℝ) + 1)) / 2 := by
     rw [innerLinear, sum_linear_Ico _ _ _ hU1, hUeq]
     push_cast
     ring
-  have hKV : (K : ℝ) ≤ yCut m a a' := by
+  have hKV : (K : ℝ) ≤ yCut m x y := by
     rw [yCut, le_div_iff₀ hsR]
-    have h1 : K * (a + a') ≤ m := le_trans (Nat.div_mul_le_self _ _) (by omega)
-    have h2 : ((K * (a + a') : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast h1
+    have h1 : K * (x + y) ≤ m := le_trans (Nat.div_mul_le_self _ _) (by omega)
+    have h2 : ((K * (x + y) : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast h1
     push_cast at h2
     linarith
-  have hVK : yCut m a a' ≤ (K : ℝ) + 1 := by
+  have hVK : yCut m x y ≤ (K : ℝ) + 1 := by
     rw [yCut, div_le_iff₀ hsR]
-    have h1 : m - 1 < (K + 1) * (a + a') := by
-      have hdm := Nat.div_add_mod (m - 1) (a + a')
-      have hlt : (m - 1) % (a + a') < a + a' := Nat.mod_lt _ (by omega)
+    have h1 : m - 1 < (K + 1) * (x + y) := by
+      have hdm := Nat.div_add_mod (m - 1) (x + y)
+      have hlt : (m - 1) % (x + y) < x + y := Nat.mod_lt _ (by omega)
       nlinarith
-    have h2 : m ≤ (K + 1) * (a + a') := by omega
-    have h3 : (m : ℝ) ≤ (((K + 1) * (a + a') : ℕ) : ℝ) := by exact_mod_cast h2
+    have h2 : m ≤ (K + 1) * (x + y) := by omega
+    have h3 : (m : ℝ) ≤ (((K + 1) * (x + y) : ℕ) : ℝ) := by exact_mod_cast h2
     push_cast at h3
     linarith
-  have hV1 : 1 ≤ yCut m a a' := by
+  have hV1 : 1 ≤ yCut m x y := by
     rw [yCut, le_div_iff₀ hsR]
-    have : ((a + a' : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast hs
+    have : ((x + y : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast hs
     push_cast at this
     linarith
-  have hmts := main_term_vs_sum (aCoeff m d a) (bCoeff a a') (yCut m a a') K hKV hVK hV1
-  have hG2 : G2term m d a a'
-      = (1 / (a : ℝ)) * ((aCoeff m d a * (K : ℝ)
-          + bCoeff a a' * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
-        - (aCoeff m d a * yCut m a a' + bCoeff a a' * yCut m a a' ^ 2 / 2)) := by
+  have hmts := main_term_vs_sum (aCoeff m d x) (bCoeff x y) (yCut m x y) K hKV hVK hV1
+  have hG2 : G2term m d x y
+      = (1 / (x : ℝ)) * ((aCoeff m d x * (K : ℝ)
+          + bCoeff x y * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
+        - (aCoeff m d x * yCut m x y + bCoeff x y * yCut m x y ^ 2 / 2)) := by
     unfold G2term G1term
     rw [hsum]
     ring
-  rw [hG2, abs_mul, abs_of_nonneg (by positivity : (0 : ℝ) ≤ 1 / (a : ℝ))]
-  have hia : 1 / (a : ℝ) ≤ 1 := by
+  rw [hG2, abs_mul, abs_of_nonneg (by positivity : (0 : ℝ) ≤ 1 / (x : ℝ))]
+  have hia : 1 / (x : ℝ) ≤ 1 := by
     rw [div_le_one (by linarith)]
     linarith
-  have habs : |(aCoeff m d a * (K : ℝ) + bCoeff a a' * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
-      - (aCoeff m d a * yCut m a a' + bCoeff a a' * yCut m a a' ^ 2 / 2)|
-      ≤ |aCoeff m d a| + |bCoeff a a'| * yCut m a a' := by
+  have habs : |(aCoeff m d x * (K : ℝ) + bCoeff x y * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
+      - (aCoeff m d x * yCut m x y + bCoeff x y * yCut m x y ^ 2 / 2)|
+      ≤ |aCoeff m d x| + |bCoeff x y| * yCut m x y := by
     rw [abs_sub_comm]
     exact hmts
-  have hYnn : (0 : ℝ) ≤ yCut m a a' := by linarith
-  calc 1 / (a : ℝ) * |(aCoeff m d a * (K : ℝ) + bCoeff a a' * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
-          - (aCoeff m d a * yCut m a a' + bCoeff a a' * yCut m a a' ^ 2 / 2)|
-      ≤ 1 * (|aCoeff m d a| + |bCoeff a a'| * yCut m a a') :=
+  have hYnn : (0 : ℝ) ≤ yCut m x y := by linarith
+  calc 1 / (x : ℝ) * |(aCoeff m d x * (K : ℝ) + bCoeff x y * ((K : ℝ) * ((K : ℝ) + 1)) / 2)
+          - (aCoeff m d x * yCut m x y + bCoeff x y * yCut m x y ^ 2 / 2)|
+      ≤ 1 * (|aCoeff m d x| + |bCoeff x y| * yCut m x y) :=
         mul_le_mul hia habs (abs_nonneg _)
           (by positivity)
-    _ = |aCoeff m d a| + |bCoeff a a'| * yCut m a a' := one_mul _
+    _ = |aCoeff m d x| + |bCoeff x y| * yCut m x y := one_mul _
 
-/-- **The bound of Lemma 18 at one pair:** `|G₃| ≤ (|A| + |B|(Y-1))(1 + log a)`,
+/-- **The bound of Lemma 18 at one pair:** `|G₃| ≤ (|A| + |B|(Y-1))(1 + log x)`,
 from the character estimate. -/
-theorem abs_G3term_le {m d a a' : ℕ} (hm : 0 < m) (hd : 0 < d)
-    (ha' : 1 ≤ a') (haa : a' < a) (hgcd : Nat.gcd a a' = 1) (hbulk : d * a * (a + a') ≤ m) :
-    |G3term m d a a'|
-      ≤ (|aCoeff m d a| + |bCoeff a a'| * ((gtBound m d a a' - 1 : ℕ) : ℝ))
-          * (1 + Real.log a) := by
-  have ha : 0 < a := by omega
-  have hs : 0 < a + a' := by omega
-  have hda2 : d * a * a < m := by nlinarith
-  have hrange : ∀ b' ∈ Finset.Ico 1 (gtBound m d a a'), a' * b' ≤ m := by
-    intro b' hb'
-    have := (mem_gtRange hm hs ha' hda2).1 hb'
+theorem abs_G3term_le {m d x y : ℕ} (hm : 0 < m) (hd : 0 < d)
+    (hy : 1 ≤ y) (haa : y < x) (hgcd : Nat.gcd x y = 1) (hbulk : d * x * (x + y) ≤ m) :
+    |G3term m d x y|
+      ≤ (|aCoeff m d x| + |bCoeff x y| * ((yBound m d x y - 1 : ℕ) : ℝ))
+          * (1 + Real.log x) := by
+  have hx : 0 < x := by omega
+  have hs : 0 < x + y := by omega
+  have hda2 : d * x * x < m := by nlinarith
+  have hrange : ∀ y' ∈ Finset.Ico 1 (yBound m d x y), y * y' ≤ m := by
+    intro y' hy'
+    have := (mem_gtRange hm hs hy hda2).1 hy'
     omega
-  obtain ⟨c, hc⟩ := inner_gt_estimate (m := m) (d := d) (a := a) (a' := a') ha hgcd
-    (gtBound m d a a') hrange
+  obtain ⟨c, hc⟩ := inner_gt_estimate (m := m) (d := d) (x := x) (y := y) hx hgcd
+    (yBound m d x y) hrange
   exact hc
 
 /-! ## Aggregating over the pairs
@@ -317,41 +317,41 @@ theorem gtTriples_bulk_decompose {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
     ∑ t ∈ (gtTriples m d).filter (fun t => d * t.1 * (t.1 + t.2.1) ≤ m),
         (d * t.1 + (m - t.2.1 * t.2.2) / t.1)
       = ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m),
-          ∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
-            (d * p.1 + (m - p.2 * b') / p.1) := by
+          ∑ y' ∈ (Finset.Ico 1 (yBound m d p.1 p.2)).filter (fun y' => p.1 ∣ (m - p.2 * y')),
+            (d * p.1 + (m - p.2 * y') / p.1) := by
   classical
   have h := gtTriples_decompose (m := m) (d := d) hm
-    (fun a a' b' => if d * a * (a + a') ≤ m then d * a + (m - a' * b') / a else 0)
+    (fun x y y' => if d * x * (x + y) ≤ m then d * x + (m - y * y') / x else 0)
   calc ∑ t ∈ (gtTriples m d).filter (fun t => d * t.1 * (t.1 + t.2.1) ≤ m),
           (d * t.1 + (m - t.2.1 * t.2.2) / t.1)
       = ∑ t ∈ gtTriples m d,
           (if d * t.1 * (t.1 + t.2.1) ≤ m then d * t.1 + (m - t.2.1 * t.2.2) / t.1 else 0) :=
         Finset.sum_filter _ _
     _ = ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
-          ∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
-            (if d * p.1 * (p.1 + p.2) ≤ m then d * p.1 + (m - p.2 * b') / p.1 else 0) := h
+          ∑ y' ∈ (Finset.Ico 1 (yBound m d p.1 p.2)).filter (fun y' => p.1 ∣ (m - p.2 * y')),
+            (if d * p.1 * (p.1 + p.2) ≤ m then d * p.1 + (m - p.2 * y') / p.1 else 0) := h
     _ = ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
           (if d * p.1 * (p.1 + p.2) ≤ m then
-            ∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
-              (d * p.1 + (m - p.2 * b') / p.1) else 0) := by
+            ∑ y' ∈ (Finset.Ico 1 (yBound m d p.1 p.2)).filter (fun y' => p.1 ∣ (m - p.2 * y')),
+              (d * p.1 + (m - p.2 * y') / p.1) else 0) := by
         refine Finset.sum_congr rfl fun p _ => ?_
-        split_ifs with hb
+        split_ifs with hx'
         · rfl
         · simp
     _ = ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * (p.1 + p.2) ≤ m),
-          ∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
-            (d * p.1 + (m - p.2 * b') / p.1) := by
+          ∑ y' ∈ (Finset.Ico 1 (yBound m d p.1 p.2)).filter (fun y' => p.1 ∣ (m - p.2 * y')),
+            (d * p.1 + (m - p.2 * y') / p.1) := by
         rw [← Finset.sum_filter, Finset.filter_filter]
         refine Finset.sum_congr (Finset.filter_congr fun p hp => ?_) (fun _ _ => rfl)
-        obtain ⟨a, a'⟩ := p
-        obtain ⟨-, ha1, haa, -⟩ := mem_coprimePairs.1 hp
-        have ha : 0 < a := by omega
+        obtain ⟨x, y⟩ := p
+        obtain ⟨-, hx1, haa, -⟩ := mem_coprimePairs.1 hp
+        have hx : 0 < x := by omega
         constructor
         · rintro ⟨-, h2⟩; exact h2
         · intro h2
           refine ⟨?_, h2⟩
-          have hpos : 0 < d * a * a' := Nat.mul_pos (Nat.mul_pos hd ha) (by omega)
-          have hlt : d * a * a < d * a * (a + a') := by nlinarith
+          have hpos : 0 < d * x * y := Nat.mul_pos (Nat.mul_pos hd hx) (by omega)
+          have hlt : d * x * x < d * x * (x + y) := by nlinarith
           exact lt_of_lt_of_le hlt h2
 
 /-- **The estimate at a single divisor.**
@@ -374,23 +374,23 @@ theorem divisor_estimate {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
           (d * t.1 + (m - t.2.1 * t.2.2) / t.1))
         + ∑ t ∈ (gtTriples m d).filter (fun t => ¬ (d * t.1 * (t.1 + t.2.1) ≤ m)),
             (d * t.1 + (m - t.2.1 * t.2.2) / t.1) :=
-    gtTriples_bulk_small m d (fun a a' b' => d * a + (m - a' * b') / a)
+    gtTriples_bulk_small m d (fun x y y' => d * x + (m - y * y') / x)
   have hbd := gtTriples_bulk_decompose hm hd
   -- the bulk part, pair by pair
   have hpair : ∀ p ∈ Sb,
-      |((∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter (fun b' => p.1 ∣ (m - p.2 * b')),
-            (d * p.1 + (m - p.2 * b') / p.1) : ℕ) : ℝ)
+      |((∑ y' ∈ (Finset.Ico 1 (yBound m d p.1 p.2)).filter (fun y' => p.1 ∣ (m - p.2 * y')),
+            (d * p.1 + (m - p.2 * y') / p.1) : ℕ) : ℝ)
           - ((d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ)) + (m : ℝ) ^ 2 * cTerm p)|
         ≤ 2 * (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / (p.1 : ℝ)) * (1 + Real.log m) := by
     intro p hp
-    obtain ⟨a, a'⟩ := p
+    obtain ⟨x, y⟩ := p
     rw [hSb, Finset.mem_filter] at hp
     obtain ⟨hpc, hpb⟩ := hp
-    obtain ⟨-, ha1, haa, hgcd⟩ := mem_coprimePairs.1 hpc
-    exact bulk_pair_estimate hm hd ha1 haa hgcd hpb
+    obtain ⟨-, hx1, haa, hgcd⟩ := mem_coprimePairs.1 hpc
+    exact bulk_pair_estimate hm hd hx1 haa hgcd hpb
   have hbulkest :
-      |(∑ p ∈ Sb, ((∑ b' ∈ (Finset.Ico 1 (gtBound m d p.1 p.2)).filter
-              (fun b' => p.1 ∣ (m - p.2 * b')), (d * p.1 + (m - p.2 * b') / p.1) : ℕ) : ℝ))
+      |(∑ p ∈ Sb, ((∑ y' ∈ (Finset.Ico 1 (yBound m d p.1 p.2)).filter
+              (fun y' => p.1 ∣ (m - p.2 * y')), (d * p.1 + (m - p.2 * y') / p.1) : ℕ) : ℝ))
           - ∑ p ∈ Sb, ((d : ℝ) * (m : ℝ) / ((p.1 : ℝ) + (p.2 : ℝ)) + (m : ℝ) ^ 2 * cTerm p)|
         ≤ ∑ p ∈ Sb, 2 * (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / (p.1 : ℝ)) * (1 + Real.log m) := by
     rw [← Finset.sum_sub_distrib]
@@ -403,11 +403,11 @@ theorem divisor_estimate {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
       rw [hSb, Finset.mem_filter] at hp
       obtain ⟨hpc, hpb⟩ := hp
       refine Finset.mem_filter.2 ⟨hpc, ?_⟩
-      obtain ⟨a, a'⟩ := p
-      obtain ⟨-, ha1, haa, -⟩ := mem_coprimePairs.1 hpc
-      have ha : 0 < a := by omega
-      have hpos : 0 < d * a * a' := Nat.mul_pos (Nat.mul_pos hd ha) (by omega)
-      have hlt : d * a * a < d * a * (a + a') := by nlinarith
+      obtain ⟨x, y⟩ := p
+      obtain ⟨-, hx1, haa, -⟩ := mem_coprimePairs.1 hpc
+      have hx : 0 < x := by omega
+      have hpos : 0 < d * x * y := Nat.mul_pos (Nat.mul_pos hd hx) (by omega)
+      have hlt : d * x * x < d * x * (x + y) := by nlinarith
       exact lt_of_lt_of_le hlt hpb
     have hstep : ∑ p ∈ Sb, 2 * (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / (p.1 : ℝ))
             * (1 + Real.log m)
@@ -431,8 +431,8 @@ theorem divisor_estimate {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
       (fun t => ¬ (d * t.1 * (t.1 + t.2.1) ≤ m)), (d * t.1 + (m - t.2.1 * t.2.2) / t.1) : ℕ) : ℝ) :=
     by positivity
   -- assemble
-  have key : ∀ X Y M b1 b2 : ℝ, |X - M| ≤ b1 → 0 ≤ Y → Y ≤ b2 → |X + Y - M| ≤ b1 + b2 := by
-    intro X Y M b1 b2 h1 h2 h3
+  have key : ∀ X Y M x'1 b2 : ℝ, |X - M| ≤ x'1 → 0 ≤ Y → Y ≤ b2 → |X + Y - M| ≤ x'1 + b2 := by
+    intro X Y M x'1 b2 h1 h2 h3
     have htri := abs_add_le (X - M) Y
     rw [abs_of_nonneg h2] at htri
     have heq : X + Y - M = (X - M) + Y := by ring
@@ -480,11 +480,11 @@ theorem aggregate_le {n : ℕ} (hn : 0 < n) (F : ℕ → ℕ → ℕ → ℕ →
       rw [Finset.mem_filter] at hp ⊢
       obtain ⟨hpc, hpb⟩ := hp
       refine ⟨hpc, ?_⟩
-      obtain ⟨a, a'⟩ := p
-      obtain ⟨-, ha1, haa, -⟩ := mem_coprimePairs.1 hpc
-      have ha : 0 < a := by omega
-      have hpos : 0 < d * a * a' := Nat.mul_pos (Nat.mul_pos hd0 ha) (by omega)
-      have hlt : d * a * a < d * a * (a + a') := by nlinarith
+      obtain ⟨x, y⟩ := p
+      obtain ⟨-, hx1, haa, -⟩ := mem_coprimePairs.1 hpc
+      have hx : 0 < x := by omega
+      have hpos : 0 < d * x * y := Nat.mul_pos (Nat.mul_pos hd0 hx) (by omega)
+      have hlt : d * x * x < d * x * (x + y) := by nlinarith
       exact lt_of_lt_of_le hlt hpb
     refine le_trans (Finset.sum_le_sum_of_subset_of_nonneg hsub fun p _ _ => by positivity) ?_
     exact middle_layer hm0 hd0
@@ -503,114 +503,114 @@ noncomputable def G3sum (n : ℕ) : ℝ :=
     (fun p => d * p.1 * (p.1 + p.2) ≤ n / d), G3term (n / d) d p.1 p.2
 
 theorem abs_G2sum_le {n : ℕ} (hn : 0 < n) : |G2sum n| ≤ Err n := by
-  refine aggregate_le hn (fun m d a a' => G2term m d a a') fun d hd p hp => ?_
+  refine aggregate_le hn (fun m d x y => G2term m d x y) fun d hd p hp => ?_
   obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
   have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
   have hm0 : 0 < n / d := Nat.div_pos (Nat.le_of_dvd hn hdn) hd0
-  obtain ⟨a, a'⟩ := p
+  obtain ⟨x, y⟩ := p
   rw [Finset.mem_filter] at hp
   obtain ⟨hpc, hpb⟩ := hp
-  have hpb' : d * a * (a + a') ≤ n / d := hpb
-  obtain ⟨-, ha1, haa, hgcd⟩ := mem_coprimePairs.1 hpc
-  have ha : 0 < a := by omega
-  have haR : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast ha
+  have hpy' : d * x * (x + y) ≤ n / d := hpb
+  obtain ⟨-, hx1, haa, hgcd⟩ := mem_coprimePairs.1 hpc
+  have hx : 0 < x := by omega
+  have haR : (1 : ℝ) ≤ (x : ℝ) := by exact_mod_cast hx
   have hmR : (1 : ℝ) ≤ ((n / d : ℕ) : ℝ) := by exact_mod_cast hm0
   have hlog : (0 : ℝ) ≤ Real.log ((n / d : ℕ) : ℝ) := Real.log_nonneg hmR
-  have hb := abs_G2term_le hm0 hd0 ha1 haa hpb'
-  -- `|A| + |B|·Y ≤ d·a + 2m/a`
-  have hAabs : |aCoeff (n / d) d a| = aCoeff (n / d) d a :=
+  have hx' := abs_G2term_le hm0 hd0 hx1 haa hpy'
+  -- `|A| + |B|·Y ≤ d·x + 2m/x`
+  have hAabs : |aCoeff (n / d) d x| = aCoeff (n / d) d x :=
     abs_of_nonneg (by unfold aCoeff; positivity)
-  have hBabs : |bCoeff a a'| = (a' : ℝ) / (a : ℝ) := by
+  have hBabs : |bCoeff x y| = (y : ℝ) / (x : ℝ) := by
     unfold bCoeff
-    rw [abs_div, abs_neg, abs_of_nonneg (by positivity : (0:ℝ) ≤ (a' : ℝ)),
-      abs_of_nonneg (by positivity : (0:ℝ) ≤ (a : ℝ))]
-  have hsR : (0 : ℝ) < (a : ℝ) + (a' : ℝ) := by
-    have h1 : (0 : ℝ) ≤ (a' : ℝ) := by positivity
-    have h2 : (0 : ℝ) < (a : ℝ) := by exact_mod_cast ha
+    rw [abs_div, abs_neg, abs_of_nonneg (by positivity : (0:ℝ) ≤ (y : ℝ)),
+      abs_of_nonneg (by positivity : (0:ℝ) ≤ (x : ℝ))]
+  have hsR : (0 : ℝ) < (x : ℝ) + (y : ℝ) := by
+    have h1 : (0 : ℝ) ≤ (y : ℝ) := by positivity
+    have h2 : (0 : ℝ) < (x : ℝ) := by exact_mod_cast hx
     linarith
-  have hBY : |bCoeff a a'| * yCut (n / d) a a' ≤ ((n / d : ℕ) : ℝ) / (a : ℝ) := by
+  have hBY : |bCoeff x y| * yCut (n / d) x y ≤ ((n / d : ℕ) : ℝ) / (x : ℝ) := by
     rw [hBabs, yCut, div_mul_div_comm, div_le_div_iff₀ (by positivity) (by positivity)]
-    have hma : (0 : ℝ) ≤ ((n / d : ℕ) : ℝ) * (a : ℝ) * (a : ℝ) := by positivity
-    nlinarith [hma, Nat.cast_nonneg (α := ℝ) a']
-  have hW : |aCoeff (n / d) d a| + |bCoeff a a'| * yCut (n / d) a a'
-      ≤ ((d * a : ℕ) : ℝ) + 2 * ((n / d : ℕ) : ℝ) / (a : ℝ) := by
+    have hma : (0 : ℝ) ≤ ((n / d : ℕ) : ℝ) * (x : ℝ) * (x : ℝ) := by positivity
+    nlinarith [hma, Nat.cast_nonneg (α := ℝ) y]
+  have hW : |aCoeff (n / d) d x| + |bCoeff x y| * yCut (n / d) x y
+      ≤ ((d * x : ℕ) : ℝ) + 2 * ((n / d : ℕ) : ℝ) / (x : ℝ) := by
     rw [hAabs]
     unfold aCoeff
-    have : ((n / d : ℕ) : ℝ) / (a : ℝ) + ((n / d : ℕ) : ℝ) / (a : ℝ)
-        = 2 * ((n / d : ℕ) : ℝ) / (a : ℝ) := by ring
+    have : ((n / d : ℕ) : ℝ) / (x : ℝ) + ((n / d : ℕ) : ℝ) / (x : ℝ)
+        = 2 * ((n / d : ℕ) : ℝ) / (x : ℝ) := by ring
     linarith [hBY]
-  have hWnn : (0 : ℝ) ≤ ((d * a : ℕ) : ℝ) + 2 * ((n / d : ℕ) : ℝ) / (a : ℝ) := by positivity
-  nlinarith [hb, hW, hWnn, hlog]
+  have hWnn : (0 : ℝ) ≤ ((d * x : ℕ) : ℝ) + 2 * ((n / d : ℕ) : ℝ) / (x : ℝ) := by positivity
+  nlinarith [hx', hW, hWnn, hlog]
 
-theorem gtBound_sub_one_le_yCut {m d a a' : ℕ} (hd : 0 < d) (ha' : 1 ≤ a') (haa : a' < a)
-    (hbulk : d * a * (a + a') ≤ m) :
-    ((gtBound m d a a' - 1 : ℕ) : ℝ) ≤ yCut m a a' := by
-  have ha : 0 < a := by omega
-  have hsR : (0 : ℝ) < (a : ℝ) + (a' : ℝ) := by
-    have h1 : (0 : ℝ) < (a : ℝ) := by exact_mod_cast ha
-    have h2 : (0 : ℝ) ≤ (a' : ℝ) := by positivity
+theorem yBound_sub_one_le_yCut {m d x y : ℕ} (hd : 0 < d) (hy : 1 ≤ y) (haa : y < x)
+    (hbulk : d * x * (x + y) ≤ m) :
+    ((yBound m d x y - 1 : ℕ) : ℝ) ≤ yCut m x y := by
+  have hx : 0 < x := by omega
+  have hsR : (0 : ℝ) < (x : ℝ) + (y : ℝ) := by
+    have h1 : (0 : ℝ) < (x : ℝ) := by exact_mod_cast hx
+    have h2 : (0 : ℝ) ≤ (y : ℝ) := by positivity
     linarith
-  have hUeq : gtBound m d a a' = (m - 1) / (a + a') + 1 := gtBound_bulk_eq hd ha' haa hbulk
-  have hK : gtBound m d a a' - 1 = (m - 1) / (a + a') := by
+  have hUeq : yBound m d x y = (m - 1) / (x + y) + 1 := yBound_bulk_eq hd hy haa hbulk
+  have hK : yBound m d x y - 1 = (m - 1) / (x + y) := by
     rw [hUeq, Nat.add_sub_cancel]
   rw [hK, yCut, le_div_iff₀ hsR]
-  have h1 : (m - 1) / (a + a') * (a + a') ≤ m :=
+  have h1 : (m - 1) / (x + y) * (x + y) ≤ m :=
     le_trans (Nat.div_mul_le_self _ _) (by omega)
-  have h2 : (((m - 1) / (a + a') * (a + a') : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast h1
+  have h2 : (((m - 1) / (x + y) * (x + y) : ℕ) : ℝ) ≤ (m : ℝ) := by exact_mod_cast h1
   push_cast at h2
   linarith
 
 theorem abs_G3sum_le {n : ℕ} (hn : 0 < n) : |G3sum n| ≤ Err n := by
-  refine aggregate_le hn (fun m d a a' => G3term m d a a') fun d hd p hp => ?_
+  refine aggregate_le hn (fun m d x y => G3term m d x y) fun d hd p hp => ?_
   obtain ⟨hdn, -⟩ := Nat.mem_divisors.1 hd
   have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
   have hm0 : 0 < n / d := Nat.div_pos (Nat.le_of_dvd hn hdn) hd0
-  obtain ⟨a, a'⟩ := p
+  obtain ⟨x, y⟩ := p
   rw [Finset.mem_filter] at hp
   obtain ⟨hpc, hpb⟩ := hp
-  have hpb' : d * a * (a + a') ≤ n / d := hpb
-  obtain ⟨-, ha1, haa, hgcd⟩ := mem_coprimePairs.1 hpc
-  have ha : 0 < a := by omega
-  have haR : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast ha
+  have hpy' : d * x * (x + y) ≤ n / d := hpb
+  obtain ⟨-, hx1, haa, hgcd⟩ := mem_coprimePairs.1 hpc
+  have hx : 0 < x := by omega
+  have haR : (1 : ℝ) ≤ (x : ℝ) := by exact_mod_cast hx
   have hmR : (1 : ℝ) ≤ ((n / d : ℕ) : ℝ) := by exact_mod_cast hm0
-  have haleM : a ≤ n / d := by
-    refine le_trans ?_ hpb'
-    calc a = 1 * a * 1 := by ring
-      _ ≤ d * a * (a + a') := Nat.mul_le_mul (Nat.mul_le_mul hd0 (le_refl a)) (by omega)
-  have haleMR : (a : ℝ) ≤ ((n / d : ℕ) : ℝ) := by exact_mod_cast haleM
-  have h := abs_G3term_le hm0 hd0 ha1 haa hgcd hpb'
-  -- `|A| + |B|·(U-1) ≤ d·a + 2m/a`
-  have hAabs : |aCoeff (n / d) d a| = aCoeff (n / d) d a :=
+  have haleM : x ≤ n / d := by
+    refine le_trans ?_ hpy'
+    calc x = 1 * x * 1 := by ring
+      _ ≤ d * x * (x + y) := Nat.mul_le_mul (Nat.mul_le_mul hd0 (le_refl x)) (by omega)
+  have haleMR : (x : ℝ) ≤ ((n / d : ℕ) : ℝ) := by exact_mod_cast haleM
+  have h := abs_G3term_le hm0 hd0 hx1 haa hgcd hpy'
+  -- `|A| + |B|·(U-1) ≤ d·x + 2m/x`
+  have hAabs : |aCoeff (n / d) d x| = aCoeff (n / d) d x :=
     abs_of_nonneg (by unfold aCoeff; positivity)
-  have hBabs : |bCoeff a a'| = (a' : ℝ) / (a : ℝ) := by
+  have hBabs : |bCoeff x y| = (y : ℝ) / (x : ℝ) := by
     unfold bCoeff
-    rw [abs_div, abs_neg, abs_of_nonneg (by positivity : (0 : ℝ) ≤ (a' : ℝ)),
-      abs_of_nonneg (by positivity : (0 : ℝ) ≤ (a : ℝ))]
-  have hsR : (0 : ℝ) < (a : ℝ) + (a' : ℝ) := by
-    have h1 : (0 : ℝ) ≤ (a' : ℝ) := by positivity
-    have h2 : (0 : ℝ) < (a : ℝ) := by exact_mod_cast ha
+    rw [abs_div, abs_neg, abs_of_nonneg (by positivity : (0 : ℝ) ≤ (y : ℝ)),
+      abs_of_nonneg (by positivity : (0 : ℝ) ≤ (x : ℝ))]
+  have hsR : (0 : ℝ) < (x : ℝ) + (y : ℝ) := by
+    have h1 : (0 : ℝ) ≤ (y : ℝ) := by positivity
+    have h2 : (0 : ℝ) < (x : ℝ) := by exact_mod_cast hx
     linarith
-  have hBY : |bCoeff a a'| * yCut (n / d) a a' ≤ ((n / d : ℕ) : ℝ) / (a : ℝ) := by
+  have hBY : |bCoeff x y| * yCut (n / d) x y ≤ ((n / d : ℕ) : ℝ) / (x : ℝ) := by
     rw [hBabs, yCut, div_mul_div_comm, div_le_div_iff₀ (by positivity) (by positivity)]
-    have hma : (0 : ℝ) ≤ ((n / d : ℕ) : ℝ) * (a : ℝ) * (a : ℝ) := by positivity
-    nlinarith [hma, Nat.cast_nonneg (α := ℝ) a']
-  have hKY := gtBound_sub_one_le_yCut hd0 ha1 haa hpb'
-  have hBK : |bCoeff a a'| * ((gtBound (n / d) d a a' - 1 : ℕ) : ℝ)
-      ≤ |bCoeff a a'| * yCut (n / d) a a' :=
+    have hma : (0 : ℝ) ≤ ((n / d : ℕ) : ℝ) * (x : ℝ) * (x : ℝ) := by positivity
+    nlinarith [hma, Nat.cast_nonneg (α := ℝ) y]
+  have hKY := yBound_sub_one_le_yCut hd0 hx1 haa hpy'
+  have hBK : |bCoeff x y| * ((yBound (n / d) d x y - 1 : ℕ) : ℝ)
+      ≤ |bCoeff x y| * yCut (n / d) x y :=
     mul_le_mul_of_nonneg_left hKY (abs_nonneg _)
-  have hW : |aCoeff (n / d) d a| + |bCoeff a a'| * ((gtBound (n / d) d a a' - 1 : ℕ) : ℝ)
-      ≤ ((d * a : ℕ) : ℝ) + 2 * ((n / d : ℕ) : ℝ) / (a : ℝ) := by
+  have hW : |aCoeff (n / d) d x| + |bCoeff x y| * ((yBound (n / d) d x y - 1 : ℕ) : ℝ)
+      ≤ ((d * x : ℕ) : ℝ) + 2 * ((n / d : ℕ) : ℝ) / (x : ℝ) := by
     rw [hAabs]
     unfold aCoeff
-    have hrw : ((n / d : ℕ) : ℝ) / (a : ℝ) + ((n / d : ℕ) : ℝ) / (a : ℝ)
-        = 2 * ((n / d : ℕ) : ℝ) / (a : ℝ) := by ring
+    have hrw : ((n / d : ℕ) : ℝ) / (x : ℝ) + ((n / d : ℕ) : ℝ) / (x : ℝ)
+        = 2 * ((n / d : ℕ) : ℝ) / (x : ℝ) := by ring
     linarith [hBK, hBY]
-  have hlogle : Real.log (a : ℝ) ≤ Real.log ((n / d : ℕ) : ℝ) :=
+  have hlogle : Real.log (x : ℝ) ≤ Real.log ((n / d : ℕ) : ℝ) :=
     Real.log_le_log (by linarith) haleMR
-  have hloga : (0 : ℝ) ≤ Real.log (a : ℝ) := Real.log_nonneg haR
-  have hWnn : (0 : ℝ) ≤ ((d * a : ℕ) : ℝ) + 2 * ((n / d : ℕ) : ℝ) / (a : ℝ) := by positivity
-  have hnn : (0 : ℝ) ≤ |aCoeff (n / d) d a|
-      + |bCoeff a a'| * ((gtBound (n / d) d a a' - 1 : ℕ) : ℝ) := by positivity
+  have hloga : (0 : ℝ) ≤ Real.log (x : ℝ) := Real.log_nonneg haR
+  have hWnn : (0 : ℝ) ≤ ((d * x : ℕ) : ℝ) + 2 * ((n / d : ℕ) : ℝ) / (x : ℝ) := by positivity
+  have hnn : (0 : ℝ) ≤ |aCoeff (n / d) d x|
+      + |bCoeff x y| * ((yBound (n / d) d x y - 1 : ℕ) : ℝ) := by positivity
   nlinarith [h, hW, hWnn, hlogle, hloga, hnn]
 
 /-- **Lemma 16.**  `G₂(n) = O(n^{3/2+ε})`. -/
@@ -700,7 +700,7 @@ theorem Q_isBigO {ε : ℝ} (hε : 0 < ε) :
   classical
   obtain ⟨C1, hC1, hErr⟩ := error_isBigO hε
   obtain ⟨C2, hC2, hDiag⟩ := sum_diag_isBigO hε
-  obtain ⟨C3, hC3, hG1⟩ := lemma17_isBigO hε
+  obtain ⟨C3, hC3, hG1⟩ := lemma19_isBigO hε
   refine ⟨5 * C1 + C2 + C3, by positivity, fun n hn => ?_⟩
   have hnR : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
   have hnpos : (0 : ℝ) < (n : ℝ) := by linarith
@@ -975,7 +975,7 @@ theorem sum_cost_allShifts {n : ℕ} (hn : 0 < n) :
 /-! ## Theorem 14 -/
 
 /-- **Theorem 14.**  `avgCost n = D·n + O(n^{1/2+ε})` with `D = 1 + 4C ≈ 1.85`. -/
-theorem theorem13 {ε : ℝ} (hε : 0 < ε) :
+theorem theorem14 {ε : ℝ} (hε : 0 < ε) :
     ∃ K : ℝ, 0 < K ∧ ∀ n : ℕ, 0 < n →
       |avgCost n - dConst * (n : ℝ)| ≤ K * (n : ℝ) ^ (1 / 2 + ε) := by
   obtain ⟨K1, hK1, hS⟩ := sum_remSum_isBigO hε

@@ -5,10 +5,10 @@ Heilbronn's bijection (Heilbronn 1969, p. 93), which underlies equation
 (eq. heilbron) of Blomer--Bux, sends a continued-fraction expansion
 `n = K(c₀,…,c_l)` together with a split point `j` to the quadruple
 
-  `a = K(c₀,…,c_j)`,   `b = K(c_{j+1},…,c_l)`,
-  `a' = K(c₀,…,c_{j-1})`, `b' = K(c_{j+2},…,c_l)`,
+  `x = K(c₀,…,c_j)`,   `x' = K(c_{j+1},…,c_l)`,
+  `y = K(c₀,…,c_{j-1})`, `y' = K(c_{j+2},…,c_l)`,
 
-and the relation `n = a·b + a'·b'` that makes the quadruple a solution is
+and the relation `n = x·x' + y·y'` that makes the quadruple a solution is
 exactly **Euler's continuant identity**.  This file defines the continuant of a
 list and proves that identity.
 
@@ -39,7 +39,7 @@ theorem K_cons_cons (c₀ c₁ : ℕ) (cs : List ℕ) :
   `K (l₁ ++ l₂) = K l₁ · K l₂ + K (l₁.dropLast) · K (l₂.tail)`.
 
 This is the identity that turns a split continued-fraction expansion into a
-solution of `n = a·b + a'·b'`. -/
+solution of `n = x·x' + y·y'`. -/
 theorem K_append : ∀ (l₁ l₂ : List ℕ), l₁ ≠ [] → l₂ ≠ [] →
     K (l₁ ++ l₂) = K l₁ * K l₂ + K l₁.dropLast * K l₂.tail := by
   intro l₁
@@ -90,7 +90,7 @@ theorem K_reverse : ∀ l : List ℕ, K l.reverse = K l := by
 
 /-- **Consecutive continuants are coprime**: `gcd (K l) (K l.dropLast) = 1`.
 
-This supplies the condition `gcd(a, a') = 1` in Heilbronn's correspondence. -/
+This supplies the condition `gcd(x, y) = 1` in Heilbronn's correspondence. -/
 theorem K_coprime : ∀ l : List ℕ, Nat.gcd (K l) (K l.dropLast) = 1 := by
   intro l
   induction l using List.reverseRecOn with
@@ -105,8 +105,8 @@ theorem K_coprime : ∀ l : List ℕ, Nat.gcd (K l) (K l.dropLast) = 1 := by
 
 /-! ## Size conditions
 
-Heilbronn's quadruples satisfy `a > a' ≥ 1` and `b > b' ≥ 1`, where `a'` is the
-continuant of the truncated prefix and `b'` that of the truncated suffix.  These
+Heilbronn's quadruples satisfy `x > y ≥ 1` and `x' > y' ≥ 1`, where `y` is the
+continuant of the truncated prefix and `y'` that of the truncated suffix.  These
 follow from positivity together with the two truncation inequalities below. -/
 
 /-- Continuants of lists of positive entries are positive. -/
@@ -149,7 +149,7 @@ mirror image of `K_dropLast_lt`, via `K_reverse`. -/
 theorem K_tail_lt (l : List ℕ) (hlen : 2 ≤ l.length) (hpos : ∀ c ∈ l, 1 ≤ c) :
     K l.tail < K l := by
   have hrev : (l.reverse).dropLast = (l.tail).reverse := by
-    rcases l with _ | ⟨a, t⟩
+    rcases l with _ | ⟨x, t⟩
     · simp
     · simp
   have hlen' : 2 ≤ l.reverse.length := by simpa using hlen
@@ -162,7 +162,7 @@ theorem K_tail_lt (l : List ℕ) (hlen : 2 ≤ l.length) (hpos : ∀ c ∈ l, 1 
 /-- The prefix continuants are coprime, mirrored to suffixes. -/
 theorem K_coprime_tail (l : List ℕ) : Nat.gcd (K l) (K l.tail) = 1 := by
   have hrev : (l.reverse).dropLast = (l.tail).reverse := by
-    rcases l with _ | ⟨a, t⟩ <;> simp
+    rcases l with _ | ⟨x, t⟩ <;> simp
   have h := K_coprime l.reverse
   rwa [hrev, K_reverse, K_reverse] at h
 
@@ -201,14 +201,14 @@ theorem K_tail_lt' {l : List ℕ} (hne : l ≠ []) (hpos : ∀ c ∈ l, 1 ≤ c)
 Splitting an expansion `n = K (l₁ ++ l₂)` at an interior point produces the
 quadruple
 
-  `a = K l₁`,  `b = K l₂`,  `a' = K l₁.dropLast`,  `b' = K l₂.tail`,
+  `x = K l₁`,  `x' = K l₂`,  `y = K l₁.dropLast`,  `y' = K l₂.tail`,
 
 and the theorem below is that this quadruple satisfies every condition defining
 the target set of Heilbronn's bijection. -/
 
 /-- **Heilbronn's correspondence, forward direction.**  The quadruple obtained by
-splitting an expansion satisfies `n = a·b + a'·b'`, the size conditions
-`a > a' ≥ 1` and `b > b' ≥ 1`, and the coprimality conditions. -/
+splitting an expansion satisfies `n = x·x' + y·y'`, the size conditions
+`x > y ≥ 1` and `x' > y' ≥ 1`, and the coprimality conditions. -/
 theorem heilbronn_forward {l₁ l₂ : List ℕ} (h₁ : l₁ ≠ []) (h₂ : l₂ ≠ [])
     (hpos₁ : ∀ c ∈ l₁, 1 ≤ c) (hpos₂ : ∀ c ∈ l₂, 1 ≤ c)
     (hfirst : l₁.length = 1 → 2 ≤ K l₁) (hlast : l₂.length = 1 → 2 ≤ K l₂) :
@@ -224,65 +224,65 @@ theorem heilbronn_forward {l₁ l₂ : List ℕ} (h₁ : l₁ ≠ []) (h₂ : l�
 
 /-! ## The inverse map
 
-Recovering the expansion from the pair `(a, a')` is exactly the Euclidean
-algorithm: `K_concat` says `a = c·a' + K m.dropLast` with `c = a / a'` and
-`K m.dropLast = a mod a'`, so peeling entries off the end of the list is the
-same as running Euclid on `(a, a')`.  This is the point of contact between
+Recovering the expansion from the pair `(x, y)` is exactly the Euclidean
+algorithm: `K_concat` says `x = c·y + K m.dropLast` with `c = x / y` and
+`K m.dropLast = x mod y`, so peeling entries off the end of the list is the
+same as running Euclid on `(x, y)`.  This is the point of contact between
 Heilbronn's bijection and the remainder sums of `Euclid.lean`. -/
 
-/-- The continued-fraction expansion of `a / a'`, read off by the Euclidean
+/-- The continued-fraction expansion of `x / y`, read off by the Euclidean
 algorithm.  The quotients are collected from the end of the list backwards. -/
-def cf (a a' : ℕ) : List ℕ :=
-  if h : a' = 0 then [] else cf a' (a % a') ++ [a / a']
-termination_by a'
+def cf (x y : ℕ) : List ℕ :=
+  if h : y = 0 then [] else cf y (x % y) ++ [x / y]
+termination_by y
 decreasing_by exact Nat.mod_lt _ (Nat.pos_of_ne_zero h)
 
-@[simp] theorem cf_zero (a : ℕ) : cf a 0 = [] := by rw [cf]; simp
+@[simp] theorem cf_zero (x : ℕ) : cf x 0 = [] := by rw [cf]; simp
 
-theorem cf_of_pos {a a' : ℕ} (h : a' ≠ 0) :
-    cf a a' = cf a' (a % a') ++ [a / a'] := by rw [cf]; simp [h]
+theorem cf_of_pos {x y : ℕ} (h : y ≠ 0) :
+    cf x y = cf y (x % y) ++ [x / y] := by rw [cf]; simp [h]
 
 /-- **Heilbronn's correspondence, inverse direction.**  Every coprime pair
-`a > a' ≥ 1` is `(K l, K l.dropLast)` for the expansion `l = cf a a'`. -/
-theorem K_cf : ∀ a' a : ℕ, 1 ≤ a' → a' < a → Nat.gcd a a' = 1 →
-    K (cf a a') = a ∧ K (cf a a').dropLast = a' := by
-  intro a'
-  induction a' using Nat.strong_induction_on with
-  | _ a' ih =>
-    intro a ha'1 hlt hgcd
-    rcases Nat.lt_or_ge a' 2 with h2 | h2
-    · -- `a' = 1`: the expansion is the single entry `a`
-      have ha'eq : a' = 1 := by omega
-      subst ha'eq
-      have h1 : cf a 1 = [a] := by
+`x > y ≥ 1` is `(K l, K l.dropLast)` for the expansion `l = cf x y`. -/
+theorem K_cf : ∀ y x : ℕ, 1 ≤ y → y < x → Nat.gcd x y = 1 →
+    K (cf x y) = x ∧ K (cf x y).dropLast = y := by
+  intro y
+  induction y using Nat.strong_induction_on with
+  | _ y ih =>
+    intro x hy1 hlt hgcd
+    rcases Nat.lt_or_ge y 2 with h2 | h2
+    · -- `y = 1`: the expansion is the single entry `x`
+      have hyeq : y = 1 := by omega
+      subst hyeq
+      have h1 : cf x 1 = [x] := by
         rw [cf_of_pos (by norm_num), Nat.mod_one, cf_zero, Nat.div_one]
         simp
       rw [h1]
       simp
-    · -- `a' ≥ 2`: peel off the quotient and recurse
-      have ha'ne : a' ≠ 0 := by omega
-      have hrlt : a % a' < a' := Nat.mod_lt _ (by omega)
-      have hr1 : 1 ≤ a % a' := by
-        rcases Nat.eq_zero_or_pos (a % a') with h0 | h0
+    · -- `y ≥ 2`: peel off the quotient and recurse
+      have hyne : y ≠ 0 := by omega
+      have hrlt : x % y < y := Nat.mod_lt _ (by omega)
+      have hr1 : 1 ≤ x % y := by
+        rcases Nat.eq_zero_or_pos (x % y) with h0 | h0
         · exfalso
-          have hdvd : a' ∣ a := Nat.dvd_of_mod_eq_zero h0
-          have hg : Nat.gcd a a' = a' := Nat.gcd_eq_right hdvd
+          have hdvd : y ∣ x := Nat.dvd_of_mod_eq_zero h0
+          have hg : Nat.gcd x y = y := Nat.gcd_eq_right hdvd
           omega
         · exact h0
-      have hgcd' : Nat.gcd a' (a % a') = 1 := by
-        rw [← hgcd, Nat.gcd_comm a a', Nat.gcd_rec a' a]
+      have hgcd' : Nat.gcd y (x % y) = 1 := by
+        rw [← hgcd, Nat.gcd_comm x y, Nat.gcd_rec y x]
         exact Nat.gcd_comm _ _
-      obtain ⟨hK, hKd⟩ := ih (a % a') hrlt a' hr1 hrlt hgcd'
-      have hne : cf a' (a % a') ≠ [] := by
+      obtain ⟨hK, hKd⟩ := ih (x % y) hrlt y hr1 hrlt hgcd'
+      have hne : cf y (x % y) ≠ [] := by
         intro hc
         rw [hc] at hK
         simp at hK
         omega
-      have hcf : cf a a' = cf a' (a % a') ++ [a / a'] := cf_of_pos ha'ne
+      have hcf : cf x y = cf y (x % y) ++ [x / y] := cf_of_pos hyne
       constructor
-      · rw [hcf, K_concat _ hne (a / a'), hK, hKd]
-        have hdm := Nat.div_add_mod a a'
-        have hcomm : a / a' * a' = a' * (a / a') := Nat.mul_comm _ _
+      · rw [hcf, K_concat _ hne (x / y), hK, hKd]
+        have hdm := Nat.div_add_mod x y
+        have hcomm : x / y * y = y * (x / y) := Nat.mul_comm _ _
         omega
       · rw [hcf]
         simpa using hK
@@ -336,96 +336,96 @@ theorem cf_K : ∀ l : List ℕ, l ≠ [] → (∀ c ∈ l, 1 ≤ c) → (∀ x 
 
 /-- The expansion produced by `cf` is normalised: nonempty, with positive
 entries and first entry at least `2`. -/
-theorem cf_spec : ∀ a' a : ℕ, 1 ≤ a' → a' < a → Nat.gcd a a' = 1 →
-    cf a a' ≠ [] ∧ (∀ x ∈ cf a a', 1 ≤ x) ∧ (∀ x ∈ (cf a a').head?, 2 ≤ x) := by
-  intro a'
-  induction a' using Nat.strong_induction_on with
-  | _ a' ih =>
-    intro a ha'1 hlt hgcd
-    rcases Nat.lt_or_ge a' 2 with h2 | h2
-    · have ha'eq : a' = 1 := by omega
-      subst ha'eq
-      have h1 : cf a 1 = [a] := by
+theorem cf_spec : ∀ y x : ℕ, 1 ≤ y → y < x → Nat.gcd x y = 1 →
+    cf x y ≠ [] ∧ (∀ c ∈ cf x y, 1 ≤ c) ∧ (∀ c ∈ (cf x y).head?, 2 ≤ c) := by
+  intro y
+  induction y using Nat.strong_induction_on with
+  | _ y ih =>
+    intro x hy1 hlt hgcd
+    rcases Nat.lt_or_ge y 2 with h2 | h2
+    · have hyeq : y = 1 := by omega
+      subst hyeq
+      have h1 : cf x 1 = [x] := by
         rw [cf_of_pos (by norm_num), Nat.mod_one, cf_zero, Nat.div_one]
         simp
       rw [h1]
-      refine ⟨by simp, ?_, ?_⟩ <;> intro x hx <;> simp at hx <;> omega
-    · have ha'ne : a' ≠ 0 := by omega
-      have hrlt : a % a' < a' := Nat.mod_lt _ (by omega)
-      have hr1 : 1 ≤ a % a' := by
-        rcases Nat.eq_zero_or_pos (a % a') with h0 | h0
+      refine ⟨by simp, ?_, ?_⟩ <;> intro c hx <;> simp at hx <;> omega
+    · have hyne : y ≠ 0 := by omega
+      have hrlt : x % y < y := Nat.mod_lt _ (by omega)
+      have hr1 : 1 ≤ x % y := by
+        rcases Nat.eq_zero_or_pos (x % y) with h0 | h0
         · exfalso
-          have hg : Nat.gcd a a' = a' := Nat.gcd_eq_right (Nat.dvd_of_mod_eq_zero h0)
+          have hg : Nat.gcd x y = y := Nat.gcd_eq_right (Nat.dvd_of_mod_eq_zero h0)
           omega
         · exact h0
-      have hgcd' : Nat.gcd a' (a % a') = 1 := by
-        rw [← hgcd, Nat.gcd_comm a a', Nat.gcd_rec a' a]
+      have hgcd' : Nat.gcd y (x % y) = 1 := by
+        rw [← hgcd, Nat.gcd_comm x y, Nat.gcd_rec y x]
         exact Nat.gcd_comm _ _
-      obtain ⟨hne, hpos, hhd⟩ := ih (a % a') hrlt a' hr1 hrlt hgcd'
-      have hq1 : 1 ≤ a / a' := (Nat.one_le_div_iff (by omega)).2 (by omega)
-      rw [cf_of_pos ha'ne]
+      obtain ⟨hne, hpos, hhd⟩ := ih (x % y) hrlt y hr1 hrlt hgcd'
+      have hq1 : 1 ≤ x / y := (Nat.one_le_div_iff (by omega)).2 (by omega)
+      rw [cf_of_pos hyne]
       refine ⟨by simp, ?_, ?_⟩
-      · intro x hx
+      · intro c hx
         rcases List.mem_append.1 hx with h | h
-        · exact hpos x h
+        · exact hpos c h
         · simp at h; omega
-      · intro x hx
-        rcases hcf : cf a' (a % a') with _ | ⟨y, ys⟩
+      · intro c hx
+        rcases hcf : cf y (x % y) with _ | ⟨c₀, cs⟩
         · exact absurd hcf hne
         · rw [hcf] at hx hhd
           simp at hx ⊢
-          exact hhd x (by simp [hx])
+          exact hhd c (by simp [hx])
 
 /-- **Heilbronn's bijection.**
 
 The map `l ↦ (K l, K l.dropLast)` is a bijection from normalised expansions
 (nonempty, positive entries, first entry at least `2`) onto the coprime pairs
-`a > a' ≥ 1`.  The first component is injectivity, the second surjectivity
+`x > y ≥ 1`.  The first component is injectivity, the second surjectivity
 together with the fact that the inverse lands among normalised expansions.
 
 Combined with `heilbronn_forward`, this is the correspondence underlying
 equation (eq. heilbron) of Blomer--Bux. -/
 theorem heilbronn_bijection :
-    (∀ l : List ℕ, l ≠ [] → (∀ c ∈ l, 1 ≤ c) → (∀ x ∈ l.head?, 2 ≤ x) →
+    (∀ l : List ℕ, l ≠ [] → (∀ c ∈ l, 1 ≤ c) → (∀ hd ∈ l.head?, 2 ≤ hd) →
         cf (K l) (K l.dropLast) = l)
-      ∧ (∀ a a' : ℕ, 1 ≤ a' → a' < a → Nat.gcd a a' = 1 →
-        (cf a a' ≠ [] ∧ (∀ c ∈ cf a a', 1 ≤ c) ∧ (∀ x ∈ (cf a a').head?, 2 ≤ x))
-          ∧ K (cf a a') = a ∧ K (cf a a').dropLast = a') :=
-  ⟨cf_K, fun a a' h1 h2 h3 => ⟨cf_spec a' a h1 h2 h3, K_cf a' a h1 h2 h3⟩⟩
+      ∧ (∀ x y : ℕ, 1 ≤ y → y < x → Nat.gcd x y = 1 →
+        (cf x y ≠ [] ∧ (∀ c ∈ cf x y, 1 ≤ c) ∧ (∀ hd ∈ (cf x y).head?, 2 ≤ hd))
+          ∧ K (cf x y) = x ∧ K (cf x y).dropLast = y) :=
+  ⟨cf_K, fun x y h1 h2 h3 => ⟨cf_spec y x h1 h2 h3, K_cf y x h1 h2 h3⟩⟩
 
 /-- Dropping the last entry of a reversed list drops the first entry. -/
 theorem reverse_dropLast_eq (l : List ℕ) : (l.reverse).dropLast = (l.tail).reverse := by
-  rcases l with _ | ⟨a, t⟩ <;> simp
+  rcases l with _ | ⟨x, t⟩ <;> simp
 
 /-- Mirror of the earlier reversal identity. -/
 theorem reverse_tail_eq (l : List ℕ) : (l.reverse).tail = (l.dropLast).reverse := by
   have h : ((l.reverse).reverse).dropLast = ((l.reverse).tail).reverse := by
-    rcases hl : l.reverse with _ | ⟨a, t⟩ <;> simp
+    rcases hl : l.reverse with _ | ⟨x, t⟩ <;> simp
   rw [List.reverse_reverse] at h
   rw [h, List.reverse_reverse]
 
 /-- **Heilbronn's correspondence, surjectivity at the level of quadruples.**
 
-Every quadruple `(a, b, a', b')` with `a > a' ≥ 1`, `b > b' ≥ 1` and both
+Every quadruple `(x, x', y, y')` with `x > y ≥ 1`, `x' > y' ≥ 1` and both
 coprimality conditions arises from a split expansion, and its continuant
-identity `n = a·b + a'·b'` holds.  The suffix is obtained by reversing, which is
+identity `n = x·x' + y·y'` holds.  The suffix is obtained by reversing, which is
 legitimate by `K_reverse`. -/
-theorem heilbronn_surjective {a b a' b' : ℕ}
-    (ha : 1 ≤ a') (hab : a' < a) (hga : Nat.gcd a a' = 1)
-    (hb : 1 ≤ b') (hbb : b' < b) (hgb : Nat.gcd b b' = 1) :
+theorem heilbronn_surjective {x x' y y' : ℕ}
+    (hx : 1 ≤ y) (hab : y < x) (hga : Nat.gcd x y = 1)
+    (hx' : 1 ≤ y') (hbb : y' < x') (hgb : Nat.gcd x' y' = 1) :
     ∃ l₁ l₂ : List ℕ, l₁ ≠ [] ∧ l₂ ≠ [] ∧
-      K l₁ = a ∧ K l₁.dropLast = a' ∧ K l₂ = b ∧ K l₂.tail = b' ∧
-      K (l₁ ++ l₂) = a * b + a' * b' := by
-  obtain ⟨hK₁, hKd₁⟩ := K_cf a' a ha hab hga
-  obtain ⟨hne₁, -, -⟩ := cf_spec a' a ha hab hga
-  obtain ⟨hK₂, hKd₂⟩ := K_cf b' b hb hbb hgb
-  obtain ⟨hne₂, -, -⟩ := cf_spec b' b hb hbb hgb
-  have hne₂' : (cf b b').reverse ≠ [] := by simpa using hne₂
-  have hb₂ : K (cf b b').reverse = b := by rw [K_reverse]; exact hK₂
-  have hb₂' : K ((cf b b').reverse).tail = b' := by
+      K l₁ = x ∧ K l₁.dropLast = y ∧ K l₂ = x' ∧ K l₂.tail = y' ∧
+      K (l₁ ++ l₂) = x * x' + y * y' := by
+  obtain ⟨hK₁, hKd₁⟩ := K_cf y x hx hab hga
+  obtain ⟨hne₁, -, -⟩ := cf_spec y x hx hab hga
+  obtain ⟨hK₂, hKd₂⟩ := K_cf y' x' hx' hbb hgb
+  obtain ⟨hne₂, -, -⟩ := cf_spec y' x' hx' hbb hgb
+  have hne₂' : (cf x' y').reverse ≠ [] := by simpa using hne₂
+  have hx'₂ : K (cf x' y').reverse = x' := by rw [K_reverse]; exact hK₂
+  have hx'₂' : K ((cf x' y').reverse).tail = y' := by
     rw [reverse_tail_eq, K_reverse]; exact hKd₂
-  refine ⟨cf a a', (cf b b').reverse, hne₁, hne₂', hK₁, hKd₁, hb₂, hb₂', ?_⟩
-  rw [K_append _ _ hne₁ hne₂', hK₁, hKd₁, hb₂, hb₂']
+  refine ⟨cf x y, (cf x' y').reverse, hne₁, hne₂', hK₁, hKd₁, hx'₂, hx'₂', ?_⟩
+  rw [K_append _ _ hne₁ hne₂', hK₁, hKd₁, hx'₂, hx'₂']
 
 /-! ## The bridge to remainder sums
 
@@ -599,14 +599,14 @@ theorem two_le_K_of_length_one' {l : List ℕ} (h : l.length = 1)
 
 /-- A prefix inherits the head condition. -/
 theorem head?_take_of_head? {L : List ℕ} {j : ℕ} (hj : 1 ≤ j)
-    (hhead : ∀ x ∈ L.head?, 2 ≤ x) : ∀ x ∈ (L.take j).head?, 2 ≤ x := by
-  intro x hx
+    (hhead : ∀ c ∈ L.head?, 2 ≤ c) : ∀ c ∈ (L.take j).head?, 2 ≤ c := by
+  intro c hc
   apply hhead
-  rcases L with _ | ⟨a, t⟩
-  · simp at hx
+  rcases L with _ | ⟨x, t⟩
+  · simp at hc
   · rcases j with _ | j'
     · omega
-    · simp at hx ⊢
+    · simp at hc ⊢
       omega
 
 /-- A suffix inherits the last-entry condition. -/
@@ -715,9 +715,9 @@ theorem heilbronn_split_roundtrip {L : List ℕ} (hpos : ∀ c ∈ L, 1 ≤ c)
 
 /-! ## The quadruple index set
 
-The right-hand side of (eq. heilbron) sums over quadruples `(a, b, a', b')`
-with `a > a' ≥ 1`, `b > b' ≥ 1`, both coprimality conditions, and
-`n = a·b + a'·b'`.  Every component is bounded by `n`, so this is a `Finset`. -/
+The right-hand side of (eq. heilbron) sums over quadruples `(x, x', y, y')`
+with `x > y ≥ 1`, `x' > y' ≥ 1`, both coprimality conditions, and
+`n = x·x' + y·y'`.  Every component is bounded by `n`, so this is a `Finset`. -/
 
 /-- The quadruples appearing on the right of (eq. heilbron). -/
 def quadruples (n : ℕ) : Finset (ℕ × ℕ × ℕ × ℕ) :=
@@ -727,18 +727,18 @@ def quadruples (n : ℕ) : Finset (ℕ × ℕ × ℕ × ℕ) :=
       ∧ Nat.gcd q.1 q.2.2.1 = 1 ∧ Nat.gcd q.2.1 q.2.2.2 = 1
       ∧ n = q.1 * q.2.1 + q.2.2.1 * q.2.2.2)
 
-theorem mem_quadruples {n a b a' b' : ℕ} :
-    (a, b, a', b') ∈ quadruples n ↔
-      (a ≤ n ∧ b ≤ n ∧ a' ≤ n ∧ b' ≤ n) ∧ 1 ≤ a' ∧ a' < a ∧ 1 ≤ b' ∧ b' < b
-        ∧ Nat.gcd a a' = 1 ∧ Nat.gcd b b' = 1 ∧ n = a * b + a' * b' := by
+theorem mem_quadruples {n x x' y y' : ℕ} :
+    (x, x', y, y') ∈ quadruples n ↔
+      (x ≤ n ∧ x' ≤ n ∧ y ≤ n ∧ y' ≤ n) ∧ 1 ≤ y ∧ y < x ∧ 1 ≤ y' ∧ y' < x'
+        ∧ Nat.gcd x y = 1 ∧ Nat.gcd x' y' = 1 ∧ n = x * x' + y * y' := by
   simp [quadruples, Finset.mem_filter, Finset.mem_product, and_assoc]
 
 /-- The components of a quadruple are bounded by `n`. -/
-theorem quadruple_le {n a b a' b' : ℕ} (h1 : 1 ≤ a') (h2 : a' < a) (h3 : 1 ≤ b')
-    (h4 : b' < b) (hsum : n = a * b + a' * b') :
-    a ≤ n ∧ b ≤ n ∧ a' ≤ n ∧ b' ≤ n := by
-  have ha : 1 ≤ a := by omega
-  have hb : 1 ≤ b := by omega
+theorem quadruple_le {n x x' y y' : ℕ} (h1 : 1 ≤ y) (h2 : y < x) (h3 : 1 ≤ y')
+    (h4 : y' < x') (hsum : n = x * x' + y * y') :
+    x ≤ n ∧ x' ≤ n ∧ y ≤ n ∧ y' ≤ n := by
+  have hx : 1 ≤ x := by omega
+  have hx' : 1 ≤ x' := by omega
   refine ⟨?_, ?_, ?_, ?_⟩ <;> nlinarith
 
 /-- **Splits land in the quadruple set.** -/
@@ -752,8 +752,8 @@ theorem split_mem_quadruples {n k j : ℕ} (hk : k ∈ shifts n) (hj1 : 1 ≤ j)
 
 /-! ## The expansion attached to a quadruple
 
-The inverse of the passage from splits to quadruples: given `(a, b, a', b')`,
-reassemble the expansion as `cf a a'` followed by the reverse of `cf b b'`.
+The inverse of the passage from splits to quadruples: given `(x, x', y, y')`,
+reassemble the expansion as `cf x y` followed by the reverse of `cf x' y'`.
 Reversing is what `K_reverse` licenses. -/
 
 theorem head?_append_of_ne_nil {l₁ l₂ : List ℕ} (h : l₁ ≠ []) :
@@ -763,57 +763,57 @@ theorem head?_append_of_ne_nil {l₁ l₂ : List ℕ} (h : l₁ ≠ []) :
   · simp
 
 /-- The expansion attached to a quadruple. -/
-def quadExpansion (a b a' b' : ℕ) : List ℕ := cf a a' ++ (cf b b').reverse
+def quadExpansion (x x' y y' : ℕ) : List ℕ := cf x y ++ (cf x' y').reverse
 
 /-- **The expansion attached to a quadruple is the split it came from.**  It is
-a normalised expansion of `n`, and splitting it at `|cf a a'|` returns the two
+a normalised expansion of `n`, and splitting it at `|cf x y|` returns the two
 halves. -/
-theorem quadExpansion_spec {n a b a' b' : ℕ} (hq : (a, b, a', b') ∈ quadruples n) :
-    K (quadExpansion a b a' b') = n ∧ quadExpansion a b a' b' ≠ []
-      ∧ (∀ c ∈ quadExpansion a b a' b', 1 ≤ c)
-      ∧ (∀ x ∈ (quadExpansion a b a' b').head?, 2 ≤ x)
-      ∧ (∀ x ∈ (quadExpansion a b a' b').getLast?, 2 ≤ x)
-      ∧ (quadExpansion a b a' b').take (cf a a').length = cf a a'
-      ∧ (quadExpansion a b a' b').drop (cf a a').length = (cf b b').reverse
-      ∧ 1 ≤ (cf a a').length
-      ∧ (cf a a').length < (quadExpansion a b a' b').length := by
-  obtain ⟨-, ha1, ha2, hb1, hb2, hga, hgb, hsum⟩ := mem_quadruples.1 hq
-  obtain ⟨hKa, hKa'⟩ := K_cf a' a ha1 ha2 hga
-  obtain ⟨hnea, hposa, hheada⟩ := cf_spec a' a ha1 ha2 hga
-  obtain ⟨hKb, hKb'⟩ := K_cf b' b hb1 hb2 hgb
-  obtain ⟨hneb, hposb, hheadb⟩ := cf_spec b' b hb1 hb2 hgb
-  have hnebr : (cf b b').reverse ≠ [] := by simpa using hneb
-  have hKbr : K (cf b b').reverse = b := by rw [K_reverse]; exact hKb
-  have hKbr' : K ((cf b b').reverse).tail = b' := by
-    rw [reverse_tail_eq, K_reverse]; exact hKb'
-  have hlen : 1 ≤ (cf a a').length := List.length_pos_iff.2 hnea
+theorem quadExpansion_spec {n x x' y y' : ℕ} (hq : (x, x', y, y') ∈ quadruples n) :
+    K (quadExpansion x x' y y') = n ∧ quadExpansion x x' y y' ≠ []
+      ∧ (∀ c ∈ quadExpansion x x' y y', 1 ≤ c)
+      ∧ (∀ hd ∈ (quadExpansion x x' y y').head?, 2 ≤ hd)
+      ∧ (∀ hd ∈ (quadExpansion x x' y y').getLast?, 2 ≤ hd)
+      ∧ (quadExpansion x x' y y').take (cf x y).length = cf x y
+      ∧ (quadExpansion x x' y y').drop (cf x y).length = (cf x' y').reverse
+      ∧ 1 ≤ (cf x y).length
+      ∧ (cf x y).length < (quadExpansion x x' y y').length := by
+  obtain ⟨-, hx1, hx2, hx'1, hx'2, hga, hgb, hsum⟩ := mem_quadruples.1 hq
+  obtain ⟨hKa, hKy⟩ := K_cf y x hx1 hx2 hga
+  obtain ⟨hnea, hposa, hheada⟩ := cf_spec y x hx1 hx2 hga
+  obtain ⟨hKb, hKy'⟩ := K_cf y' x' hx'1 hx'2 hgb
+  obtain ⟨hneb, hposb, hheadb⟩ := cf_spec y' x' hx'1 hx'2 hgb
+  have hnebr : (cf x' y').reverse ≠ [] := by simpa using hneb
+  have hKbr : K (cf x' y').reverse = x' := by rw [K_reverse]; exact hKb
+  have hKbr' : K ((cf x' y').reverse).tail = y' := by
+    rw [reverse_tail_eq, K_reverse]; exact hKy'
+  have hlen : 1 ≤ (cf x y).length := List.length_pos_iff.2 hnea
   refine ⟨?_, ?_, ?_, ?_, ?_, List.take_left, List.drop_left, hlen, ?_⟩
-  · rw [quadExpansion, K_append _ _ hnea hnebr, hKa, hKa', hKbr, hKbr', hsum]
+  · rw [quadExpansion, K_append _ _ hnea hnebr, hKa, hKy, hKbr, hKbr', hsum]
   · simp [quadExpansion, hnea]
   · intro c hc
     rcases List.mem_append.1 hc with h | h
     · exact hposa c h
     · exact hposb c (List.mem_reverse.1 h)
-  · intro x hx
-    rw [quadExpansion, head?_append_of_ne_nil hnea] at hx
-    exact hheada x hx
-  · intro x hx
+  · intro hd hhd
+    rw [quadExpansion, head?_append_of_ne_nil hnea] at hhd
+    exact hheada hd hhd
+  · intro hd hhd
     rw [quadExpansion, List.getLast?_append_of_ne_nil _ hnebr,
-      List.getLast?_reverse] at hx
-    exact hheadb x hx
+      List.getLast?_reverse] at hhd
+    exact hheadb hd hhd
   · rw [quadExpansion, List.length_append]
-    have hbl : 0 < (cf b b').reverse.length := List.length_pos_iff.2 hnebr
+    have hbl : 0 < (cf x' y').reverse.length := List.length_pos_iff.2 hnebr
     omega
 
 /-- The shift attached to a quadruple lies in `shifts n`, and its expansion is
 the reassembled one. -/
-theorem quadExpansion_shift {n a b a' b' : ℕ} (hq : (a, b, a', b') ∈ quadruples n) :
-    K (quadExpansion a b a' b').dropLast ∈ shifts n
-      ∧ cf n (K (quadExpansion a b a' b').dropLast) = quadExpansion a b a' b' := by
+theorem quadExpansion_shift {n x x' y y' : ℕ} (hq : (x, x', y, y') ∈ quadruples n) :
+    K (quadExpansion x x' y y').dropLast ∈ shifts n
+      ∧ cf n (K (quadExpansion x x' y y').dropLast) = quadExpansion x x' y y' := by
   obtain ⟨hKL, hne, hpos, hhead, hlast, -, -, -, -⟩ := quadExpansion_spec hq
-  set L := quadExpansion a b a' b' with hL
+  set L := quadExpansion x x' y y' with hL
   have hk1 : 1 ≤ K L.dropLast :=
-    K_pos _ (fun x hx => hpos x (List.dropLast_subset L hx))
+    K_pos _ (fun c hc => hpos c (List.dropLast_subset L hc))
   have hk2 : 2 * K L.dropLast ≤ n := by
     have := two_mul_K_dropLast_le L hne hpos hlast
     omega
@@ -827,7 +827,7 @@ theorem quadExpansion_shift {n a b a' b' : ℕ} (hq : (a, b, a', b') ∈ quadrup
 /-! ## Equation (eq. heilbron)
 
 The reindexing: the double sum of continuants over interior splits equals the
-sum of `a` over Heilbronn's quadruples. -/
+sum of `x` over Heilbronn's quadruples. -/
 
 /-- **The reindexing of (eq. heilbron).** -/
 theorem sum_split_eq_sum_quadruples (n : ℕ) :
@@ -845,7 +845,7 @@ theorem sum_split_eq_sum_quadruples (n : ℕ) :
     simp only [Finset.mem_sigma, Finset.mem_Ico] at hp
     exact split_mem_quadruples hp.1 hp.2.1 hp.2.2
   · -- the inverse map lands in the sigma set
-    rintro ⟨a, b, a', b'⟩ hq
+    rintro ⟨x, x', y, y'⟩ hq
     obtain ⟨hs, hcf⟩ := quadExpansion_shift hq
     obtain ⟨-, -, -, -, -, -, -, hlen1, hlen2⟩ := quadExpansion_spec hq
     rw [Finset.mem_sigma, Finset.mem_Ico]
@@ -871,28 +871,28 @@ theorem sum_split_eq_sum_quadruples (n : ℕ) :
       omega
     rw [hKd, hjlen]
   · -- right inverse
-    rintro ⟨a, b, a', b'⟩ hq
+    rintro ⟨x, x', y, y'⟩ hq
     obtain ⟨-, hcf⟩ := quadExpansion_shift hq
     obtain ⟨-, -, -, -, -, htake, hdrop, -, -⟩ := quadExpansion_spec hq
-    obtain ⟨-, ha1, ha2, hb1, hb2, hga, hgb, -⟩ := mem_quadruples.1 hq
-    obtain ⟨hKa, hKa'⟩ := K_cf a' a ha1 ha2 hga
-    obtain ⟨hKb, hKb'⟩ := K_cf b' b hb1 hb2 hgb
+    obtain ⟨-, hx1, hx2, hx'1, hx'2, hga, hgb, -⟩ := mem_quadruples.1 hq
+    obtain ⟨hKa, hKy⟩ := K_cf y x hx1 hx2 hga
+    obtain ⟨hKb, hKy'⟩ := K_cf y' x' hx'1 hx'2 hgb
     simp only [hcf, htake, hdrop]
-    have e2 : K (cf b b').reverse = b := by rw [K_reverse]; exact hKb
-    have e4 : K ((cf b b').reverse).tail = b' := by
-      rw [reverse_tail_eq, K_reverse]; exact hKb'
-    rw [hKa, e2, hKa', e4]
+    have e2 : K (cf x' y').reverse = x' := by rw [K_reverse]; exact hKb
+    have e4 : K ((cf x' y').reverse).tail = y' := by
+      rw [reverse_tail_eq, K_reverse]; exact hKy'
+    rw [hKa, e2, hKy, e4]
   · rintro ⟨k, j⟩ _
     rfl
 
 /-- The quadruple set is symmetric under swapping the two halves. -/
-theorem mem_quadruples_swap {n a b a' b' : ℕ} (h : (a, b, a', b') ∈ quadruples n) :
-    (b, a, b', a') ∈ quadruples n := by
+theorem mem_quadruples_swap {n x x' y y' : ℕ} (h : (x, x', y, y') ∈ quadruples n) :
+    (x', x, y', y) ∈ quadruples n := by
   rw [mem_quadruples] at h ⊢
   obtain ⟨⟨h1, h2, h3, h4⟩, h5, h6, h7, h8, h9, h10, h11⟩ := h
   exact ⟨⟨h2, h1, h4, h3⟩, h7, h8, h5, h6, h10, h9, by rw [h11]; ring⟩
 
-/-- **Summing `a` over the quadruples is the same as summing `b`.**
+/-- **Summing `x` over the quadruples is the same as summing `x'`.**
 
 The paper uses this to symmetrise; it is the involution swapping the two
 halves of the quadruple. -/
@@ -901,15 +901,15 @@ theorem sum_fst_eq_sum_snd (n : ℕ) :
   refine Finset.sum_bij'
     (i := fun q _ => (q.2.1, q.1, q.2.2.2, q.2.2.1))
     (j := fun q _ => (q.2.1, q.1, q.2.2.2, q.2.2.1)) ?_ ?_ ?_ ?_ ?_
-  · rintro ⟨a, b, a', b'⟩ hq
+  · rintro ⟨x, x', y, y'⟩ hq
     exact mem_quadruples_swap hq
-  · rintro ⟨a, b, a', b'⟩ hq
+  · rintro ⟨x, x', y, y'⟩ hq
     exact mem_quadruples_swap hq
-  · rintro ⟨a, b, a', b'⟩ _
+  · rintro ⟨x, x', y, y'⟩ _
     rfl
-  · rintro ⟨a, b, a', b'⟩ _
+  · rintro ⟨x, x', y, y'⟩ _
     rfl
-  · rintro ⟨a, b, a', b'⟩ _
+  · rintro ⟨x, x', y, y'⟩ _
     rfl
 
 /-- **The coprime form of the Heilbronn identity.**
@@ -1025,7 +1025,7 @@ range plus a divisor-weighted sum over Heilbronn's quadruples.
 
 This is the coprime form summed over `g = gcd(n,k)`.  The paper writes the
 second term as a single sum over quadruples constrained only by
-`gcd(a,a') = 1`; that regrouping is `sum_quadruplesAll` below. -/
+`gcd(x,y) = 1`; that regrouping is `sum_quadruplesAll` below. -/
 theorem heilbron_aggregated {n : ℕ} (hn : 0 < n) :
     ∑ k ∈ allShifts n, remSum n k
       = (∑ k ∈ allShifts n, Nat.gcd n k)
@@ -1036,24 +1036,24 @@ theorem heilbron_aggregated {n : ℕ} (hn : 0 < n) :
 
 /-! ## The quadruples of (eq. heilbron)
 
-The paper's right-hand side sums `b` over quadruples constrained only by
-`gcd(a,a') = 1`.  Classifying those by `e = gcd(b,b')` regroups them into the
+The paper's right-hand side sums `x'` over quadruples constrained only by
+`gcd(x,y) = 1`.  Classifying those by `e = gcd(x',y')` regroups them into the
 divisor-weighted sum over fully coprime quadruples. -/
 
-/-- The quadruples of (eq. heilbron): only `gcd(a,a') = 1` is imposed. -/
+/-- The quadruples of (eq. heilbron): only `gcd(x,y) = 1` is imposed. -/
 def quadruplesAll (n : ℕ) : Finset (ℕ × ℕ × ℕ × ℕ) :=
   ((Finset.range (n + 1)) ×ˢ (Finset.range (n + 1)) ×ˢ (Finset.range (n + 1))
       ×ˢ (Finset.range (n + 1))).filter
     (fun q => 1 ≤ q.2.2.1 ∧ q.2.2.1 < q.1 ∧ 1 ≤ q.2.2.2 ∧ q.2.2.2 < q.2.1
       ∧ Nat.gcd q.1 q.2.2.1 = 1 ∧ n = q.1 * q.2.1 + q.2.2.1 * q.2.2.2)
 
-theorem mem_quadruplesAll {n a b a' b' : ℕ} :
-    (a, b, a', b') ∈ quadruplesAll n ↔
-      (a ≤ n ∧ b ≤ n ∧ a' ≤ n ∧ b' ≤ n) ∧ 1 ≤ a' ∧ a' < a ∧ 1 ≤ b' ∧ b' < b
-        ∧ Nat.gcd a a' = 1 ∧ n = a * b + a' * b' := by
+theorem mem_quadruplesAll {n x x' y y' : ℕ} :
+    (x, x', y, y') ∈ quadruplesAll n ↔
+      (x ≤ n ∧ x' ≤ n ∧ y ≤ n ∧ y' ≤ n) ∧ 1 ≤ y ∧ y < x ∧ 1 ≤ y' ∧ y' < x'
+        ∧ Nat.gcd x y = 1 ∧ n = x * x' + y * y' := by
   simp [quadruplesAll, Finset.mem_filter, Finset.mem_product, and_assoc]
 
-/-- **Classifying the quadruples by `gcd(b,b')`.** -/
+/-- **Classifying the quadruples by `gcd(x',y')`.** -/
 theorem sum_snd_quadruplesAll {n : ℕ} (hn : 0 < n) :
     ∑ q ∈ quadruplesAll n, q.2.1
       = ∑ e ∈ n.divisors, e * ∑ p ∈ quadruples (n / e), p.2.1 := by
@@ -1067,66 +1067,66 @@ theorem sum_snd_quadruplesAll {n : ℕ} (hn : 0 < n) :
     (j := fun p _ => (p.2.1, p.1 * p.2.2.1, p.2.2.2.1, p.1 * p.2.2.2.2))
     ?_ ?_ ?_ ?_ ?_
   · -- forward
-    rintro ⟨a, b, a', b'⟩ hq
-    obtain ⟨⟨-, -, -, -⟩, ha1, ha2, hb1, hb2, hga, hsum⟩ := mem_quadruplesAll.1 hq
-    have he : 0 < Nat.gcd b b' := Nat.gcd_pos_of_pos_left _ (by omega)
-    have heb : Nat.gcd b b' ∣ b := Nat.gcd_dvd_left _ _
-    have heb' : Nat.gcd b b' ∣ b' := Nat.gcd_dvd_right _ _
-    have hen : Nat.gcd b b' ∣ n := by
+    rintro ⟨x, x', y, y'⟩ hq
+    obtain ⟨⟨-, -, -, -⟩, hx1, hx2, hx'1, hx'2, hga, hsum⟩ := mem_quadruplesAll.1 hq
+    have he : 0 < Nat.gcd x' y' := Nat.gcd_pos_of_pos_left _ (by omega)
+    have heb : Nat.gcd x' y' ∣ x' := Nat.gcd_dvd_left _ _
+    have hey' : Nat.gcd x' y' ∣ y' := Nat.gcd_dvd_right _ _
+    have hen : Nat.gcd x' y' ∣ n := by
       rw [hsum]
-      exact Dvd.dvd.add (Dvd.dvd.mul_left heb a) (Dvd.dvd.mul_left heb' a')
-    have hne : n / Nat.gcd b b' = a * (b / Nat.gcd b b') + a' * (b' / Nat.gcd b b') := by
+      exact Dvd.dvd.add (Dvd.dvd.mul_left heb x) (Dvd.dvd.mul_left hey' y)
+    have hne : n / Nat.gcd x' y' = x * (x' / Nat.gcd x' y') + y * (y' / Nat.gcd x' y') := by
       rw [Nat.div_eq_iff_eq_mul_left he hen, hsum, Nat.add_mul, Nat.mul_assoc,
-        Nat.mul_assoc, Nat.div_mul_cancel heb, Nat.div_mul_cancel heb']
+        Nat.mul_assoc, Nat.div_mul_cancel heb, Nat.div_mul_cancel hey']
     simp only [Finset.mem_sigma, Nat.mem_divisors]
-    refine ⟨⟨hen, hn.ne'⟩, mem_quadruples.2 ⟨?_, ha1, ha2, ?_, ?_, hga, ?_, hne⟩⟩
-    · refine quadruple_le ha1 ha2 ?_ ?_ hne
-      · exact (Nat.one_le_div_iff he).2 (Nat.le_of_dvd (by omega) heb')
-      · exact Nat.div_lt_div_of_lt_of_dvd heb hb2
-    · exact (Nat.one_le_div_iff he).2 (Nat.le_of_dvd (by omega) heb')
-    · exact Nat.div_lt_div_of_lt_of_dvd heb hb2
+    refine ⟨⟨hen, hn.ne'⟩, mem_quadruples.2 ⟨?_, hx1, hx2, ?_, ?_, hga, ?_, hne⟩⟩
+    · refine quadruple_le hx1 hx2 ?_ ?_ hne
+      · exact (Nat.one_le_div_iff he).2 (Nat.le_of_dvd (by omega) hey')
+      · exact Nat.div_lt_div_of_lt_of_dvd heb hx'2
+    · exact (Nat.one_le_div_iff he).2 (Nat.le_of_dvd (by omega) hey')
+    · exact Nat.div_lt_div_of_lt_of_dvd heb hx'2
     · exact Nat.coprime_div_gcd_div_gcd he
   · -- backward
-    rintro ⟨e, a, b1, a', b1'⟩ hp
+    rintro ⟨e, x, x'1, y, y'1⟩ hp
     simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
     obtain ⟨⟨hen, -⟩, hq⟩ := hp
-    obtain ⟨-, ha1, ha2, hb1, hb2, hga, -, hsum⟩ := mem_quadruples.1 hq
+    obtain ⟨-, hx1, hx2, hx'1, hx'2, hga, -, hsum⟩ := mem_quadruples.1 hq
     have he : 0 < e := Nat.pos_of_dvd_of_pos hen hn
     have hmul : e * (n / e) = n := Nat.mul_div_cancel' hen
-    have hsum' : n = a * (e * b1) + a' * (e * b1') := by
+    have hsum' : n = x * (e * x'1) + y * (e * y'1) := by
       rw [← hmul, hsum]; ring
     rw [mem_quadruplesAll]
-    have hp1 : 1 ≤ e * b1' := Nat.mul_pos he hb1
-    have hp2 : e * b1' < e * b1 := by nlinarith
-    exact ⟨quadruple_le ha1 ha2 hp1 hp2 hsum', ha1, ha2, hp1, hp2, hga, hsum'⟩
+    have hp1 : 1 ≤ e * y'1 := Nat.mul_pos he hx'1
+    have hp2 : e * y'1 < e * x'1 := by nlinarith
+    exact ⟨quadruple_le hx1 hx2 hp1 hp2 hsum', hx1, hx2, hp1, hp2, hga, hsum'⟩
   · -- left inverse
-    rintro ⟨a, b, a', b'⟩ hq
-    obtain ⟨-, -, -, hb1, hb2, -, -⟩ := mem_quadruplesAll.1 hq
-    have he : 0 < Nat.gcd b b' := Nat.gcd_pos_of_pos_left _ (by omega)
-    have e1 : Nat.gcd b b' * (b / Nat.gcd b b') = b :=
+    rintro ⟨x, x', y, y'⟩ hq
+    obtain ⟨-, -, -, hx'1, hx'2, -, -⟩ := mem_quadruplesAll.1 hq
+    have he : 0 < Nat.gcd x' y' := Nat.gcd_pos_of_pos_left _ (by omega)
+    have e1 : Nat.gcd x' y' * (x' / Nat.gcd x' y') = x' :=
       Nat.mul_div_cancel' (Nat.gcd_dvd_left _ _)
-    have e2 : Nat.gcd b b' * (b' / Nat.gcd b b') = b' :=
+    have e2 : Nat.gcd x' y' * (y' / Nat.gcd x' y') = y' :=
       Nat.mul_div_cancel' (Nat.gcd_dvd_right _ _)
     rw [e1, e2]
   · -- right inverse
-    rintro ⟨e, a, b1, a', b1'⟩ hp
+    rintro ⟨e, x, x'1, y, y'1⟩ hp
     simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
     obtain ⟨⟨hen, -⟩, hq⟩ := hp
-    obtain ⟨-, -, -, hb1, hb2, -, hcop, -⟩ := mem_quadruples.1 hq
+    obtain ⟨-, -, -, hx'1, hx'2, -, hcop, -⟩ := mem_quadruples.1 hq
     have he : 0 < e := Nat.pos_of_dvd_of_pos hen hn
-    have hgcd : Nat.gcd (e * b1) (e * b1') = e := by
+    have hgcd : Nat.gcd (e * x'1) (e * y'1) = e := by
       rw [Nat.gcd_mul_left, hcop, mul_one]
     simp only [hgcd, Nat.mul_div_cancel_left _ he]
-  · rintro ⟨a, b, a', b'⟩ hq
-    obtain ⟨-, -, -, hb1, hb2, -, -⟩ := mem_quadruplesAll.1 hq
-    have he : 0 < Nat.gcd b b' := Nat.gcd_pos_of_pos_left _ (by omega)
-    exact (Nat.mul_div_cancel' (Nat.gcd_dvd_left b b')).symm
+  · rintro ⟨x, x', y, y'⟩ hq
+    obtain ⟨-, -, -, hx'1, hx'2, -, -⟩ := mem_quadruplesAll.1 hq
+    have he : 0 < Nat.gcd x' y' := Nat.gcd_pos_of_pos_left _ (by omega)
+    exact (Nat.mul_div_cancel' (Nat.gcd_dvd_left x' y')).symm
 
 /-- **Equation (eq. heilbron).**
 
 Summing the Euclidean remainder sums over all shifts the block cycle algorithm
 recurses on equals the sum of `gcd(n,k)` over the same range, plus the sum of
-`b` over the quadruples constrained only by `gcd(a,a') = 1`.
+`x'` over the quadruples constrained only by `gcd(x,y) = 1`.
 
 This is the paper's labelled identity, the passage from move counts to lattice
 point counts. -/
@@ -1139,12 +1139,12 @@ theorem heilbron {n : ℕ} (hn : 0 < n) :
 
 /-! ## Removing the gcd condition
 
-The paper writes `R(n)` for the sum of `b` over quadruples with `gcd(a,a') = 1`
+The paper writes `R(n)` for the sum of `x'` over quadruples with `gcd(x,y) = 1`
 — the right-hand side of (eq. heilbron) — and `Q(n)` for the same sum with no
-gcd condition at all.  Classifying by `d = gcd(a,a')` gives `Q(n) = ∑_{d ∣ n} R(d)`,
+gcd condition at all.  Classifying by `d = gcd(x,y)` gives `Q(n) = ∑_{d ∣ n} R(d)`,
 which is what Möbius inversion is then applied to.
 
-Note the summand `b` is untouched by this classification, so unlike the
+Note the summand `x'` is untouched by this classification, so unlike the
 aggregation of (eq. heilbron) there is no divisor weight. -/
 
 /-- The quadruples with no gcd condition. -/
@@ -1154,13 +1154,13 @@ def quadruplesQ (n : ℕ) : Finset (ℕ × ℕ × ℕ × ℕ) :=
     (fun q => 1 ≤ q.2.2.1 ∧ q.2.2.1 < q.1 ∧ 1 ≤ q.2.2.2 ∧ q.2.2.2 < q.2.1
       ∧ n = q.1 * q.2.1 + q.2.2.1 * q.2.2.2)
 
-theorem mem_quadruplesQ {n a b a' b' : ℕ} :
-    (a, b, a', b') ∈ quadruplesQ n ↔
-      (a ≤ n ∧ b ≤ n ∧ a' ≤ n ∧ b' ≤ n) ∧ 1 ≤ a' ∧ a' < a ∧ 1 ≤ b' ∧ b' < b
-        ∧ n = a * b + a' * b' := by
+theorem mem_quadruplesQ {n x x' y y' : ℕ} :
+    (x, x', y, y') ∈ quadruplesQ n ↔
+      (x ≤ n ∧ x' ≤ n ∧ y ≤ n ∧ y' ≤ n) ∧ 1 ≤ y ∧ y < x ∧ 1 ≤ y' ∧ y' < x'
+        ∧ n = x * x' + y * y' := by
   simp [quadruplesQ, Finset.mem_filter, Finset.mem_product, and_assoc]
 
-/-- **`Q(n) = ∑_{d ∣ n} R(n/d)`.**  Classifying quadruples by `d = gcd(a,a')`. -/
+/-- **`Q(n) = ∑_{d ∣ n} R(n/d)`.**  Classifying quadruples by `d = gcd(x,y)`. -/
 theorem sum_snd_quadruplesQ {n : ℕ} (hn : 0 < n) :
     ∑ q ∈ quadruplesQ n, q.2.1
       = ∑ d ∈ n.divisors, ∑ p ∈ quadruplesAll (n / d), p.2.1 := by
@@ -1171,48 +1171,48 @@ theorem sum_snd_quadruplesQ {n : ℕ} (hn : 0 < n) :
           q.2.2.2)⟩ : (_ : ℕ) × (ℕ × ℕ × ℕ × ℕ)))
     (j := fun p _ => (p.1 * p.2.1, p.2.2.1, p.1 * p.2.2.2.1, p.2.2.2.2))
     ?_ ?_ ?_ ?_ ?_
-  · rintro ⟨a, b, a', b'⟩ hq
-    obtain ⟨-, ha1, ha2, hb1, hb2, hsum⟩ := mem_quadruplesQ.1 hq
-    have hd : 0 < Nat.gcd a a' := Nat.gcd_pos_of_pos_left _ (by omega)
-    have hda : Nat.gcd a a' ∣ a := Nat.gcd_dvd_left _ _
-    have hda' : Nat.gcd a a' ∣ a' := Nat.gcd_dvd_right _ _
-    have hdn : Nat.gcd a a' ∣ n := by
+  · rintro ⟨x, x', y, y'⟩ hq
+    obtain ⟨-, hx1, hx2, hx'1, hx'2, hsum⟩ := mem_quadruplesQ.1 hq
+    have hd : 0 < Nat.gcd x y := Nat.gcd_pos_of_pos_left _ (by omega)
+    have hda : Nat.gcd x y ∣ x := Nat.gcd_dvd_left _ _
+    have hdy : Nat.gcd x y ∣ y := Nat.gcd_dvd_right _ _
+    have hdn : Nat.gcd x y ∣ n := by
       rw [hsum]
-      exact Dvd.dvd.add (Dvd.dvd.mul_right hda b) (Dvd.dvd.mul_right hda' b')
-    have hnd : n / Nat.gcd a a'
-        = a / Nat.gcd a a' * b + a' / Nat.gcd a a' * b' := by
+      exact Dvd.dvd.add (Dvd.dvd.mul_right hda x') (Dvd.dvd.mul_right hdy y')
+    have hnd : n / Nat.gcd x y
+        = x / Nat.gcd x y * x' + y / Nat.gcd x y * y' := by
       rw [Nat.div_eq_iff_eq_mul_left hd hdn, hsum, Nat.add_mul, Nat.mul_right_comm,
-        Nat.mul_right_comm (a' / Nat.gcd a a'), Nat.div_mul_cancel hda,
-        Nat.div_mul_cancel hda']
-    have hq1 : 1 ≤ a' / Nat.gcd a a' :=
-      (Nat.one_le_div_iff hd).2 (Nat.le_of_dvd (by omega) hda')
-    have hq2 : a' / Nat.gcd a a' < a / Nat.gcd a a' :=
-      Nat.div_lt_div_of_lt_of_dvd hda ha2
+        Nat.mul_right_comm (y / Nat.gcd x y), Nat.div_mul_cancel hda,
+        Nat.div_mul_cancel hdy]
+    have hq1 : 1 ≤ y / Nat.gcd x y :=
+      (Nat.one_le_div_iff hd).2 (Nat.le_of_dvd (by omega) hdy)
+    have hq2 : y / Nat.gcd x y < x / Nat.gcd x y :=
+      Nat.div_lt_div_of_lt_of_dvd hda hx2
     simp only [Finset.mem_sigma, Nat.mem_divisors]
     exact ⟨⟨hdn, hn.ne'⟩, mem_quadruplesAll.2
-      ⟨quadruple_le hq1 hq2 hb1 hb2 hnd, hq1, hq2, hb1, hb2,
+      ⟨quadruple_le hq1 hq2 hx'1 hx'2 hnd, hq1, hq2, hx'1, hx'2,
         Nat.coprime_div_gcd_div_gcd hd, hnd⟩⟩
-  · rintro ⟨d, a1, b, a1', b'⟩ hp
+  · rintro ⟨d, a1, x', a1', y'⟩ hp
     simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
     obtain ⟨⟨hdn, -⟩, hq⟩ := hp
-    obtain ⟨-, ha1, ha2, hb1, hb2, -, hsum⟩ := mem_quadruplesAll.1 hq
+    obtain ⟨-, hx1, hx2, hx'1, hx'2, -, hsum⟩ := mem_quadruplesAll.1 hq
     have hd : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
     have hmul : d * (n / d) = n := Nat.mul_div_cancel' hdn
-    have hsum' : n = d * a1 * b + d * a1' * b' := by
+    have hsum' : n = d * a1 * x' + d * a1' * y' := by
       rw [← hmul, hsum]; ring
-    have hp1 : 1 ≤ d * a1' := Nat.mul_pos hd ha1
+    have hp1 : 1 ≤ d * a1' := Nat.mul_pos hd hx1
     have hp2 : d * a1' < d * a1 := by nlinarith
     rw [mem_quadruplesQ]
-    exact ⟨quadruple_le hp1 hp2 hb1 hb2 hsum', hp1, hp2, hb1, hb2, hsum'⟩
-  · rintro ⟨a, b, a', b'⟩ hq
-    obtain ⟨-, ha1, ha2, -, -, -⟩ := mem_quadruplesQ.1 hq
-    have hd : 0 < Nat.gcd a a' := Nat.gcd_pos_of_pos_left _ (by omega)
-    have e1 : Nat.gcd a a' * (a / Nat.gcd a a') = a :=
+    exact ⟨quadruple_le hp1 hp2 hx'1 hx'2 hsum', hp1, hp2, hx'1, hx'2, hsum'⟩
+  · rintro ⟨x, x', y, y'⟩ hq
+    obtain ⟨-, hx1, hx2, -, -, -⟩ := mem_quadruplesQ.1 hq
+    have hd : 0 < Nat.gcd x y := Nat.gcd_pos_of_pos_left _ (by omega)
+    have e1 : Nat.gcd x y * (x / Nat.gcd x y) = x :=
       Nat.mul_div_cancel' (Nat.gcd_dvd_left _ _)
-    have e2 : Nat.gcd a a' * (a' / Nat.gcd a a') = a' :=
+    have e2 : Nat.gcd x y * (y / Nat.gcd x y) = y :=
       Nat.mul_div_cancel' (Nat.gcd_dvd_right _ _)
     rw [e1, e2]
-  · rintro ⟨d, a1, b, a1', b'⟩ hp
+  · rintro ⟨d, a1, x', a1', y'⟩ hp
     simp only [Finset.mem_sigma, Nat.mem_divisors] at hp
     obtain ⟨⟨hdn, -⟩, hq⟩ := hp
     obtain ⟨-, -, -, -, -, hcop, -⟩ := mem_quadruplesAll.1 hq
@@ -1220,7 +1220,7 @@ theorem sum_snd_quadruplesQ {n : ℕ} (hn : 0 < n) :
     have hgcd : Nat.gcd (d * a1) (d * a1') = d := by
       rw [Nat.gcd_mul_left, hcop, mul_one]
     simp only [hgcd, Nat.mul_div_cancel_left _ hd]
-  · rintro ⟨a, b, a', b'⟩ _
+  · rintro ⟨x, x', y, y'⟩ _
     rfl
 
 /-! ## Möbius inversion
@@ -1229,7 +1229,7 @@ With `Q(n) = ∑_{d ∣ n} R(d)` in hand, Möbius inversion gives `R` back from 
 This is equation (mobius) of the paper.  Both are recast over `ℤ` so that
 Mathlib's inversion applies. -/
 
-/-- `R(n)`: the sum of `b` over quadruples with `gcd(a,a') = 1`. -/
+/-- `R(n)`: the sum of `x'` over quadruples with `gcd(x,y) = 1`. -/
 def Rquad (n : ℕ) : ℤ := ∑ q ∈ quadruplesAll n, (q.2.1 : ℤ)
 
 /-- `Q(n)`: the same sum with no gcd condition. -/
@@ -1277,8 +1277,8 @@ For instance `[2;3,4] = 2 + 1/(3 + 1/4) = 30/13`, so `K[2,3,4] = 30`. -/
 -- we get `30/7 = 4`.
 #guard (cf 30 13).getLast? = some 2
 #guard (cf 30 7).getLast? = some 4
--- Splitting `cf 30 7 = [2,3,4]` at `j = 1` gives `a = K [2] = 2`,
--- `b = K [3,4] = 13`, `a' = K [] = 1`, `b' = K [4] = 4`, and indeed
+-- Splitting `cf 30 7 = [2,3,4]` at `j = 1` gives `x = K [2] = 2`,
+-- `x' = K [3,4] = 13`, `y = K [] = 1`, `y' = K [4] = 4`, and indeed
 -- `2 * 13 + 1 * 4 = 30`.
 #guard K ((cf 30 7).take 1) * K ((cf 30 7).drop 1)
         + K ((cf 30 7).take 1).dropLast * K ((cf 30 7).drop 1).tail = 30

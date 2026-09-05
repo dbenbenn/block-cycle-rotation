@@ -10,7 +10,7 @@ per element when the algorithm may use a buffer of size `β·n`.  Equation
                  2ℓ + μ(N',ℓ',β) - N'         otherwise,
 ```
 
-so with `ψ_β(x) := μ(1,x,β) - 1` and the relative maps of `Theorem10.lean`,
+so with `ψ_β(x) := μ(1,x,β) - 1` and the relative maps of `Theorem9.lean`,
 
 ```
 ψ_β(x) = x                              if x ≤ β,
@@ -32,7 +32,7 @@ which is how `psiBuf` is defined here.  For `β = 0` the same formula with
 `T = ∞` is `ψ`, and indeed `ψ - ψ_β ≤ 6β`.
 -/
 
-import BlockCycleRotation.Theorem10
+import BlockCycleRotation.Theorem9
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 
 namespace BlockCycleRotation

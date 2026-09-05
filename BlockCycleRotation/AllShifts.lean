@@ -23,7 +23,7 @@ there.  The conclusion is unaffected — that single term contributes `O(n)` to 
 sum of size `Θ(n²)` — and the proof below uses `n < 2k` throughout.
 -/
 
-import BlockCycleRotation.Theorem13
+import BlockCycleRotation.Theorem14
 
 namespace BlockCycleRotation
 

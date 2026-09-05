@@ -4,16 +4,16 @@
 The paper rewrites the constant `C` of equation (const-c) as
 
 ```
-C = 1/2 - S/(2·ζ(3)),     S = ∑_{a > a' ≥ 1} 1/(a'·(a+a')²),
+C = 1/2 - S/(2·ζ(3)),     S = ∑_{x > y ≥ 1} 1/(y·(x+y)²),
 ```
 
 equation (const-c-alternative).  The argument has three steps.
 
-1. The summand `(2a+a')/(2a²(a+a')²)` equals `(1/(2a'))(1/a² - 1/(a+a')²)`.
+1. The summand `(2x+y)/(2x²(x+y)²)` equals `(1/(2y))(1/x² - 1/(x+y)²)`.
 2. Multiplying by `ζ(3) = ∑_d 1/d³` removes the coprimality condition, because
    the summand is homogeneous of degree `-3` and every pair `A > A' ≥ 1`
-   factors uniquely as `A = d·a`, `A' = d·a'` with `d = gcd(A,A')`.
-3. Euler's formula `ζ(2,1) = ζ(3)` for the resulting `∑_{a>a'≥1} 1/(a'a²)`.
+   factors uniquely as `A = d·x`, `A' = d·y` with `d = gcd(A,A')`.
+3. Euler's formula `ζ(2,1) = ζ(3)` for the resulting `∑_{x>y≥1} 1/(y·x²)`.
 
 The paper cites step 3; Mathlib has no multiple-zeta-value theory, so it is
 proved here from scratch in `Euler.lean`.
@@ -27,7 +27,7 @@ open Finset
 
 /-! ## The three series over all pairs
 
-Each is supported on `a > a' ≥ 1` and extended by zero, in the style of
+Each is supported on `x > y ≥ 1` and extended by zero, in the style of
 `cTerm`. -/
 
 /-- `cTerm` without the coprimality condition. -/
@@ -36,11 +36,11 @@ noncomputable def gTerm (p : ℕ × ℕ) : ℝ :=
     (2 * (p.1 : ℝ) + (p.2 : ℝ)) / (2 * (p.1 : ℝ) ^ 2 * ((p.1 : ℝ) + (p.2 : ℝ)) ^ 2)
   else 0
 
-/-- The summand of `ζ(2,1) = ∑_{a > a' ≥ 1} 1/(a'·a²)`. -/
+/-- The summand of `ζ(2,1) = ∑_{x > y ≥ 1} 1/(y·x²)`. -/
 noncomputable def zTerm (p : ℕ × ℕ) : ℝ :=
   if 1 ≤ p.2 ∧ p.2 < p.1 then 1 / ((p.2 : ℝ) * (p.1 : ℝ) ^ 2) else 0
 
-/-- The summand of `S = ∑_{a > a' ≥ 1} 1/(a'·(a+a')²)`. -/
+/-- The summand of `S = ∑_{x > y ≥ 1} 1/(y·(x+y)²)`. -/
 noncomputable def eTerm (p : ℕ × ℕ) : ℝ :=
   if 1 ≤ p.2 ∧ p.2 < p.1 then 1 / ((p.2 : ℝ) * ((p.1 : ℝ) + (p.2 : ℝ)) ^ 2) else 0
 
@@ -59,15 +59,15 @@ theorem eTerm_nonneg (p : ℕ × ℕ) : 0 ≤ eTerm p := by
   · positivity
   · exact le_refl 0
 
-/-- **Step 1 of Remark 21.**  `(2a+a')/(2a²(a+a')²) = (1/(2a'))(1/a² - 1/(a+a')²)`. -/
+/-- **Step 1 of Remark 21.**  `(2x+y)/(2x²(x+y)²) = (1/(2y))(1/x² - 1/(x+y)²)`. -/
 theorem gTerm_eq (p : ℕ × ℕ) : gTerm p = (zTerm p - eTerm p) / 2 := by
   unfold gTerm zTerm eTerm
   split_ifs with h
   · obtain ⟨h1, h2⟩ := h
-    have ha : (0 : ℝ) < (p.1 : ℝ) := by
+    have hx : (0 : ℝ) < (p.1 : ℝ) := by
       have : 0 < p.1 := by omega
       exact_mod_cast this
-    have ha' : (0 : ℝ) < (p.2 : ℝ) := by
+    have hy : (0 : ℝ) < (p.2 : ℝ) := by
       have : 0 < p.2 := by omega
       exact_mod_cast this
     have haa : (0 : ℝ) < (p.1 : ℝ) + (p.2 : ℝ) := by linarith
@@ -89,61 +89,61 @@ theorem cTerm_eq_gTerm (p : ℕ × ℕ) :
 /-! ## Convergence
 
 Bounding row by row in the *first* index needs a harmonic sum; bounding in the
-second index does not, since `∑_{a > a'} 1/a² ≤ 1/a'` is the tail bound
+second index does not, since `∑_{x > y} 1/x² ≤ 1/y` is the tail bound
 `sum_inv_sq_tail_le`.  So the sums are taken columnwise. -/
 
-theorem zTerm_col_sum_le (a' : ℕ) (s : Finset ℕ) :
-    ∑ a ∈ s, zTerm (a, a') ≤ 1 / (a' : ℝ) ^ 2 := by
-  rcases Nat.eq_zero_or_pos a' with rfl | ha'
+theorem zTerm_col_sum_le (y : ℕ) (s : Finset ℕ) :
+    ∑ x ∈ s, zTerm (x, y) ≤ 1 / (y : ℝ) ^ 2 := by
+  rcases Nat.eq_zero_or_pos y with rfl | hy
   · simp [zTerm]
-  · have ha'R : (0 : ℝ) < (a' : ℝ) := by exact_mod_cast ha'
-    have h1 : ∑ a ∈ s, zTerm (a, a')
-        = ∑ a ∈ s.filter (fun a => a' < a), (1 / (a' : ℝ)) * (1 / (a : ℝ) ^ 2) := by
+  · have hyR : (0 : ℝ) < (y : ℝ) := by exact_mod_cast hy
+    have h1 : ∑ x ∈ s, zTerm (x, y)
+        = ∑ x ∈ s.filter (fun x => y < x), (1 / (y : ℝ)) * (1 / (x : ℝ) ^ 2) := by
       rw [Finset.sum_filter]
-      refine Finset.sum_congr rfl fun a _ => ?_
+      refine Finset.sum_congr rfl fun x _ => ?_
       unfold zTerm
-      by_cases h : a' < a
-      · rw [if_pos ⟨ha', h⟩, if_pos h]
+      by_cases h : y < x
+      · rw [if_pos ⟨hy, h⟩, if_pos h]
         field_simp
       · rw [if_neg (by tauto), if_neg h]
     rw [h1, ← Finset.mul_sum]
-    have h3 := sum_inv_sq_tail_le ha' (s.filter (fun a => a' < a))
-      (fun a ha => (Finset.mem_filter.1 ha).2)
-    calc (1 / (a' : ℝ)) * ∑ a ∈ s.filter (fun a => a' < a), 1 / (a : ℝ) ^ 2
-        ≤ (1 / (a' : ℝ)) * (1 / (a' : ℝ)) :=
+    have h3 := sum_inv_sq_tail_le hy (s.filter (fun x => y < x))
+      (fun x hx => (Finset.mem_filter.1 hx).2)
+    calc (1 / (y : ℝ)) * ∑ x ∈ s.filter (fun x => y < x), 1 / (x : ℝ) ^ 2
+        ≤ (1 / (y : ℝ)) * (1 / (y : ℝ)) :=
           mul_le_mul_of_nonneg_left h3 (by positivity)
-      _ = 1 / (a' : ℝ) ^ 2 := by ring
+      _ = 1 / (y : ℝ) ^ 2 := by ring
 
-theorem zTerm_col_summable (a' : ℕ) : Summable (fun a => zTerm (a, a')) :=
-  summable_of_sum_le (fun a => zTerm_nonneg (a, a')) (zTerm_col_sum_le a')
+theorem zTerm_col_summable (y : ℕ) : Summable (fun x => zTerm (x, y)) :=
+  summable_of_sum_le (fun x => zTerm_nonneg (x, y)) (zTerm_col_sum_le y)
 
-theorem zTerm_col_tsum_le (a' : ℕ) : ∑' a, zTerm (a, a') ≤ 1 / (a' : ℝ) ^ 2 :=
-  Real.tsum_le_of_sum_le (fun a => zTerm_nonneg (a, a')) (zTerm_col_sum_le a')
+theorem zTerm_col_tsum_le (y : ℕ) : ∑' x, zTerm (x, y) ≤ 1 / (y : ℝ) ^ 2 :=
+  Real.tsum_le_of_sum_le (fun x => zTerm_nonneg (x, y)) (zTerm_col_sum_le y)
 
 theorem zTerm_summable : Summable zTerm := by
   refine (Equiv.prodComm ℕ ℕ).summable_iff.1 ?_
   change Summable (fun q : ℕ × ℕ => zTerm (q.2, q.1))
   have hnn : (0 : ℕ × ℕ → ℝ) ≤ fun q => zTerm (q.2, q.1) := fun q => zTerm_nonneg _
   rw [summable_prod_of_nonneg hnn]
-  refine ⟨fun a' => zTerm_col_summable a', ?_⟩
-  have hg : Summable (fun a' : ℕ => 1 / (a' : ℝ) ^ 2) := by
+  refine ⟨fun y => zTerm_col_summable y, ?_⟩
+  have hg : Summable (fun y : ℕ => 1 / (y : ℝ) ^ 2) := by
     rw [Real.summable_one_div_nat_pow]; norm_num
-  refine Summable.of_nonneg_of_le (fun a' => ?_) (fun a' => zTerm_col_tsum_le a') hg
-  exact tsum_nonneg fun a => zTerm_nonneg _
+  refine Summable.of_nonneg_of_le (fun y => ?_) (fun y => zTerm_col_tsum_le y) hg
+  exact tsum_nonneg fun x => zTerm_nonneg _
 
 theorem eTerm_le_zTerm (p : ℕ × ℕ) : eTerm p ≤ zTerm p := by
   unfold eTerm zTerm
   split_ifs with h
   · obtain ⟨h1, h2⟩ := h
-    have ha' : (0 : ℝ) < (p.2 : ℝ) := by
+    have hy : (0 : ℝ) < (p.2 : ℝ) := by
       have : 0 < p.2 := by omega
       exact_mod_cast this
-    have ha : (0 : ℝ) < (p.1 : ℝ) := by
+    have hx : (0 : ℝ) < (p.1 : ℝ) := by
       have : 0 < p.1 := by omega
       exact_mod_cast this
     refine one_div_le_one_div_of_le (by positivity) ?_
-    nlinarith [mul_nonneg ha'.le (mul_nonneg ha.le ha'.le),
-      mul_nonneg ha'.le (mul_nonneg ha'.le ha'.le)]
+    nlinarith [mul_nonneg hy.le (mul_nonneg hx.le hy.le),
+      mul_nonneg hy.le (mul_nonneg hy.le hy.le)]
   · exact le_refl 0
 
 theorem eTerm_summable : Summable eTerm :=
@@ -154,10 +154,10 @@ theorem gTerm_summable : Summable gTerm := by
   rw [h]
   exact (zTerm_summable.sub eTerm_summable).div_const 2
 
-/-- `ζ(2,1) = ∑_{a > a' ≥ 1} 1/(a'·a²)`. -/
+/-- `ζ(2,1) = ∑_{x > y ≥ 1} 1/(y·x²)`. -/
 noncomputable def zeta21 : ℝ := ∑' p, zTerm p
 
-/-- `S = ∑_{a > a' ≥ 1} 1/(a'·(a+a')²)`, the series of eq. (const-c-alternative). -/
+/-- `S = ∑_{x > y ≥ 1} 1/(y·(x+y)²)`, the series of eq. (const-c-alternative). -/
 noncomputable def sConst : ℝ := ∑' p, eTerm p
 
 /-- `ζ(3) = ∑_{d ≥ 1} 1/d³`. -/
@@ -174,7 +174,7 @@ theorem tsum_gTerm : ∑' p, gTerm p = (zeta21 - sConst) / 2 := by
 /-! ## Step 2: removing the coprimality condition
 
 `gTerm` is homogeneous of degree `-3`, and every pair `A > A' ≥ 1` is uniquely
-`(d·a, d·a')` with `d = gcd(A,A')` and `gcd(a,a') = 1`.  So multiplying the
+`(d·x, d·y)` with `d = gcd(A,A')` and `gcd(x,y) = 1`.  So multiplying the
 coprime sum by `ζ(3) = ∑_d 1/d³` gives the sum over all pairs. -/
 
 /-- `1/(d+1)³`, the summand of `ζ(3)`. -/
@@ -208,31 +208,31 @@ theorem gTerm_ne_zero {p : ℕ × ℕ} (h : gTerm p ≠ 0) : 1 ≤ p.2 ∧ p.2 <
   · exact hc
   · exact absurd rfl h
 
-theorem cTerm_pos {a a' : ℕ} (h1 : 1 ≤ a') (h2 : a' < a) (h3 : Nat.gcd a a' = 1) :
-    0 < cTerm (a, a') := by
+theorem cTerm_pos {x y : ℕ} (h1 : 1 ≤ y) (h2 : y < x) (h3 : Nat.gcd x y = 1) :
+    0 < cTerm (x, y) := by
   unfold cTerm
   rw [if_pos ⟨h1, h2, h3⟩]
-  have ha : (0 : ℝ) < (a : ℝ) := by
-    have : 0 < a := by omega
+  have hx : (0 : ℝ) < (x : ℝ) := by
+    have : 0 < x := by omega
     exact_mod_cast this
-  have ha' : (0 : ℝ) < (a' : ℝ) := by
-    have : 0 < a' := by omega
+  have hy : (0 : ℝ) < (y : ℝ) := by
+    have : 0 < y := by omega
     exact_mod_cast this
   positivity
 
 /-- **`gTerm` is homogeneous of degree `-3`.** -/
-theorem gTerm_smul {k a a' : ℕ} (hk : 0 < k) (h1 : 1 ≤ a') (h2 : a' < a) :
-    gTerm (k * a, k * a') = gTerm (a, a') / (k : ℝ) ^ 3 := by
+theorem gTerm_smul {k x y : ℕ} (hk : 0 < k) (h1 : 1 ≤ y) (h2 : y < x) :
+    gTerm (k * x, k * y) = gTerm (x, y) / (k : ℝ) ^ 3 := by
   have hkR : (0 : ℝ) < (k : ℝ) := by exact_mod_cast hk
-  have ha : (0 : ℝ) < (a : ℝ) := by
-    have : 0 < a := by omega
+  have hx : (0 : ℝ) < (x : ℝ) := by
+    have : 0 < x := by omega
     exact_mod_cast this
-  have ha' : (0 : ℝ) < (a' : ℝ) := by
-    have : 0 < a' := by omega
+  have hy : (0 : ℝ) < (y : ℝ) := by
+    have : 0 < y := by omega
     exact_mod_cast this
-  have hk1 : 1 ≤ k * a' := Nat.one_le_iff_ne_zero.2 (by positivity)
-  have hk2 : k * a' < k * a := by
-    rw [Nat.mul_comm k a', Nat.mul_comm k a]
+  have hk1 : 1 ≤ k * y := Nat.one_le_iff_ne_zero.2 (by positivity)
+  have hk2 : k * y < k * x := by
+    rw [Nat.mul_comm k y, Nat.mul_comm k x]
     exact Nat.mul_lt_mul_of_lt_of_le h2 (le_refl k) hk
   unfold gTerm
   rw [if_pos ⟨hk1, hk2⟩, if_pos ⟨h1, h2⟩]
@@ -242,26 +242,26 @@ theorem gTerm_smul {k a a' : ℕ} (hk : 0 < k) (h1 : 1 ≤ a') (h2 : a' < a) :
 /-- **The `ζ(3)` unfolding.** -/
 theorem tsum_gTerm_eq : ∑' p : ℕ × ℕ, gTerm p = ∑' q : ℕ × (ℕ × ℕ), uTerm q.1 * cTerm q.2 := by
   refine tsum_eq_tsum_of_ne_zero_bij
-    (fun x => ((x.1.1 + 1) * x.1.2.1, (x.1.1 + 1) * x.1.2.2)) ?_ ?_ ?_
+    (fun w => ((w.1.1 + 1) * w.1.2.1, (w.1.1 + 1) * w.1.2.2)) ?_ ?_ ?_
   · -- injective
-    rintro ⟨⟨d, a, a'⟩, hx⟩ ⟨⟨e, b, b'⟩, hy⟩ heq
+    rintro ⟨⟨d, x, y⟩, hx⟩ ⟨⟨e, x', y'⟩, hy⟩ heq
     simp only [Function.mem_support, ne_eq] at hx hy
-    have hcx : cTerm (a, a') ≠ 0 := fun h => hx (by simp [h])
-    have hcy : cTerm (b, b') ≠ 0 := fun h => hy (by simp [h])
+    have hcx : cTerm (x, y) ≠ 0 := fun h => hx (by simp [h])
+    have hcy : cTerm (x', y') ≠ 0 := fun h => hy (by simp [h])
     obtain ⟨hx1, hx2, hx3⟩ := cTerm_ne_zero hcx
     obtain ⟨hy1, hy2, hy3⟩ := cTerm_ne_zero hcy
     simp only [Prod.mk.injEq] at heq
     obtain ⟨he1, he2⟩ := heq
-    have hg : Nat.gcd ((d + 1) * a) ((d + 1) * a') = d + 1 := by
+    have hg : Nat.gcd ((d + 1) * x) ((d + 1) * y) = d + 1 := by
       rw [Nat.gcd_mul_left, hx3, Nat.mul_one]
-    have hg' : Nat.gcd ((e + 1) * b) ((e + 1) * b') = e + 1 := by
+    have hg' : Nat.gcd ((e + 1) * x') ((e + 1) * y') = e + 1 := by
       rw [Nat.gcd_mul_left, hy3, Nat.mul_one]
     have hde : d + 1 = e + 1 := by rw [← hg, ← hg', he1, he2]
     have hd : d = e := by omega
     subst hd
-    have hab : a = b := Nat.eq_of_mul_eq_mul_left (by omega) he1
-    have hab' : a' = b' := Nat.eq_of_mul_eq_mul_left (by omega) he2
-    subst hab; subst hab'
+    have hab : x = x' := Nat.eq_of_mul_eq_mul_left (by omega) he1
+    have hxy' : y = y' := Nat.eq_of_mul_eq_mul_left (by omega) he2
+    subst hab; subst hxy'
     rfl
   · -- surjective onto the support of `gTerm`
     rintro p hp
@@ -271,34 +271,34 @@ theorem tsum_gTerm_eq : ∑' p : ℕ × ℕ, gTerm p = ∑' q : ℕ × (ℕ × �
     have hg0pos : 0 < g0 := Nat.gcd_pos_of_pos_left _ (by omega)
     have hd1 : g0 ∣ p.1 := Nat.gcd_dvd_left _ _
     have hd2 : g0 ∣ p.2 := Nat.gcd_dvd_right _ _
-    set a := p.1 / g0 with ha
-    set a' := p.2 / g0 with ha'
-    have he1 : g0 * a = p.1 := Nat.mul_div_cancel' hd1
-    have he2 : g0 * a' = p.2 := Nat.mul_div_cancel' hd2
-    have hco : Nat.gcd a a' = 1 := Nat.coprime_div_gcd_div_gcd hg0pos
-    have hpos1 : 1 ≤ a' := by
-      rcases Nat.eq_zero_or_pos a' with h | h
+    set x := p.1 / g0 with hx
+    set y := p.2 / g0 with hy
+    have he1 : g0 * x = p.1 := Nat.mul_div_cancel' hd1
+    have he2 : g0 * y = p.2 := Nat.mul_div_cancel' hd2
+    have hco : Nat.gcd x y = 1 := Nat.coprime_div_gcd_div_gcd hg0pos
+    have hpos1 : 1 ≤ y := by
+      rcases Nat.eq_zero_or_pos y with h | h
       · rw [h, Nat.mul_zero] at he2; omega
       · omega
-    have hlt : a' < a := by
+    have hlt : y < x := by
       by_contra hc
-      have : g0 * a ≤ g0 * a' := Nat.mul_le_mul_left _ (by omega)
+      have : g0 * x ≤ g0 * y := Nat.mul_le_mul_left _ (by omega)
       omega
-    refine ⟨⟨(g0 - 1, (a, a')), ?_⟩, ?_⟩
+    refine ⟨⟨(g0 - 1, (x, y)), ?_⟩, ?_⟩
     · simp only [Function.mem_support, ne_eq]
       exact ne_of_gt (mul_pos (uTerm_pos _) (cTerm_pos hpos1 hlt hco))
     · simp only [Nat.sub_add_cancel hg0pos]
       rw [he1, he2]
   · -- the values match
-    rintro ⟨⟨d, a, a'⟩, hx⟩
+    rintro ⟨⟨d, x, y⟩, hx⟩
     simp only [Function.mem_support, ne_eq] at hx
-    have hcx : cTerm (a, a') ≠ 0 := fun h => hx (by simp [h])
+    have hcx : cTerm (x, y) ≠ 0 := fun h => hx (by simp [h])
     obtain ⟨hx1, hx2, hx3⟩ := cTerm_ne_zero hcx
-    have hg : gTerm ((d + 1) * a, (d + 1) * a') = gTerm (a, a') / ((d + 1 : ℕ) : ℝ) ^ 3 :=
+    have hg : gTerm ((d + 1) * x, (d + 1) * y) = gTerm (x, y) / ((d + 1 : ℕ) : ℝ) ^ 3 :=
       gTerm_smul (by omega) hx1 hx2
-    have hcg : cTerm (a, a') = gTerm (a, a') := by
+    have hcg : cTerm (x, y) = gTerm (x, y) := by
       rw [cTerm_eq_gTerm, if_pos hx3]
-    change gTerm ((d + 1) * a, (d + 1) * a') = uTerm d * cTerm (a, a')
+    change gTerm ((d + 1) * x, (d + 1) * y) = uTerm d * cTerm (x, y)
     rw [hg, hcg, uTerm]
     push_cast
     ring
@@ -313,7 +313,7 @@ theorem zeta3_mul_cConst : zeta3 * cConst = (zeta21 - sConst) / 2 := by
 /-! ## Step 3: Euler's `ζ(2,1) = ζ(3)`
 
 Mathlib has no multiple-zeta-value theory, so the formula the paper cites is
-proved here.  Writing `n = a'` and `k = a - a'`, the point is the identity
+proved here.  Writing `n = y` and `k = x - y`, the point is the identity
 
 ```
 1/(n(n+k)²) + 1/(k(n+k)²) = 1/(n·k·(n+k)),
@@ -326,8 +326,8 @@ only the telescoping `∑_k 1/(k(n+k)) = H_n/n`, giving `∑_n H_n/n² = ζ(2,1)
 
 open Filter Topology
 
-/-- `harm a = ∑_{i=1}^{a-1} 1/i`. -/
-noncomputable def harm (a : ℕ) : ℝ := ∑ i ∈ Finset.Ico 1 a, (1 : ℝ) / (i : ℝ)
+/-- `harm x = ∑_{i=1}^{x-1} 1/i`. -/
+noncomputable def harm (x : ℕ) : ℝ := ∑ i ∈ Finset.Ico 1 x, (1 : ℝ) / (i : ℝ)
 
 theorem harm_eq_range (n : ℕ) : harm (n + 1) = ∑ j ∈ Finset.range n, 1 / ((j : ℝ) + 1) := by
   unfold harm
@@ -337,11 +337,11 @@ theorem harm_eq_range (n : ℕ) : harm (n + 1) = ∑ j ∈ Finset.range n, 1 / (
   push_cast
   ring_nf
 
-theorem harm_succ {a : ℕ} (ha : 1 ≤ a) : harm (a + 1) = harm a + 1 / (a : ℝ) := by
+theorem harm_succ {x : ℕ} (hx : 1 ≤ x) : harm (x + 1) = harm x + 1 / (x : ℝ) := by
   unfold harm
-  rw [Finset.sum_Ico_succ_top ha]
+  rw [Finset.sum_Ico_succ_top hx]
 
-theorem harm_nonneg (a : ℕ) : 0 ≤ harm a :=
+theorem harm_nonneg (x : ℕ) : 0 ≤ harm x :=
   Finset.sum_nonneg fun i _ => by positivity
 
 /-- The partial sums of the telescoping series. -/
@@ -439,17 +439,17 @@ theorem tsum_tail_inv_sq {n : ℕ} (hn : 0 < n) :
   have hcast : ∀ j : ℕ, 1 / ((n : ℝ) + (j : ℝ) + 1) ^ 2 = 1 / (((n + j + 1 : ℕ) : ℝ)) ^ 2 := by
     intro j; push_cast; ring
   simp only [hcast]
-  have himg : ∑ x ∈ s.image (fun j => n + j + 1), 1 / ((x : ℝ)) ^ 2
-      = ∑ x ∈ s, 1 / (((n + x + 1 : ℕ) : ℝ)) ^ 2 :=
+  have himg : ∑ t ∈ s.image (fun j => n + j + 1), 1 / ((t : ℝ)) ^ 2
+      = ∑ t ∈ s, 1 / (((n + t + 1 : ℕ) : ℝ)) ^ 2 :=
     Finset.sum_image (by
-      intro x _ y _ h
-      have h' : n + x + 1 = n + y + 1 := h
+      intro t _ y _ h
+      have h' : n + t + 1 = n + y + 1 := h
       omega)
   rw [← himg]
   refine sum_inv_sq_tail_le hn _ ?_
-  intro a ha
-  simp only [Finset.mem_image] at ha
-  obtain ⟨x, -, rfl⟩ := ha
+  intro x hx
+  simp only [Finset.mem_image] at hx
+  obtain ⟨t, -, rfl⟩ := hx
   omega
 
 /-- `1/(n(n+k)²)` at `n = i+1`, `k = j+1`. -/
@@ -509,7 +509,7 @@ theorem pTerm_summable : Summable pTerm := by
   exact Summable.of_nonneg_of_le (fun i => tsum_nonneg fun j => (pTerm_pos _).le)
     pTerm_row_tsum_le hg
 
-/-- **`∑ pTerm = ζ(2,1)`**: the reindexing `(i,j) ↦ (a,a') = (i+j+2, i+1)`. -/
+/-- **`∑ pTerm = ζ(2,1)`**: the reindexing `(i,j) ↦ (x,y) = (i+j+2, i+1)`. -/
 theorem tsum_pTerm : ∑' p : ℕ × ℕ, zTerm p = ∑' q : ℕ × ℕ, pTerm q := by
   refine tsum_eq_tsum_of_ne_zero_bij (fun q => (q.1.1 + q.1.2 + 2, q.1.1 + 1)) ?_ ?_ ?_
   · intro x y heq
@@ -591,49 +591,49 @@ theorem tsum_qTerm_rows :
 
 /-! ### The rows of `ζ(2,1)` -/
 
-theorem zTerm_row (a : ℕ) : ∑' a' : ℕ, zTerm (a, a') = harm a / (a : ℝ) ^ 2 := by
-  have hsupp : ∀ a' ∉ Finset.range a, zTerm (a, a') = 0 := by
-    intro a' ha'
-    simp only [Finset.mem_range, not_lt] at ha'
+theorem zTerm_row (x : ℕ) : ∑' y : ℕ, zTerm (x, y) = harm x / (x : ℝ) ^ 2 := by
+  have hsupp : ∀ y ∉ Finset.range x, zTerm (x, y) = 0 := by
+    intro y hy
+    simp only [Finset.mem_range, not_lt] at hy
     unfold zTerm
     rw [if_neg]
     rintro ⟨-, h2⟩
     omega
   rw [tsum_eq_sum hsupp]
-  rcases Nat.eq_zero_or_pos a with rfl | ha
+  rcases Nat.eq_zero_or_pos x with rfl | hx
   · simp [harm]
-  · rw [Finset.range_eq_Ico, Finset.sum_eq_sum_Ico_succ_bot ha]
-    have h0 : zTerm (a, 0) = 0 := by
+  · rw [Finset.range_eq_Ico, Finset.sum_eq_sum_Ico_succ_bot hx]
+    have h0 : zTerm (x, 0) = 0 := by
       unfold zTerm; rw [if_neg]; rintro ⟨h1, -⟩; omega
     rw [h0, zero_add]
     unfold harm
     rw [Finset.sum_div]
-    refine Finset.sum_congr rfl fun a' ha' => ?_
-    rw [Finset.mem_Ico] at ha'
-    have ha'0 : (0 : ℝ) < (a' : ℝ) := by
-      have : 0 < a' := by omega
+    refine Finset.sum_congr rfl fun y hy => ?_
+    rw [Finset.mem_Ico] at hy
+    have hy0 : (0 : ℝ) < (y : ℝ) := by
+      have : 0 < y := by omega
       exact_mod_cast this
-    have haR : (0 : ℝ) < (a : ℝ) := by exact_mod_cast ha
+    have haR : (0 : ℝ) < (x : ℝ) := by exact_mod_cast hx
     unfold zTerm
     rw [if_pos ⟨by omega, by omega⟩]
     field_simp
 
-theorem harmRow_summable : Summable (fun a : ℕ => harm a / (a : ℝ) ^ 2) := by
+theorem harmRow_summable : Summable (fun x : ℕ => harm x / (x : ℝ) ^ 2) := by
   have hnn : (0 : ℕ × ℕ → ℝ) ≤ zTerm := fun p => zTerm_nonneg p
   have h := (summable_prod_of_nonneg hnn).1 zTerm_summable
-  exact h.2.congr fun a => zTerm_row a
+  exact h.2.congr fun x => zTerm_row x
 
-theorem zeta21_eq : zeta21 = ∑' a : ℕ, harm a / (a : ℝ) ^ 2 := by
+theorem zeta21_eq : zeta21 = ∑' x : ℕ, harm x / (x : ℝ) ^ 2 := by
   rw [zeta21, zTerm_summable.tsum_prod]
   exact tsum_congr zTerm_row
 
-theorem inv_cube_summable : Summable (fun a : ℕ => 1 / (a : ℝ) ^ 3) := by
+theorem inv_cube_summable : Summable (fun x : ℕ => 1 / (x : ℝ) ^ 3) := by
   rw [Real.summable_one_div_nat_pow]; norm_num
 
-theorem zeta3_eq : zeta3 = ∑' a : ℕ, 1 / (a : ℝ) ^ 3 := by
+theorem zeta3_eq : zeta3 = ∑' x : ℕ, 1 / (x : ℝ) ^ 3 := by
   have hshift : Summable (fun n : ℕ => 1 / (((n + 1 : ℕ)) : ℝ) ^ 3) :=
     (summable_nat_add_iff 1).2 inv_cube_summable
-  have h1 : ∑' a : ℕ, 1 / (a : ℝ) ^ 3
+  have h1 : ∑' x : ℕ, 1 / (x : ℝ) ^ 3
       = 1 / (((0 : ℕ)) : ℝ) ^ 3 + ∑' n : ℕ, 1 / (((n + 1 : ℕ)) : ℝ) ^ 3 :=
     tsum_eq_zero_add' hshift
   have h2 : (1 : ℝ) / (((0 : ℕ)) : ℝ) ^ 3 = 0 := by norm_num
@@ -646,7 +646,7 @@ theorem zeta3_eq : zeta3 = ∑' a : ℕ, 1 / (a : ℝ) ^ 3 := by
 
 /-- **Euler's `ζ(2,1) = ζ(3)`.** -/
 theorem euler_zeta21 : zeta21 = zeta3 := by
-  have hsum : Summable (fun a : ℕ => harm a / (a : ℝ) ^ 2 + 1 / (a : ℝ) ^ 3) :=
+  have hsum : Summable (fun x : ℕ => harm x / (x : ℝ) ^ 2 + 1 / (x : ℝ) ^ 3) :=
     harmRow_summable.add inv_cube_summable
   have hrow : ∑' q : ℕ × ℕ, qTerm q = zeta21 + zeta3 := by
     rw [tsum_qTerm_rows, zeta21_eq, zeta3_eq,

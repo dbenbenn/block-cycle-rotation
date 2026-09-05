@@ -23,7 +23,7 @@ since `In` and `Out` are continuous away from `1/x ∈ ℤ` and preserve
 irrationality.
 -/
 
-import BlockCycleRotation.Theorem13
+import BlockCycleRotation.Theorem14
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.Analysis.BoxIntegral.UnitPartition
@@ -987,7 +987,7 @@ theorem avgCost_eq_riemann {n : ℕ} (hn : 0 < n) :
   field_simp
 
 /-- **Theorem 9.**  `avgCost n / n → ∫₀¹ f`. -/
-theorem theorem10_unit :
+theorem theorem9_unit :
     Tendsto (fun n : ℕ => avgCost n / (n : ℝ)) atTop (𝓝 (∫ x in (0 : ℝ)..1, fBar x)) := by
   have hgcd : Tendsto
       (fun n : ℕ => ((∑ k ∈ Finset.range n, Nat.gcd n k : ℕ) : ℝ) / (n : ℝ) ^ 2)
@@ -1076,10 +1076,10 @@ theorem integral_fCost_split :
   ring
 
 /-- **Theorem 9.**  `avgCost n / n → 2∫₀^{1/2} f`. -/
-theorem theorem10 :
+theorem theorem9 :
     Tendsto (fun n : ℕ => avgCost n / (n : ℝ)) atTop
       (𝓝 (2 * ∫ x in (0 : ℝ)..(1 / 2), fCost x)) := by
-  have h := theorem10_unit
+  have h := theorem9_unit
   rw [integral_fBar_eq_fCost (by norm_num) (by norm_num) (by norm_num) (by norm_num),
     integral_fCost_split] at h
   exact h
