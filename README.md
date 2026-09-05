@@ -24,7 +24,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 
 | Result | Paper | Lean | State |
 | --- | --- | --- | --- |
-| Remainder sum `remSum` | Lemma 11 | `BlockCycleRotation.remSum` | ✅ defined |
+| Remainder sum `remSum` | Eq. (def-mbar), Lemma 11 | `BlockCycleRotation.remSum` | ✅ defined |
 | Master inequality | (new, see below) | `remSum_add_gcd_le` | ✅ proved |
 | Worst case `≤ 3(n − gcd)` | Thm A / Obs. 2 | `moveCount_add_gcd_le` | ✅ proved |
 | Worst case `≤ 3n` | Thm A | `moveCount_le_three_mul` | ✅ proved |
@@ -37,6 +37,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | `remSum F_{m+1} F_m = F_{m+2} − 2` | Obs. 3 | `remSum_fib_consec` | ✅ proved |
 | `gcd(F_{m+2}, F_m) = 1` | Obs. 3 | `gcd_fib_add_two` | ✅ proved |
 | **Obs. 3: Fibonacci worst case `3n − 5`** | Obs. 3 | `remSum_fib`, `moveCount_fib` | ✅ **proved** |
+| The block cycle idea (expository) | Remark 1 | — | ➖ nothing to formalize |
+| Type A moves number `2(k₁+k₂+⋯)` | Observation 10 | folded into `cost_add_gcd` | ➖ not stated separately |
+| Type B moves number `n − gcd(n,k)` | Observation 12 | folded into `cost_add_gcd` | ➖ not stated separately |
 | Block cycle step is correct | §2, Fig. 1 | `rotate_block_step` | ✅ proved |
 | Algorithm on lists | §2 | `BlockCycleRotation.bcRotate` | ✅ defined |
 | It computes the rotation | §2 | `bcRotate_eq_rotate` | ✅ proved |
@@ -149,9 +152,9 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Symmetry `M(n,k) = M(n,n−k)` | Thm 14 | `sum_min_eq`, `sum_algCost_eq` | ✅ proved |
 | Cost over shifts via `cost + gcd` | Thm 14 | `sum_cost_allShifts` | ✅ proved |
 | **Theorem 14, `D = 1 + 4C ≈ 1.85`** | Thm 14 | `theorem13` | ✅ **proved** |
-| Relative recursion `In`, `Out` | Obs 9 / Thm 7 | `Inn`, `Outt`, `Outt_le` | ✅ proved |
-| The series for `ψ` converges | Thm 7 | `psi_summable`, `psi_le_three` | ✅ proved |
-| Functional equation for `ψ` | Thm 7 | `psi_eq` | ✅ proved |
+| Relative recursion `In`, `Out`, and `Out ≤ 2/3` | Observation 4 | `Inn`, `Outt`, `Outt_le` | ✅ proved |
+| The series for `ψ` converges; `ψ = lim_β ψ_β` | Eq. (defpsi), Thm 7 | `psi_summable`, `psi_le_three` | ✅ proved |
+| Functional equation for `ψ` | Eq. (essential-recurrence) | `psi_eq` | ✅ proved |
 | **`n·ψ(k/n) = 2·remSum(n,k)`** | Lemma 11(2) | `psi_rat` | ✅ **proved** |
 | **Equation (relation)** | §3 | `relation`, `fCost` | ✅ **proved** |
 | **Theorem 7: continuity at irrationals** | Thm 7 | `continuousAt_psi`, `continuousAt_fCost` | ✅ **proved** |
@@ -329,7 +332,7 @@ correspondence, and the coprime form of the Heilbronn identity follow the
 paper's statements and proof structure.  Equation (eq. heilbron) itself, the
 aggregate of that identity over the gcd, is `heilbron`.
 
-**Deviations, all documented in the sources.** Remark 20, on averaging over all
+**Deviations, all documented in the sources.** The paper counts the moves in two halves — the type A moves of Observation 10 and the type B moves of Observation 12 — and adds them. `cost_add_gcd` instead proves the combined identity by one induction on the algorithm's recursion, because `cost` is modelled as a cost recursion rather than as a sequence of individual moves; neither half is stated on its own. Remark 20, on averaging over all
 shifts, states the reflection for `n > k ≥ n/2`; the hypothesis must be strict,
 since at `2k = n` it would read `k = k + k` (there `remSum n (n/2) = n/2` while
 `k + remSum n (n−k) = n`). `remSum_reflect` assumes `n < 2k`, and the
