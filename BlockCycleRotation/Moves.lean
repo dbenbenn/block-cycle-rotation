@@ -17,11 +17,12 @@ algorithm, whose move count is *counted* rather than stipulated.
 
 ## What counts as a move
 
-§2 of the paper fixes the unit: "a cyclic permutation of order `m` can be
-performed using `m+1` moves (using just one additional cell of memory)", and the
-block step "moved `(q-1)k` elements into their final position using `(q+1)k`
-moves".  So a **move is one element copy**, and copies into and out of auxiliary
-memory are counted like any other.  That is what `Move` below is.
+The paper fixes the unit twice.  §1, on the Dolphin scheme: "a cyclic
+permutation of order `m` can be performed using `m+1` moves (using just one
+additional cell of memory)".  §2, on the block step: it "moved `(q-1)k` elements
+into their final position using `(q+1)k` moves".  So a **move is one element
+copy**, and copies into and out of auxiliary memory are counted like any other.
+That is what `Move` below is.
 
 ## Why this is not circular
 
@@ -945,7 +946,7 @@ namespace BlockCycleRotation
 variable {α : Type*}
 
 /-- **Equation (1).**  On the paper's range `2k ≤ n`, with at least the one
-auxiliary cell §2 assumes, the block cycle method
+auxiliary cell §1 assumes, the block cycle method
 
 * rotates the window `[0, n)` left by `k`,
 * names no auxiliary cell numbered `b` or higher, and
