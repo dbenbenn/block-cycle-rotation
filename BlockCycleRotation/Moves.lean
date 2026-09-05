@@ -29,8 +29,9 @@ A program could be made cheap by doing less work.  The content is that *one*
 program is simultaneously
 * buffer-respecting -- it names no auxiliary cell numbered `≥ b`
   (`rotProg_usesBuffer`), and
-* correct -- running it rotates the array (`rotProg_correct`, still open, but
-  checked at compile time for every shift of every length below 12),
+* correct -- running it rotates the array.  Proved for the buffered base case
+  (`bufStep_correct`); open for the recursion, though checked at compile time
+  for every shift of every length below 12,
 
 and *that* program has exactly `costB n k b` moves (`rotProg_length`).  The
 recursion is then a theorem about a concrete artifact rather than a definition.
@@ -90,7 +91,7 @@ structure State (α : Type*) where
   arr : ℕ → α
   buf : ℕ → α
 
-variable {α : Type*} [DecidableEq α]
+variable {α : Type*}
 
 /-- Read a location. -/
 def State.get (s : State α) : Loc → α
@@ -137,6 +138,23 @@ end BlockCycleRotation
 
 namespace BlockCycleRotation
 
+/-! ## Reading the state after a run -/
+
+@[simp] theorem get_arr (s : State α) (i : ℕ) : s.get (.arr i) = s.arr i := rfl
+@[simp] theorem get_buf (s : State α) (j : ℕ) : s.get (.buf j) = s.buf j := rfl
+@[simp] theorem set_arr_arr (s : State α) (i : ℕ) (v : α) :
+    (s.set (.arr i) v).arr = Function.update s.arr i v := rfl
+@[simp] theorem set_arr_buf (s : State α) (i : ℕ) (v : α) : (s.set (.arr i) v).buf = s.buf := rfl
+@[simp] theorem set_buf_buf (s : State α) (j : ℕ) (v : α) :
+    (s.set (.buf j) v).buf = Function.update s.buf j v := rfl
+@[simp] theorem set_buf_arr (s : State α) (j : ℕ) (v : α) : (s.set (.buf j) v).arr = s.arr := rfl
+
+/-- A program built by mapping over `List.range` runs one step at a time. -/
+theorem run_range_succ (m : ℕ) (f : ℕ → Move) (s : State α) :
+    run ((List.range (m + 1)).map f) s = (run ((List.range m).map f) s).step (f m) := by
+  rw [List.range_succ, List.map_append, run_append]
+  simp [run]
+
 /-! ## The two steps of the algorithm
 
 Each is an explicit list of moves.  Their costs are the lengths of those lists,
@@ -179,16 +197,144 @@ theorem blockStep_length {n k : ℕ} (hk : 0 < k) (hkn : k ≤ n) :
 /-- The buffered step, available when the shift fits in the buffer.  Copy the
 first `k` entries into the buffer, shift the remaining `n-k` down by `k`, and
 write the buffer back at the top. -/
-def bufStep (n k : ℕ) : Prog :=
-  (List.range k).map (fun j => ⟨.arr j, .buf j⟩)
-    ++ (List.range (n - k)).map (fun j => ⟨.arr (j + k), .arr j⟩)
-    ++ (List.range k).map (fun j => ⟨.buf j, .arr (n - k + j)⟩)
+def bufIn (k : ℕ) : Prog := (List.range k).map (fun j => ⟨.arr j, .buf j⟩)
+
+/-- Shift `m` entries down by `k`, lowest first. -/
+def shiftDown (k m : ℕ) : Prog := (List.range m).map (fun j => ⟨.arr (j + k), .arr j⟩)
+
+/-- Write `k` buffered entries back, starting at `base`. -/
+def writeBack (base k : ℕ) : Prog := (List.range k).map (fun j => ⟨.buf j, .arr (base + j)⟩)
+
+/-- The buffered step. -/
+def bufStep (n k : ℕ) : Prog := bufIn k ++ shiftDown k (n - k) ++ writeBack (n - k) k
 
 /-- **The paper's `n+k`, counted rather than assumed.**  `k` copies in, `n-k`
 shifts, `k` copies out. -/
 theorem bufStep_length {n k : ℕ} (hkn : k ≤ n) : moves (bufStep n k) = n + k := by
-  simp only [bufStep, moves, List.length_append, List.length_map, List.length_range]
+  simp only [bufStep, bufIn, shiftDown, writeBack, moves, List.length_append,
+    List.length_map, List.length_range]
   omega
+
+/-! ## Correctness of the buffered step
+
+`bufStep` is the base case of the recursion, and the one place a buffer of more
+than one cell is used.  It is proved correct here: running it rotates the window
+`[0, n)` left by `k`. -/
+
+theorem run_bufIn_succ (m : ℕ) (s : State α) :
+    run (bufIn (m + 1)) s = (run (bufIn m) s).step ⟨.arr m, .buf m⟩ := by
+  simp only [bufIn]; exact run_range_succ m _ s
+
+theorem run_shiftDown_succ (k m : ℕ) (s : State α) :
+    run (shiftDown k (m + 1)) s = (run (shiftDown k m) s).step ⟨.arr (m + k), .arr m⟩ := by
+  simp only [shiftDown]; exact run_range_succ m _ s
+
+theorem run_writeBack_succ (base m : ℕ) (s : State α) :
+    run (writeBack base (m + 1)) s = (run (writeBack base m) s).step ⟨.buf m, .arr (base + m)⟩ := by
+  simp only [writeBack]; exact run_range_succ m _ s
+
+/-- Reading the block into the buffer leaves the array alone. -/
+theorem bufIn_arr (k : ℕ) (s : State α) : (run (bufIn k) s).arr = s.arr := by
+  induction k with
+  | zero => simp [bufIn]
+  | succ m ih => rw [run_bufIn_succ]; simpa [State.step] using ih
+
+/-- …and puts `s.arr j` in buffer cell `j`. -/
+theorem bufIn_buf {k : ℕ} (s : State α) {j : ℕ} (hj : j < k) :
+    (run (bufIn k) s).buf j = s.arr j := by
+  induction k with
+  | zero => omega
+  | succ m ih =>
+    rw [run_bufIn_succ]
+    rcases Nat.lt_succ_iff_lt_or_eq.1 hj with h | rfl
+    · simp [State.step, Function.update_of_ne (by omega : j ≠ m), ih h]
+    · simp [State.step, bufIn_arr]
+
+/-- The shift writes only below `m`. -/
+theorem shiftDown_arr_ge (k : ℕ) : ∀ (m : ℕ) (s : State α) (i : ℕ), m ≤ i →
+    (run (shiftDown k m) s).arr i = s.arr i := by
+  intro m
+  induction m with
+  | zero => simp [shiftDown]
+  | succ m ih =>
+    intro s i hi
+    rw [run_shiftDown_succ]
+    simp only [State.step, get_arr, set_arr_arr]
+    rw [Function.update_of_ne (by omega : i ≠ m)]
+    exact ih s i (by omega)
+
+/-- Below `m` it moves each entry down by `k`.  The reads are safe because a
+position `j + k` is written only at the later step `j + k`, if at all. -/
+theorem shiftDown_arr_lt (k : ℕ) : ∀ (m : ℕ) (s : State α) (i : ℕ), i < m →
+    (run (shiftDown k m) s).arr i = s.arr (i + k) := by
+  intro m
+  induction m with
+  | zero => omega
+  | succ m ih =>
+    intro s i hi
+    rw [run_shiftDown_succ]
+    simp only [State.step, get_arr, set_arr_arr]
+    rcases Nat.lt_succ_iff_lt_or_eq.1 hi with h | rfl
+    · rw [Function.update_of_ne (by omega : i ≠ m)]; exact ih s i h
+    · rw [Function.update_self]; exact shiftDown_arr_ge k _ s (i + k) (by omega)
+
+theorem shiftDown_buf (k : ℕ) : ∀ (m : ℕ) (s : State α), (run (shiftDown k m) s).buf = s.buf := by
+  intro m
+  induction m with
+  | zero => simp [shiftDown]
+  | succ m ih => intro s; rw [run_shiftDown_succ]; simpa [State.step] using ih s
+
+/-- The write-back touches only `[base, base + k)`. -/
+theorem writeBack_arr_lt (base : ℕ) : ∀ (m : ℕ) (s : State α) (i : ℕ), i < base →
+    (run (writeBack base m) s).arr i = s.arr i := by
+  intro m
+  induction m with
+  | zero => simp [writeBack]
+  | succ m ih =>
+    intro s i hi
+    rw [run_writeBack_succ]
+    simp only [State.step, get_buf, set_arr_arr]
+    rw [Function.update_of_ne (by omega : i ≠ base + m)]
+    exact ih s i hi
+
+theorem writeBack_buf (base : ℕ) : ∀ (m : ℕ) (s : State α), (run (writeBack base m) s).buf = s.buf := by
+  intro m
+  induction m with
+  | zero => simp [writeBack]
+  | succ m ih => intro s; rw [run_writeBack_succ]; simpa [State.step] using ih s
+
+/-- …and puts buffer cell `j` at `base + j`. -/
+theorem writeBack_arr_mem (base : ℕ) : ∀ (m : ℕ) (s : State α) (j : ℕ), j < m →
+    (run (writeBack base m) s).arr (base + j) = s.buf j := by
+  intro m
+  induction m with
+  | zero => omega
+  | succ m ih =>
+    intro s j hj
+    rw [run_writeBack_succ]
+    simp only [State.step, get_buf, set_arr_arr]
+    rcases Nat.lt_succ_iff_lt_or_eq.1 hj with h | rfl
+    · rw [Function.update_of_ne (by omega : base + j ≠ base + m)]; exact ih s j h
+    · rw [Function.update_self, writeBack_buf]
+
+/-- **The buffered step rotates.**  Every position of the window ends holding
+the entry `k` places to its right, cyclically. -/
+theorem bufStep_correct {n k : ℕ} (hkn : k ≤ n) (s : State α) (i : ℕ) (hi : i < n) :
+    (run (bufStep n k) s).arr i = s.arr ((i + k) % n) := by
+  have hn : 0 < n := by omega
+  rw [bufStep, run_append, run_append]
+  by_cases h : i < n - k
+  · -- the shifted part: position i takes the entry at i + k
+    rw [writeBack_arr_lt _ _ _ _ h, shiftDown_arr_lt _ _ _ _ h, bufIn_arr]
+    rw [Nat.mod_eq_of_lt (by omega)]
+  · -- the buffered block, written back at the top
+    push_neg at h
+    obtain ⟨j, rfl⟩ : ∃ j, i = n - k + j := ⟨i - (n - k), by omega⟩
+    have hj : j < k := by omega
+    rw [writeBack_arr_mem _ _ _ _ hj, shiftDown_buf, bufIn_buf _ hj]
+    congr 1
+    have h1 : n - k + j + k = n + j := by omega
+    rw [h1, Nat.add_mod_left, Nat.mod_eq_of_lt (by omega : j < n)]
 
 /-! ## Relabelling
 
@@ -331,7 +477,8 @@ theorem blockStep_usesBuffer {b : ℕ} (hb : 1 ≤ b) (n k : ℕ) :
 
 theorem bufStep_usesBuffer {n k b : ℕ} (h : k ≤ b) : UsesBuffer b (bufStep n k) := by
   intro m hm
-  simp only [bufStep, List.mem_append, List.mem_map, List.mem_range] at hm
+  simp only [bufStep, bufIn, shiftDown, writeBack, List.mem_append, List.mem_map,
+    List.mem_range] at hm
   refine ⟨?_, ?_⟩ <;> intro i hi <;>
     rcases hm with (⟨j, hj, h⟩ | ⟨j, hj, h⟩) | ⟨j, hj, h⟩ <;> subst h <;> (cases hi <;> omega)
 
