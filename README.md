@@ -207,7 +207,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | **Euler's `ζ(2,1) = ζ(3)`** | Remark 21 (cited) | `euler_zeta21` | ✅ **proved** |
 | **Eq. (const-c-alternative)** | Remark 21 | `cConst_eq_alternative` | ✅ **proved** |
 | Truncations bound `C`, `D` above | Remark 21 | `cConst_le_truncation`, `dConst_le_truncation` | ✅ proved |
-| Divisor bound `d(n) = O(nᵋ)` | §4 | `exists_card_divisors_le` | ✅ proved |
+| Divisor bound `d(n) = O(nᵋ)` | §4 (cited as standard) | `exists_card_divisors_le` | ✅ proved |
 
 ### A note on the worst-case proof
 
@@ -293,6 +293,14 @@ does not provide, is proved in `DivisorBound.lean`: for each `ε > 0` there is
 With that in hand the three pieces of §4 are complete: `lemma17` (the main term
 and the constant `C`), `lemma_g_two` and `lemma_g_three` (the two error terms),
 and `theorem13` assembles them.
+
+**A note on the paper's argument order.** The paper writes the move count and the
+remainder sum with their arguments in both orders: equation (8) defines `m̄(n,k)`
+with the size first, while equation (eq. heilbron) sums `m̄(k,n)` with the shift
+first; `m(n,k)` in §2 becomes `m(k,n)` in the display computing `ρ(n)/n`. Neither
+function is symmetric in its two arguments, so the reader has to disambiguate from
+context. This formalization uses size-first throughout — `remSum n k`, `cost n k`,
+`algCost n k` — matching equation (8).
 
 ## Citations
 
