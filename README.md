@@ -102,7 +102,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | `b > a` through the classification | §4 | `sum_QGT_classify` | ✅ proved |
 | **The paper's triple sum** | §4 | `Q_gt_tripleSum` | ✅ **proved** |
 | Key restriction `d·a² < m` | §4 | `gtTriples_sq_lt` | ✅ proved |
-| Paper's `U = min(…)` | §4 | `gtBound`, `mem_gtRange` | ✅ proved |
+| Paper's `U = min(…)` | §4 | `yBound`, `mem_gtRange` | ✅ proved |
 | Triple sum decomposed by pairs | §4 | `gtTriples_decompose` | ✅ proved |
 | Progression estimate over `ℝ` | §4 | `sum_ap_sub_main_le_log_real` | ✅ proved |
 | **Innermost estimation layer** | Lemmas 16 and 18 | `inner_gt_estimate` | ✅ **proved** |
@@ -118,7 +118,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | `C` as iterated / finite-row sums | Eq. (const-c) | `cConst_eq_tsum_finRows` | ✅ proved |
 | Tail bound `∑_{a>N} 1/a² ≤ 1/N` | Lemma 19 | `sum_inv_sq_tail_le` | ✅ proved |
 | Truncation error for `C` | Lemma 19 | `cConst_le_partial_add` | ✅ proved |
-| Bulk/small split condition | Lemma 19 | `gtBound_bulk`, `gtTriples_bulk_small` | ✅ proved |
+| Bulk/small split condition | Lemma 19 | `yBound_bulk`, `gtTriples_bulk_small` | ✅ proved |
 | Small branch: `2d·a² > m` | Lemma 19 | `small_two_mul_gt` | ✅ proved |
 | AP counting `≤ U/a + 1` | Lemma 19 | `card_mod_filter_le` | ✅ proved |
 | **Small-part bound `O(m^{3/2}√d)`** | Lemma 19 | `small_part_le` | ✅ **proved** |
@@ -132,13 +132,13 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Bulk pair sum within `3/(2N)` of `C` | Lemma 19 | `bulk_pairs_close` | ✅ proved |
 | **`d`-sum: main terms** | Lemma 19 | `sum_div_sq_eq` | ✅ **proved** |
 | `d`-sum: errors `≤ d(n)·n^{3/2}` | Lemma 19 | `error_per_divisor_le`, `sum_divisors_le` | ✅ proved |
-| **Lemma 19, at a single divisor** | Lemma 19 | `lemma17_local` | ✅ **proved** |
-| **Lemma 19** | Lemma 19 | `lemma17` | ✅ **proved** (errors as `∑_d E d`) |
-| **Lemma 19, error instantiated** | Lemma 19 | `lemma17_final`, `Eterm` | ✅ **proved** |
+| **Lemma 19, at a single divisor** | Lemma 19 | `lemma19_local` | ✅ **proved** |
+| **Lemma 19** | Lemma 19 | `lemma19` | ✅ **proved** (errors as `∑_d E d`) |
+| **Lemma 19, error instantiated** | Lemma 19 | `lemma19_final`, `Eterm` | ✅ **proved** |
 | Cut-off lower bound `m ≤ 16d·N²` | Lemma 19 | `cutoff_lower`, `sqrt_le_cutoff` | ✅ proved |
 | **Per-divisor error `≤ (8+2C)·n^{3/2}`** | Lemma 19 | `Eterm_le` | ✅ **proved** |
-| **Lemma 19, `O(n^{3/2+ε})` form** | Lemma 19 | `lemma17_isBigO` | ✅ **proved** |
-| Cut-off on the bulk branch | Lemmas 16 and 18 | `gtBound_bulk_eq` | ✅ proved |
+| **Lemma 19, `O(n^{3/2+ε})` form** | Lemma 19 | `lemma19_isBigO` | ✅ **proved** |
+| Cut-off on the bulk branch | Lemmas 16 and 18 | `yBound_bulk_eq` | ✅ proved |
 | **Estimate at one coprime pair** | Lemmas 16 and 18 | `bulk_pair_estimate` | ✅ **proved** |
 | Bulk triple sum, by pairs | Lemmas 16 and 18 | `gtTriples_bulk_decompose` | ✅ proved |
 | **Estimate at one divisor** | Lemmas 16 and 18 | `divisor_estimate` | ✅ **proved** |
@@ -153,7 +153,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Folding all shifts onto `2k ≤ n` | Thm 14 | `sum_min_eq`, `sum_algCost_eq` | ✅ proved |
 | Symmetry `M(n,k) = M(n,n−k)` | Thm 14 (proof) | built into `algCost` | ➖ definitional |
 | Cost over shifts via `cost + gcd` | Thm 14 | `sum_cost_allShifts` | ✅ proved |
-| **Theorem 14, `D = 1 + 4C ≈ 1.85`** | Thm 14 | `theorem13` | ✅ **proved** |
+| **Theorem 14, `D = 1 + 4C ≈ 1.85`** | Thm 14 | `theorem14` | ✅ **proved** |
 | Relative recursion `In`, `Out`, and `Out ≤ 2/3` | Observation 4 | `Inn`, `Outt`, `Outt_le` | ✅ proved |
 | The series for `ψ` converges; `ψ = lim_β ψ_β` | Eq. (defpsi), Thm 7 | `psi_summable`, `psi_le_three` | ✅ proved |
 | Functional equation for `ψ` | Eq. (essential-recurrence) | `psi_eq` | ✅ proved |
@@ -165,7 +165,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Evenly spaced Riemann sums | Thm 9 | `integralSum_prepartition`, `tendsto_riemann_fBar` | ✅ proved |
 | `∑_{k<n} gcd(n,k) = o(n²)` | Thm 9 | `sum_gcd_range_le` | ✅ proved |
 | `f(1−x) = f(x)`, `∫₀¹ = 2∫₀^{1/2}` | Thm 9 | `fCost_symm`, `integral_fCost_split` | ✅ proved |
-| **Theorem 9** | Thm 9 | `theorem10` | ✅ **proved** |
+| **Theorem 9** | Thm 9 | `theorem9` | ✅ **proved** |
 | `f^j` Riemann integrable | Corollary 8 | `fBar_pow_hasBoxIntegral` | ✅ proved |
 | Uniform distribution on `[0,1/2]` | Corollary 8 | `unifHalf` | ✅ defined |
 | Moments of all orders exist | Corollary 8 | `integrable_fCost_pow` | ✅ proved |
@@ -290,9 +290,9 @@ harmonic sum, i.e. `O(log a)`.
 No square-root cancellation is used anywhere. The divisor bound, which Mathlib
 does not provide, is proved in `DivisorBound.lean`: for each `ε > 0` there is
 `C` with `d(n) ≤ C·n^ε`, by splitting the primes dividing `n` at `p^ε = 2`.
-With that in hand the three pieces of §4 are complete: `lemma17` (the main term
+With that in hand the three pieces of §4 are complete: `lemma19` (the main term
 and the constant `C`), `lemma_g_two` and `lemma_g_three` (the two error terms),
-and `theorem13` assembles them.
+and `theorem14` assembles them.
 
 **A note on the paper's argument order.** The paper writes the move count and the
 remainder sum with their arguments in both orders: equation (8) defines `m̄(n,k)`
@@ -318,11 +318,54 @@ Equations are cited by the paper's own labels, `(relation)`, `(RemainderSum)`,
 `(mobius)`, `(const-c)`, `(def-mu-nu)`, `(integral)`, `(continuous)`,
 `(invquant)`, `(const-c-alternative)`, which are stable across both versions.
 
-**Identifiers keep their original names.** `theorem13` is the paper's Theorem 14,
-`theorem10` is Theorem 9, and the `lemma17*` family is Lemma 19; the files
-`Theorem13.lean` and `Theorem10.lean` are named to match those identifiers.
-`Remark21.lean` happens to be correct. The names are left alone because they are
-published under those identifiers on Prove2me, where names are immutable.
+**Identifiers follow the paper.** `theorem14`, `theorem9` and the `lemma19*`
+family are named for the paper's Theorem 14, Theorem 9 and Lemma 19, in the files
+`Theorem14.lean` and `Theorem9.lean`. They were originally `theorem13`,
+`theorem10` and `lemma17*`, after an earlier misreading of the numbering, and are
+published on Prove2me under those old names, where names are immutable. The
+platform's copy therefore uses the old identifiers; its `source` links are pinned
+to commit `f69003f`, which still resolves to the code exactly as published.
+
+## Notation
+
+The paper's letters are used throughout. Section 4's index set is
+
+```
+{ (x, x', y, y') : x > y >= 1,  x' > y' >= 1,
+                   gcd(x, y) = gcd(x', y') = 1,  n = x*x' + y*y' }
+```
+
+which is the paper's own display of Heilbronn's correspondence, and `quadruples n`
+is the `Finset` of exactly those tuples. Note that **the paper primes the second
+pair, not the second element of each pair** — `(x, x', y, y')` pairs `x` with `y`
+and `x'` with `y'`, so it is `gcd(x, y)` that is 1, not `gcd(x, x')`. Triples
+`(x, y, y')` drop `x'`, which the identity determines.
+
+Where the paper uses a bare letter, so does the Lean. Where it uses a symbol that
+would make a poor Lean identifier, the descriptive name is kept:
+
+| Paper | Lean | |
+| --- | --- | --- |
+| `x`, `x'`, `y`, `y'` | same | §4 quadruple components |
+| `d` | `d` | divisor of `n`; `m = n/d` throughout |
+| `Y(n,d,x,y)` | `yCut` | the real cut-off `min( n/(d(x+y)), (n-d^2x^2)/(dy) )` |
+| — | `yBound` | the integer endpoint `Y` induces (`mem_gtRange`) |
+| `a` | — | the congruence-class representative; implicit, the Lean filters by `x \| (m - y*y')` |
+| `A`, `B` | `aCoeff`, `bCoeff` | coefficients of the inner linear sum |
+| `G`, `G_1`, `G_2`, `G_3` | `G1term`, `G2term`, `G3term`, `G2sum`, `G3sum` | the §4 decomposition |
+| `R(n)` | `Rquad` | |
+| `C`, `D` | `cConst`, `dConst` | `D = 1 + 4C` |
+| `S`, `zeta(3)`, `zeta(2,1)` | `sConst`, `zeta3`, `zeta21` | Remark 21 |
+| `K(l)`, `c_0..c_t` | `K`, `c` | continuant and continued-fraction entries |
+| `F_k` | `Nat.fib` | Mathlib's, with `fib 0 = 0` |
+| `m(n,k)` | `moveCount` | descriptive name kept |
+| `m-bar(n,k)` | `remSum` | descriptive name kept |
+| `rho(n)` | `avgCost` | descriptive name kept |
+| `psi`, `psi_b`, `f`, `f_b`, `mu` | `psi`, `psiBuf`, `fCost`, `fCostBuf`, `muCost` | |
+
+Every declaration was checked to be unchanged across this renaming: binder names
+are erased and renamed constants normalised, and all 620 declarations hash
+identically before and after, so the rename is alpha-equivalence only.
 
 ## Building
 
