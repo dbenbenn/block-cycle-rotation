@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Block Cycle Confirmations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#eceff0; --surface:#ffffff; --surface-2:#f6f9f9;
+  --ink:#131b1e; --ink-2:#3b4a4e; --muted:#6b797d;
+  --rule:#d0d9da; --rule-soft:#e3eaeb;
+  --accent:#0d5f66; --accent-2:#0a4a50; --accent-soft:#dcecec;
+  --ok:#2b6b4a; --ok-soft:#dff0e6;
+  --warn:#8a5010; --warn-soft:#f6ead9;
+  --shadow:0 1px 2px rgba(19,27,30,.06), 0 8px 24px -16px rgba(19,27,30,.28);
+  --serif:"Spectral",Georgia,"Times New Roman",serif;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0c1214; --surface:#141d20; --surface-2:#182226;
+    --ink:#e3ecec; --ink-2:#b2c0c2; --muted:#88979a;
+    --rule:#263437; --rule-soft:#1d2a2d;
+    --accent:#63c0c4; --accent-2:#8ad4d7; --accent-soft:#133238;
+    --ok:#79c598; --ok-soft:#16322a;
+    --warn:#d5a065; --warn-soft:#312413;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0c1214; --surface:#141d20; --surface-2:#182226;
+  --ink:#e3ecec; --ink-2:#b2c0c2; --muted:#88979a;
+  --rule:#263437; --rule-soft:#1d2a2d;
+  --accent:#63c0c4; --accent-2:#8ad4d7; --accent-soft:#133238;
+  --ok:#79c598; --ok-soft:#16322a;
+  --warn:#d5a065; --warn-soft:#312413;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+img{max-width:100%}
+[hidden]{display:none!important}
+body{margin:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:var(--sans); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:60rem;margin:0 auto;padding:2.5rem 1.25rem 6rem}
+
+/* ---- masthead ---- */
+.mast{display:flex;flex-direction:column;gap:.9rem;padding-bottom:1.5rem;border-bottom:1px solid var(--rule)}
+.eyebrow{
+  font-family:var(--mono);font-size:.7rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--accent);font-weight:500;
+}
+h1{
+  font-family:var(--serif);font-weight:600;font-size:clamp(1.9rem,4.5vw,2.7rem);
+  line-height:1.1;margin:0;text-wrap:balance;letter-spacing:-.01em;
+}
+.dek{font-family:var(--serif);font-size:1.06rem;color:var(--ink-2);margin:0;max-width:52ch;line-height:1.5}
+
+/* ---- progress ---- */
+.progress{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem 1.25rem;margin-top:.35rem}
+.meter{flex:1 1 15rem;min-width:12rem;height:.5rem;border-radius:99px;background:var(--rule-soft);overflow:hidden}
+.meter span{display:block;height:100%;background:var(--accent);width:0;transition:width .3s ease;border-radius:99px}
+.tally{font-family:var(--mono);font-size:.82rem;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tally b{color:var(--ink);font-weight:500}
+.syncdot{font-family:var(--mono);font-size:.7rem;color:var(--muted);letter-spacing:.04em}
+
+/* ---- notice panels ---- */
+.panels{display:grid;gap:.75rem;margin:1.6rem 0 2rem}
+.panel{
+  background:var(--surface);border:1px solid var(--rule-soft);
+  border-left:2px solid var(--accent);padding:.9rem 1.05rem;
+}
+.panel.warn{border-left-color:var(--warn)}
+.panel.ok{border-left-color:var(--ok)}
+.panel h2{
+  font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;
+  margin:0 0 .35rem;color:var(--muted);font-weight:500;
+}
+.panel p{margin:0 0 .45rem;font-size:.9rem;color:var(--ink-2);line-height:1.5}
+.panel p:last-child{margin-bottom:0}
+.panel strong{color:var(--ink);font-weight:600}
+
+/* ---- controls ---- */
+.controls{
+  display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;
+  position:sticky;top:0;z-index:5;padding:.7rem 0;
+  background:var(--paper);border-bottom:1px solid var(--rule);
+}
+.seg{display:flex;border:1px solid var(--rule);background:var(--surface)}
+.seg button{
+  font-family:var(--mono);font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;
+  border:0;background:transparent;color:var(--muted);padding:.42rem .7rem;cursor:pointer;
+}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-2);font-weight:500}
+.seg button:hover{color:var(--ink)}
+.spacer{flex:1}
+.linkbtn{
+  font-family:var(--mono);font-size:.74rem;letter-spacing:.05em;color:var(--muted);
+  background:none;border:0;cursor:pointer;padding:.42rem .2rem;text-decoration:underline;
+  text-underline-offset:3px;text-decoration-color:var(--rule);
+}
+.linkbtn:hover{color:var(--accent-2)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- section head ---- */
+.sect{
+  display:flex;align-items:baseline;gap:.7rem;margin:2.2rem 0 .8rem;
+}
+.sect h2{font-family:var(--serif);font-weight:600;font-size:1.28rem;margin:0;letter-spacing:-.005em}
+.sect .rng{font-family:var(--mono);font-size:.74rem;color:var(--muted);letter-spacing:.05em}
+.sect .hr{flex:1;height:1px;background:var(--rule)}
+
+/* ---- rows ---- */
+.list{display:flex;flex-direction:column;gap:.4rem}
+.row{background:var(--surface);border:1px solid var(--rule-soft);box-shadow:var(--shadow)}
+.row.done{border-color:var(--rule);background:var(--surface-2)}
+.row.hidden{display:none}
+.head{display:grid;grid-template-columns:auto 1.6rem 1fr auto;gap:.7rem;align-items:start;padding:.7rem .85rem}
+.tick{
+  appearance:none;width:1.05rem;height:1.05rem;margin:.18rem 0 0;flex:none;
+  border:1.5px solid var(--rule);background:var(--surface);cursor:pointer;border-radius:3px;
+}
+.tick:checked{background:var(--ok);border-color:var(--ok)}
+.tick:checked::after{
+  content:"";display:block;width:.28rem;height:.55rem;margin:.06rem 0 0 .3rem;
+  border:solid var(--surface);border-width:0 2px 2px 0;transform:rotate(42deg);
+}
+.pos{
+  font-family:var(--mono);font-size:.78rem;color:var(--muted);
+  font-variant-numeric:tabular-nums;padding-top:.15rem;text-align:right;
+}
+.row.done .pos{color:var(--ok)}
+.mid{min-width:0;cursor:pointer}
+.name{font-family:var(--mono);font-size:.86rem;color:var(--ink);word-break:break-word;line-height:1.4}
+.sub{font-size:.85rem;color:var(--ink-2);margin-top:.15rem;line-height:1.45}
+.sub em{font-style:italic;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:.3rem;justify-content:flex-end;align-items:center;padding-top:.1rem}
+.tag{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;
+  padding:.15rem .42rem;border:1px solid var(--rule);color:var(--muted);white-space:nowrap;
+}
+.tag.def{background:var(--accent-soft);border-color:transparent;color:var(--accent-2)}
+.tag.goal{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+.tag.conf{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
+.tag.note{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+
+/* ---- body ---- */
+.body{display:none;padding:0 .85rem .95rem 3.15rem;border-top:1px solid var(--rule-soft);margin-top:.1rem}
+.row.open .body{display:block}
+.blk{padding-top:.85rem}
+.blk h3{
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 .35rem;font-weight:500;
+}
+.blk.rb h3{color:var(--accent)}
+.blk.wf h3{color:var(--warn)}
+.blk p{margin:0 0 .4rem;font-size:.89rem;color:var(--ink-2);line-height:1.55;max-width:66ch}
+.blk p:last-child{margin-bottom:0}
+.blk ul{margin:0;padding-left:1.05rem;display:flex;flex-direction:column;gap:.28rem}
+.blk li{font-size:.89rem;color:var(--ink-2);line-height:1.5;max-width:64ch}
+.blk .rbtext{font-family:var(--serif);font-size:.97rem;color:var(--ink);line-height:1.55;max-width:64ch}
+code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);padding:.05em .3em;border-radius:2px;color:var(--ink)}
+.row.done code{background:var(--surface)}
+.blk.wf li{color:var(--ink-2)}
+.blk.wf li::marker{color:var(--warn)}
+
+.notewrap{padding-top:.9rem;display:flex;flex-direction:column;gap:.3rem}
+.notewrap label{
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+}
+.notewrap textarea{
+  font-family:var(--sans);font-size:.87rem;color:var(--ink);background:var(--surface-2);
+  border:1px solid var(--rule-soft);padding:.5rem .6rem;resize:vertical;min-height:2.6rem;width:100%;
+  line-height:1.5;
+}
+.notewrap textarea:focus{border-color:var(--accent);background:var(--surface)}
+
+footer{
+  margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--rule);
+  font-size:.82rem;color:var(--muted);line-height:1.55;max-width:64ch;
+}
+footer code{background:transparent;padding:0}
+@media (max-width:36rem){
+  .head{grid-template-columns:auto 1.4rem 1fr;gap:.55rem}
+  .tags{grid-column:2 / -1;justify-content:flex-start;padding-top:.35rem}
+  .body{padding-left:1rem}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div class="eyebrow">prove2.me · proposal 46eadfe3</div>
+    <h1>Block Cycle Confirmations</h1>
+    <p class="dek">Thirty-eight items to confirm before the proposal is submitted, in <code>item_order</code>. For each one: what to compare, and what an independent reader — given only the Lean and never the paper — said it literally asserts.</p>
+    <div class="progress">
+      <div class="meter"><span id="bar"></span></div>
+      <div class="tally"><b id="ndone">0</b> of 38 reviewed here · <b id="nconf">4</b> confirmed on the platform</div>
+      <div class="syncdot" id="sync">saved in this browser</div>
+    </div>
+  </header>
+
+  <div class="panels">
+    <div class="panel">
+      <h2>How to use this</h2>
+      <p>Ticking a box here records <strong>your own review</strong> — it does not confirm anything on prove2.me. Do that on the platform; the <span class="tag conf" style="display:inline-block">confirmed</span> badge shows what was already confirmed there as of 5 Sep 2026, 14:12 UTC.</p>
+      <p>Confirms are reversible. <strong>Submit Proposal is not</strong>: at that click every draft compiles and publishes as immutable platform content.</p>
+    </div>
+    <div class="panel ok">
+      <h2>Two corrections landed today</h2>
+      <p>Preparing this page turned up two errors in published <em>descriptions</em>, both now fixed: item&nbsp;2 cited a “Lemma 12” that does not exist in the paper (position 12 is Observation 12; the identification of <code>cost</code> with the Euclidean quantities is <strong>Lemma 11</strong>), and item&nbsp;5 described <code>e</code> as e^(2πiθ) when the Lean defines <code>Complex.exp (θ * I)</code>, i.e. <strong>e^(iθ)</strong>, with the neighbouring lemmas using the same radian convention.</p>
+    </div>
+    <div class="panel warn">
+      <h2>Two things no confirmation can fix</h2>
+      <p><strong>Stale comments in code.</strong> Eight of the thirteen bundles were generated before the citation correction and carry wrong numbers inside their Lean comments. Published code is immutable. Each affected description now ends with the mapping — read that, and ignore the comments themselves.</p>
+      <p><strong>Equation (1) is assumed, not proved.</strong> The paper's move-count recursion is taken as the definition of <code>cost</code> rather than derived from the algorithm. Deferred deliberately; written up in <code>OPEN-QUESTIONS.md</code>.</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Filter items">
+      <button type="button" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" data-filter="todo" aria-pressed="false">Remaining</button>
+      <button type="button" data-filter="done" aria-pressed="false">Reviewed</button>
+    </div>
+    <div class="spacer"></div>
+    <button type="button" class="linkbtn" id="expandall">Expand all</button>
+    <button type="button" class="linkbtn" id="collapseall">Collapse all</button>
+  </div>
+
+  <div id="mount"></div>
+
+  <footer>
+    <p>Read-backs were written per the platform's <code>mission_auditor.md</code>: each by an independent agent given only the declaration, its preamble and the bundles it imports — never the paper, the descriptions, or any statement of intent. They are evidence, not authority; a read-back can be over-literal, and every finding is a hypothesis to check against the source.</p>
+    <p>Ticks and notes are kept in this browser only (localStorage) - they travel with the browser, not the link, and confirm nothing on prove2.me. Verbatim read-backs live in the publication record alongside this repository. Goal theorem: <code>BlockCycleRotation.theorem13</code> (the paper's Theorem 14). Numbering follows arXiv:2601.00979v1, where all numbered environments share one counter.</p>
+  </footer>
+</div>
+
+<script>
+const ITEMS = [
+{p:1,n:"BlockCycleRotation_Euclid",k:"def",conf:true,t:"Remainder sums in the Euclidean algorithm",
+ claim:"Defines remSum(n,k), the sum of the remainders the Euclidean algorithm produces on (n,k), and moveCount(n,k) = n − gcd(n,k) + 2·remSum(n,k).",
+ check:["Read each docstring next to the definition under it — that is the whole job here.","remSum's recursion: does the first summand match what the docstring claims?","moveCount's formula, term by term, including which subtraction comes first."],
+ rb:"Exactly two declarations. remSum(n,k) = 0 when k = 0, else k + remSum(k, n mod k) — so <strong>the first summand is k, the second argument, not n</strong>; n enters only through n mod k. moveCount(n,k) = (n ∸ gcd(n,k)) + 2·remSum(n,k), total on all of ℕ².",
+ watch:["∸ is truncated subtraction, so moveCount(0,k) = 2k rather than anything negative.","The <code>k ≤ n/2</code> in moveCount's docstring is <strong>prose, not a hypothesis</strong> — the definition is total.","The free-floating comments and empty section headings carry no logical force; several describe content that skeleton subtraction removed."]},
+
+{p:2,n:"BlockCycleRotation_Algorithm",k:"def",conf:false,t:"Algorithm definitions",
+ claim:"Defines the cost recursion cost(n,k) and the terminal segment finalSeg(n,k), following §2. Lemma 11 identifies these with the Euclidean quantities of the previous bundle.",
+ check:["cost's per-step charge: is the quotient incremented before or after multiplying by k?","What finalSeg returns, and at which moment.","That both recursions walk the same trajectory."],
+ rb:"cost(n,k) = 0 when k = 0, else (⌊n/k⌋ + 1)·k + cost(k + (n mod k), n mod k). finalSeg follows the identical trajectory accumulating nothing, returning the first component at the moment the second first becomes 0. <strong>This is not the Euclidean step</strong>: the new first component is k + (n mod k), not k — the two agree only when k divides n.",
+ watch:["This description said “Lemma 12” until today; there is no Lemma 12 in the paper. Now corrected to Lemma 11.","cost(n,0) = 0 for every n, including n = 0 — the first argument is discarded at the base case."]},
+
+{p:3,n:"BlockCycleRotation_Rotate",k:"def",conf:true,t:"The block cycle algorithm on lists",
+ claim:"Defines bcRotate, the block cycle rotation as an operation on lists, so its correctness against List.rotate can be stated and proved.",
+ check:["The four branches and the order they are tested in.","The sharp test 2k ≤ n separating the two recursive branches.","That the recursive call in branch 3 keeps the same k."],
+ rb:"Total, universe-polymorphic, no typeclass assumptions on α. Returns l unchanged when k = 0 or when |l| ≤ k. When 2k ≤ n it emits l_k … l_{m−1} for m = ⌊n/k⌋·k, then recurses on (first k entries ++ tail from m) with the <em>same</em> k. Otherwise it reverses, recurses at n − k, and reverses back.",
+ watch:["k = |l| takes branch 2 and returns l unchanged — which is what rotate does there too.","After one branch-3 step the list has length in [k, 2k), so branch 3 is never entered twice in a row."]},
+
+{p:4,n:"BlockCycleRotation_Average",k:"def",conf:true,t:"The average cost over all shifts",
+ claim:"Defines algCost and avgCost(n), the mean number of moves over the shifts of an array of length n.",
+ check:["The index set of the sum — where it starts and where it stops.","What the normalisation divides by.","The min(k, n − k) inside algCost."],
+ rb:"algCost(n,k) = cost(n, min(k, n ∸ k)). avgCost(n) = (Σ over k ∈ {0,…,n−1} of algCost(n,k)) / n — <strong>exactly n terms, including k = 0 and excluding k = n</strong>, divided by n itself, not n−1 or the count of nonzero terms. Each summand is cast to ℝ inside the sum.",
+ watch:["avgCost(0) = 0/0 = <strong>0</strong>, a junk value from Lean's total division, not a computed average.","For every k ≥ n, algCost(n,k) = cost(n,0) — constant, not undefined.","The comment about the symmetry M(n,k) = M(n,n−k) is prose; the symmetry is definitional via min."]},
+
+{p:5,n:"BlockCycleRotation_ExpSum",k:"def",conf:false,t:"The exponential e(θ)",
+ claim:"Defines e(θ) = e^(iθ) and the surrounding notation for the character sums of §4.",
+ check:["The exponent convention — this is the one thing this bundle defines.","That the estimates named in the header comment are not actually declared here."],
+ rb:"<strong>Exactly one declaration</strong>: e(θ) = exp(θ·i) into ℂ, total on ℝ. A factor of i is present and <strong>a factor of 2π is not</strong>. Everything else in the file is comment — the header's two estimates and the “sharp form of Observation 17” are not realised as Lean at all.",
+ watch:["This description read “e^(2πiθ)” until today and was wrong; corrected to match the Lean, whose neighbouring lemmas (‖e θ − 1‖² = 2 − 2cos θ, Jordan with 2/π) use the same radian convention.","The unit-circle property is asserted only in the docstring, not in the type."]},
+
+{p:6,n:"BlockCycleRotation_Continuant",k:"def",conf:false,t:"Continuants and continued fraction expansions",
+ claim:"Defines the continuant K(l) and the expansion map cf produced by the Euclidean algorithm — the objects of Heilbronn's correspondence — plus the shift and quadruple index sets.",
+ check:["K of the empty list.","Which end of the list cf appends its quotient to.","Which gcd condition each of the three quadruple sets drops."],
+ rb:"Ten declarations. K([]) = 1 (not 0), K([c]) = c, K(c₀::c₁::cs) = c₀·K(c₁::cs) + K(cs) — it drops <em>two</em> entries, so it is not a fold. cf(a,a') = [] when a' = 0, else cf(a', a mod a') ++ [⌊a/a'⌋], so quotients come out in reverse order of production. quadruples ⊆ quadruplesAll ⊆ quadruplesQ.",
+ watch:["<strong>Despite the name, quadruplesAll still imposes gcd(a,a′) = 1</strong> — only gcd(b,b′) = 1 is dropped. The set with no gcd condition at all is quadruplesQ.","Rquad and Qquad both sum the <strong>second</strong> component b, not the first.","shifts uses 2k ≤ n non-strictly, so k = n/2 is admitted when coprime to n — which happens only at n = 2."]},
+
+{p:7,n:"BlockCycleRotation_TripleSum",k:"def",conf:false,t:"Quadruples, triples and the index sets of §4",
+ claim:"Defines the index sets of §4: the quadruples attached to shifts by Heilbronn's correspondence, the coprime pairs and triples they reduce to, and the bulk cut-off.",
+ check:["The five conditions defining triples, and which inequalities are strict.","That gtBound is a minimum of two floored quotients, each plus one.","Which sets carry gcd(a,a′) = 1 and which do not."],
+ rb:"Seven definitions, no theorems. triples(n): all of a, a′, b′ ≤ n with 1 ≤ a′ < a, 1 ≤ b′, (a+a′)b′ < n strictly, and a ∣ (n ∸ a′b′). gtTriples adds gcd(a,a′) = 1 and d·a² < m ∸ a′b′. gtBound(m,d,a,a′) = min(⌊(m∸1)/(a+a′)⌋+1, ⌊((m∸d a²)∸1)/a′⌋+1).",
+ watch:["<strong>gtBound is always ≥ 1</strong>, so the index range {b′ : 1 ≤ b′ < gtBound} is <em>empty</em>, not erroneous, in every degenerate case (m = 0, a′ = 0, d a² ≥ m).","Every subtraction is truncated and every division floors, but on the elements actually retained (a+a′)b′ < n already makes the differences genuine.","coprimePairs excludes (1,0) — a′ = 0 fails 1 ≤ a′ even though gcd(1,0) = 1."]},
+
+{p:8,n:"BlockCycleRotation_Constant",k:"def",conf:false,t:"The constant C of equation (const-c)",
+ claim:"Defines the summand c(a,a′), the constant C = Σ c(a,a′), and D = 1 + 4C, the constant of Theorem 14; plus the aggregate main term G₁(n) and the per-divisor error Eterm.",
+ check:["The three guards on c — all conjoined — and the formula on the branch where they hold.","D = 1 + 4C.","The inner index set of G₁ and its bulk condition d·a·(a+a′) ≤ n/d."],
+ rb:"c(a,a′) = (2a+a′)/(2a²(a+a′)²) when 1 ≤ a′ < a and gcd(a,a′) = 1, and 0 on every other pair. C is a <code>tsum</code> over <strong>all</strong> of ℕ×ℕ, the restriction effected purely by that zero extension. D = 1 + 4C. G₁(n) is a finite double sum over divisors d ∣ n and bulk coprime pairs.",
+ watch:["<strong>tsum junk value</strong>: nothing here asserts summability, so as stated C is “the unordered sum if it exists, and 0 otherwise” — in which case D would be 1. Item 33 is where that matters.","G₁(0) = 0, since 0 has no divisors.","Eterm's second branch multiplies by C; its first divides by an integer square root that can be 0, giving 0 by convention."]},
+
+{p:9,n:"BlockCycleRotation_Theorem13",k:"def",conf:false,t:"The decomposition G₁ + G₂ + G₃",
+ claim:"Defines the three parts into which §4 splits the restricted quadruple sum: main term G₁, rounding term G₂, oscillating term G₃, with the coefficients and cut-offs of the inner sums.",
+ check:["G₂ = (1/a)·innerLinear − G₁ and G₃ = innerActual − (1/a)·innerLinear.","That yCut is the unrounded real cut-off while both inner sums range to the floored gtBound — that gap is exactly what G₂ measures.","Err(n) and its grouping."],
+ rb:"Eleven definitions and <strong>no theorems</strong>. G₂ + G₃ = innerActual − G₁ by construction, since the scaled innerLinear cancels. innerActual is a natural-number sum cast to ℝ at the end; innerLinear is real throughout. Err(n) = τ(n)·((⌊√n⌋+1)·3n(1+log n)), with τ(0) = 0.",
+ watch:["<strong>The docstrings on G2sum and G3sum announce big-O bounds; the declarations assert nothing.</strong> Those bounds are items 29 and 30.","The docstring's range “1 ≤ b′ < Y” refers to the floored gtBound in the code, not to the real yCut.","In innerActual the truncated m ∸ a′b′ becomes 0 once a′b′ ≥ m, and every a divides 0, so those indices pass the filter."]},
+
+{p:10,n:"BlockCycleRotation_Theorem10",k:"def",conf:false,t:"The cost functions ψ and f, and the uniform law on [0,½]",
+ claim:"Defines ψ and f = 1 + ψ by their self-similar recursion, the extension f̄ to the unit box for the Riemann-integrability statement, and the uniform probability measure on [0,½].",
+ check:["In and Out are 0 at 0 by explicit case split, not by a limit.","f(x) = 1 + ψ(min(x, 1−x)) — the reflection is inside f.","f̄ is the constant 1 outside [0,1], not f."],
+ rb:"Nine objects and one registered instance. psiTerm(x,0) = 2x, because the empty product is 1. ψ is a <code>tsum</code> over ℕ. unitBox denotes the <strong>half-open</strong> (0,1] in its single coordinate — 0 excluded, 1 included — and unifHalf is 2× Lebesgue restricted to (0,½].",
+ watch:["<strong>tsum junk value</strong>: wherever the series fails to be summable, ψ = 0 and hence f = 1, silently.","The only proposition proved in the whole bundle is that unifHalf is a probability measure. No continuity, integrability, summability or boundedness is claimed here."]},
+
+{p:11,n:"BlockCycleRotation_Buffer",k:"def",conf:false,t:"Buffered rotation: ψ_β, f_β and μ",
+ claim:"Defines the buffered cost functions ψ_β and f_β, the segment sequence they recurse on, and the continuous upper bound μ(N,ℓ,β) of equation (integral).",
+ check:["bufDepth compares with ≤, not <.","ψ_β doubles every segment strictly before the cut-off and adds the segment at the cut-off exactly once.","μ(N,ℓ,b) = N·(1 + ψ_{b/N}(ℓ/N)) — both arguments rescaled by N."],
+ rb:"Six definitions, no theorems. seg(x,0) = x (empty product). costB is a three-branch recursion in ℕ with <strong>no subtraction anywhere</strong>. The real-valued half and costB are defined independently and <em>nothing in this bundle relates them</em> — that relation is item 36.",
+ watch:["<strong>bufDepth junk value</strong>: inf ∅ = 0, so T = 0 means either “the first segment already fits” or “no segment ever fits”, and the definition cannot distinguish them. Either way ψ_β collapses to x.","μ(0,ℓ,b) = 0 for every ℓ and b, via total division.","Nothing requires N > 0, 0 ≤ ℓ ≤ N, or β ≥ 0."]},
+
+{p:12,n:"BlockCycleRotation_Remark21",k:"def",conf:false,t:"The series of Remark 21 and ζ(3)",
+ claim:"Defines the auxiliary series S, the zeta values ζ(3) and ζ(2,1), and the harmonic partial sums used to evaluate them, supporting the closed form C = ½ − S/(2ζ(3)).",
+ check:["Which coordinate carries the square in z and in e — they differ.","That ζ₃'s index shift lives inside the summand.","The guards: 1 ≤ p₂ and p₂ < p₁, conjoined."],
+ rb:"z(p) = 1/(p₂·p₁²) and e(p) = 1/(p₂·(p₁+p₂)²) — <strong>the first squares the first coordinate, the second squares the sum</strong> — both guarded by 1 ≤ p₂ < p₁ and 0 elsewhere. ζ₃ = Σ over all d ∈ ℕ of 1/(d+1)³, so the terms are the reciprocal cubes of the positive integers, each once.",
+ watch:["<strong>No coprimality condition appears anywhere in this bundle</strong> — that is the point of the Möbius step, and it is why S differs from C's summand.","pTerm and qTerm have no guard and no zero branch; they are evaluated at every pair, including (0,0).","<code>cTerm</code> is named in a docstring here but is not defined in this bundle."]},
+
+{p:13,n:"BlockCycleRotation_AllShifts",k:"def",conf:false,t:"AllShifts definitions",
+ claim:"Defines the sets of shifts over which the cost is averaged: those the algorithm recurses on (2k ≤ n) and the full range 1 ≤ k ≤ n used in the remark on all shifts.",
+ check:["bigShifts keeps the k for which 2k ≤ n is FALSE.","smallShifts keeps j with 2j < n, strictly.","Where the exact midpoint goes."],
+ rb:"bigShifts(n) = {k : 1 ≤ k ≤ n and n < 2k}; smallShifts(n) = {j : j < n and 2j < n}. Both have cardinality ⌈n/2⌉, and 0 is never in bigShifts.",
+ watch:["<strong>For even n the exact midpoint k = n/2 is in neither set</strong> — bigShifts rejects it because 2k ≤ n holds, smallShifts because 2j < n fails.","Neither definition uses subtraction or division."]},
+
+{p:14,n:"BlockCycleRotation.bcRotate_eq_rotate",k:"m",ms:1,conf:true,t:"§2 — the block cycle algorithm computes the rotation",
+ claim:"The block cycle scheme of §2, implemented on lists, returns the rotation of its input by k for every k ≤ |l|. The paper describes the algorithm and analyses its cost but does not prove it performs the rotation; this milestone supplies that.",
+ check:["The hypothesis is k ≤ |l|, non-strict.","The conclusion is equality of lists against Mathlib's List.rotate.","Read the milestone title and description as a pair: does the title name the right part of the paper?"],
+ rb:"For every list l over an arbitrary α and every k with k ≤ |l|, bcRotate(l,k) = rotate(l,k). This is propositional equality of lists — <strong>not a permutation or multiset statement</strong>, and nothing about cost, step count or the block decomposition.",
+ watch:["Nothing is asserted for k > |l|, which is exactly the range where rotate reduces k modulo |l|.","The empty-list case is included and is a single trivial instance, not vacuous."]},
+
+{p:15,n:"BlockCycleRotation.finalSeg_eq_gcd",k:"m",ms:2,conf:false,t:"Lemma 11(1) — the recursion terminates at gcd(n,k)",
+ claim:"The block cycle recursion on (n,k) ends on a subproblem with parameters (gcd(n,k), 0). Part (1) of Lemma 11.",
+ check:["There are no hypotheses at all — check that is what you want.","Argument order: both sides are applied to (n,k), even though the binders read k then n."],
+ rb:"finalSeg(n,k) = gcd(n,k) for <strong>every</strong> pair in ℕ², unconditionally — no positivity, no ordering, no coprimality.",
+ watch:["The step iterated is not the Euclidean step, yet the identity is with the ordinary Nat.gcd. That mismatch is the content of the lemma, not an error.","k = 0 gives finalSeg(n,0) = n = gcd(n,0); n = k = 0 gives 0 = 0."]},
+
+{p:16,n:"BlockCycleRotation.remSum_congr_mod",k:"m",ms:3,conf:false,t:"Lemma 11 (key step) — remSum(n,k) depends on n only modulo k",
+ claim:"If n ≡ m (mod k) then remSum(n,k) = remSum(m,k). This is the induction carrying the paper's proof of Lemma 11: the recursion and the Euclidean algorithm keep different first components — a segment length rather than a remainder — but congruent ones.",
+ check:["The hypothesis is the equation n mod k = m mod k.","The same k sits in the second slot on both sides; n and m vary in the first."],
+ rb:"For all n, m, k with n mod k = m mod k, remSum(n,k) = remSum(m,k). Equality in ℕ, not a congruence or an inequality.",
+ watch:["k = 0 is included: there Lean's <code>x mod 0 = x</code> makes the hypothesis read n = m, and both sides are 0.","The description is careful that this milestone and milestone 2 <em>together</em> identify the algorithm with the Euclidean algorithm; neither states it alone. Check that reads right to you."]},
+
+{p:17,n:"BlockCycleRotation.cost_add_gcd",k:"m",ms:4,conf:false,t:"Equation (7) — the move count",
+ claim:"The algorithm performs n − gcd(n,k) moves of one type and 2·remSum(n,k) of the other: cost(n,k) + gcd(n,k) = n + 2·remSum(n,k). Stated additively so that it holds with no hypothesis relating n and k.",
+ check:["The additive form, and that there is genuinely no hypothesis.","Every term is on the side the description says it is."],
+ rb:"cost(n,k) + gcd(n,k) = n + 2·remSum(n,k) for every (n,k) ∈ ℕ². No hypotheses, and <strong>no subtraction appears anywhere in the statement</strong>, so nothing truncates.",
+ watch:["The additive phrasing is the reason it needs no hypothesis; the subtractive form would truncate at n < gcd(n,k).","Note this is about cost, not moveCount — moveCount is the subtractive packaging defined in item 1."]},
+
+{p:18,n:"BlockCycleRotation.cost_le_three_mul",k:"m",ms:5,conf:false,t:"Theorem A — the worst case is 3n moves",
+ claim:"For 2k ≤ n the block cycle algorithm performs at most 3n moves. The algorithmic half of Theorem A.",
+ check:["Hypothesis 2k ≤ n, conclusion cost(n,k) ≤ 3n, both non-strict.","That the bound is 3n and not 3n − something."],
+ rb:"For all n, k with 2k ≤ n, cost(n,k) ≤ 3n. Nothing else: no positivity, no coprimality, no typeclass assumptions.",
+ watch:["The hypothesis constrains only the top-level pair. It is <em>not</em> re-imposed on the pairs the recursion visits — and it does not hold there.","k = 0 satisfies it for every n, giving 0 ≤ 3n. Sharpness is item 19, not this one."]},
+
+{p:19,n:"BlockCycleRotation.moveCount_fib",k:"m",ms:6,conf:false,t:"Observation 3 — the Fibonacci worst case, 3n − 5",
+ claim:"At n = F(m+2), k = F(m) the algorithm uses exactly 3n − 5 moves, two short of the bound of Theorem A, so the constant 3 cannot be improved.",
+ check:["The two Fibonacci indices and the gap between them.","That this is an equality, not a bound.","Whether the description's index convention matches the Lean's."],
+ rb:"For every j, moveCount(fib(j+4), fib(j+2)) = 3·fib(j+4) ∸ 5. The indices differ by 2 — <strong>non-consecutive</strong> Fibonacci numbers — giving the pairs (3,1), (5,2), (8,3), (13,5), (21,8), …",
+ watch:["Both subtractions are truncated, but on this index range neither truncates: fib(j+4) ≥ 3, so 3·fib(j+4) ≥ 9 > 5.","The smallest instance, j = 0, is moveCount(3,1) = 4.","Nothing is claimed about consecutive Fibonacci pairs or about any other (n,k)."]},
+
+{p:20,n:"BlockCycleRotation.psi_rat",k:"m",ms:7,conf:false,t:"Lemma 11(2) — n·ψ(k/n) = 2·remSum(n,k)",
+ claim:"The bridge between the discrete and continuous sides: for 2k ≤ n the value of the recursively defined ψ at the rational k/n is determined by the Euclidean remainder sum.",
+ check:["Hypotheses 0 < n and 2k ≤ n.","ψ is fed the ratio k/n while remSum takes the pair (n,k) in that order."],
+ rb:"n·ψ(k/n) = 2·remSum(n,k) as an equation in ℝ, with n, k and remSum(n,k) cast in. 0 < n keeps k/n from being 0/0, and 2k ≤ n puts k/n in [0,½].",
+ watch:["<strong>No summability hypothesis.</strong> ψ is a tsum: were the family not summable at k/n, the statement would be asserting 0 = 2·remSum(n,k). So summability at those points is carried silently by the theorem's truth.","k = 0 is included and asserts n·ψ(0) = 0."]},
+
+{p:21,n:"BlockCycleRotation.relation",k:"m",ms:8,conf:false,t:"Equation (relation) — M(n,k) = n·f(k/n) − gcd(n,k)",
+ claim:"The move count is the value of a single fixed real function f = 1 + ψ at k/n, up to the gcd correction. This is what makes the Riemann-sum argument of Theorem 9 available.",
+ check:["Hypotheses 0 < n and k ≤ n.","That this is an exact equality — no error term, no limit, no asymptotic qualifier.","The additive arrangement: algCost + gcd on the left."],
+ rb:"algCost(n,k) + gcd(n,k) = n·f(k/n), exactly, for each admissible pair separately.",
+ watch:["k = n is permitted, since the hypothesis is ≤. There both sides come to n.","Same tsum caveat as item 20, now inside f = 1 + ψ(min(x,1−x))."]},
+
+{p:22,n:"BlockCycleRotation.continuousAt_fCost",k:"m",ms:9,conf:false,t:"Theorem 7 — continuity at every irrational point",
+ claim:"f is continuous at each irrational x in (0,1). It is discontinuous at every rational, so continuity at the irrationals is the strongest statement available and is what the integrability argument needs.",
+ check:["Three hypotheses: x irrational, 0 < x, x < 1.","That continuity is asserted on all of ℝ, not within (0,1) or within a subtype."],
+ rb:"f is ContinuousAt x in the ordinary two-sided sense on ℝ — the quantifier over nearby points ranges over a full real neighbourhood, not a one-sided or set-relative limit.",
+ watch:["Irrationality is an <strong>independent</strong> hypothesis; it does not follow from 0 < x < 1, nor conversely.","Nothing is asserted about rational points. The description's claim that f is discontinuous there is context, not part of this theorem."]},
+
+{p:23,n:"BlockCycleRotation.fBar_hasBoxIntegral",k:"m",ms:10,conf:false,t:"Theorem 7 — Riemann integrability on [0,1]",
+ claim:"f is Riemann integrable, and its Riemann integral agrees with its Lebesgue integral. The second half of Theorem 7.",
+ check:["That the integration parameters are the Riemann ones: constant gauge, tags in the closed sub-box, no distortion bound.","That the value is prescribed as the Lebesgue–Bochner integral, so the statement carries the agreement of the two integrals."],
+ rb:"A closed statement with no hypotheses: the box integral of F̄ over the unit box exists <em>and equals</em> the Bochner integral of F̄ over that box as a set. This is the classical mesh-threshold criterion, not Henstock–Kurzweil or McShane.",
+ watch:["The box denotes the <strong>half-open</strong> (0,1] — the corner 0 is excluded from the set-integral. A null difference, but it is what the code writes.","If F̄ were not Lebesgue-integrable there, the prescribed value would be the junk 0. Integrability is not separately asserted.","f̄ is the constant 1 off [0,1], so F̄ is defined everywhere; the constant branch is never reached by the Riemann sums."]},
+
+{p:24,n:"BlockCycleRotation.theorem10",k:"m",ms:11,conf:false,t:"Theorem 9 — avgCost(n)/n → 2∫₀^{1/2} f",
+ claim:"The average cost per element converges to twice the integral of f over [0,½]. Proved independently of Theorem 14, so the two give independent routes to the same constant.",
+ check:["The sequence is avgCost(n)/n — divided by n a second time.","The limit is 2× the integral over [0,½], and convergence is along atTop."],
+ rb:"A closed statement: avgCost(n)/n → 2∫₀^{1/2} f(x)dx. Since avgCost already divides by n, the quantity converging is n⁻²·Σ_{k<n} cost(n, min(k, n∸k)).",
+ watch:["avgCost(0) = 0/0 = 0, a junk value — harmless, because convergence along atTop ignores any finite set of indices.","If f were not integrable on (0,½] the limit value would be 0, and the claim would reduce to convergence to 0. No integrability hypothesis appears."]},
+
+{p:25,n:"BlockCycleRotation.heilbronn_bijection",k:"m",ms:12,conf:false,t:"§4 — Heilbronn's correspondence",
+ claim:"The map l ↦ (K(l), K(l.dropLast)) is a bijection from normalised continued fraction expansions onto coprime pairs a > a′ ≥ 1. Heilbronn (1969), the correspondence on which §4 rests.",
+ check:["Read this one carefully: is the Lean a bijection, or something weaker?","The admissibility conditions on l, and which end of the list each one constrains."],
+ rb:"A conjunction of two round-trip families. (i) For admissible l — nonempty, every entry ≥ 1, first entry ≥ 2 — cf(K(l), K(l.dropLast)) = l. (ii) For coprime a > a′ ≥ 1, cf(a,a′) is admissible with K = a and K∘dropLast = a′. <strong>No injectivity, surjectivity or bijectivity is asserted anywhere</strong> — no Function.Bijective, no Equiv, no ∃!. “Bijection” appears only in the name.",
+ watch:["The description was corrected once already on exactly this point; the milestone title now says “correspondence”. Check the description body still matches.","An asymmetry worth noticing: the “≥ 2” condition constrains the <strong>first</strong> entry, while dropLast removes the <strong>last</strong>.","The forward direction is the separate theorem <code>heilbronn_forward</code>, not this one."]},
+
+{p:26,n:"BlockCycleRotation.heilbron",k:"m",ms:13,conf:false,t:"Equation (eq. heilbron) — from move counts to lattice point counts",
+ claim:"Summing remainder sums over the shifts the algorithm recurses on equals the sum of gcd(n,k) over the same range plus the sum of b over the quadruples with gcd(a,a′) = 1. The hinge of the average-case analysis.",
+ check:["The index set: allShifts(n) = {1 ≤ k ≤ ⌊n/2⌋}, with no coprimality.","The summand on the quadruple side — which component of the tuple."],
+ rb:"For 0 < n: Σ_{k ∈ allShifts(n)} remSum(n,k) = Σ_{k ∈ allShifts(n)} gcd(n,k) + Σ_{quadruplesAll(n)} b. All in ℕ, no subtraction, so nothing truncates. The quadruple summand is the <strong>second</strong> component b.",
+ watch:["quadruplesAll imposes gcd(a,a′) = 1 but <em>not</em> gcd(b,b′) = 1 — the description says so; check it does.","The quadruple set is empty for n ≤ 4, so small n reduce to an identity between the two left-hand sums."]},
+
+{p:27,n:"BlockCycleRotation.Q_gt_tripleSum",k:"m",ms:14,conf:false,t:"§4 — the paper's triple sum",
+ claim:"The restricted quadruple sum written as a sum over divisors d ∣ n, coprime pairs a > a′ ≥ 1, and b′ constrained by (a+a′)b′ < n/d, n/d ≡ a′b′ (mod a) and n/d − a′b′ > d·a².",
+ check:["The restriction on the left: which two components are compared, and what the summand is.","That the right-hand inner set carries gcd(a,a′) = 1 while the left-hand set carries no gcd condition at all."],
+ rb:"For 0 < n: Σ over (a,b,a′,b′) ∈ quadruplesQ(n) with <strong>a &lt; b</strong>, of <strong>a + b</strong>, equals Σ_{d∣n} Σ_{gtTriples(n/d, d)} (d·a + ⌊(n/d − a′b′)/a⌋).",
+ watch:["This is the item whose description once named the wrong components — it said restriction a &lt; a′ and summand a + a′. Now corrected; the Lean was right all along.","quadruplesQ has no coprimality; gtTriples does. Equality of totals only — no term-by-term correspondence is claimed."]},
+
+{p:28,n:"BlockCycleRotation.lemma17_isBigO",k:"m",ms:15,conf:false,t:"Lemma 19 — the main term",
+ claim:"G₁(n) = C·n²·Σ_{d∣n} d⁻² + O(n^{3/2+ε}).",
+ check:["The quantifier order: ∀ε>0, ∃K>0, ∀n>0 — so K may depend on ε but never on n.","The shape of the main term, including the divisor sum."],
+ rb:"|G₁(n) − C·n²·Σ_{d∣n} 1/d²| ≤ K·n^{3/2+ε}, stated as a literal existential inequality rather than through any big-O predicate.",
+ watch:["3/2 here is real division, i.e. exactly 1.5 — not a truncated natural quotient.","No upper bound on ε, so arbitrarily large ε gives weaker instances of the same statement.","The Lean name says <code>lemma17</code> but the paper's result is <strong>Lemma 19</strong>. Names are immutable; the description is the corrected one."]},
+
+{p:29,n:"BlockCycleRotation.lemma_g_two",k:"m",ms:16,conf:false,t:"Lemma 16 — G₂(n) = O(n^{3/2+ε})",
+ claim:"The rounding discrepancies committed in replacing each inner sum over an arithmetic progression by its expected length do not accumulate beyond the error term.",
+ check:["The same ∀ε ∃C ∀n shape as item 28.","That the quantity bounded is G2sum, the aggregate — not the per-index G₂."],
+ rb:"|G₂(n)| ≤ C·n^{3/2+ε} for a C depending on ε alone, uniformly over n > 0. G₂ is the discrete linear sum run to the <em>floored</em> cut-off, minus the closed form evaluated at the <em>real</em> cut-off.",
+ watch:["Inner index sets can be empty, in which case the bound says only 0 ≤ C·n^{3/2+ε} for that n.","On the indices actually summed the bulk condition forces d·a² < m, so none of the truncated subtractions truncates there."]},
+
+{p:30,n:"BlockCycleRotation.lemma_g_three",k:"m",ms:17,conf:false,t:"Lemma 18 — G₃(n) = O(n^{3/2+ε})",
+ claim:"The oscillating part, bounded by character sum estimates; the logarithmic loss from Σ_{m≠0} 1/min(m, a−m) is absorbed by n^ε.",
+ check:["Same quantifier shape again.","That G₃ is innerActual minus the scaled innerLinear — the complement of G₂'s difference."],
+ rb:"|G₃(n)| ≤ C·n^{3/2+ε}, one C per ε, uniform in n > 0. The summand is the divisibility-filtered natural-arithmetic sum minus (1/a) times the unfiltered real linear sum, both to the same cut-off U.",
+ watch:["In the “actual” sum, any b′ in range with a′b′ ≥ m makes m ∸ a′b′ = 0, which every a divides — so <strong>those indices are retained</strong> and each contributes exactly d·a.","Since G₂ + G₃ = innerActual − G₁ by construction, items 28–30 together are what bound the whole decomposition."]},
+
+{p:31,n:"BlockCycleRotation.sum_remSum_isBigO",k:"m",ms:18,conf:false,t:"Theorem 14, arithmetic form — Σ_k remSum(n,k) = Cn² + O(n^{3/2+ε})",
+ claim:"The total remainder sum over the shifts the algorithm recurses on. Converting it to move counts by equation (7) yields the goal.",
+ check:["The index set is allShifts(n), i.e. 2k ≤ n, with no coprimality.","The sum is formed in ℕ and cast once; the subtraction of Cn² happens in ℝ."],
+ rb:"|Σ_{k ∈ allShifts(n)} remSum(n,k) − C·n²| ≤ K·n^{3/2+ε}, one K per ε, uniform in n > 0.",
+ watch:["At n = 1 the index set is empty and the claim degenerates to |C| ≤ K.","Nothing here asserts C > 0 or gives C a closed form — that is item 32 — nor that the family defining C is summable."]},
+
+{p:32,n:"BlockCycleRotation.cConst_eq_alternative",k:"m",ms:19,conf:false,t:"Remark 21 — C = ½ − S/(2ζ(3))",
+ claim:"The closed form of the constant, which is what makes C numerically accessible: removing the coprimality constraint by a Möbius factor produces ζ(3).",
+ check:["The three constants and their definitions — in particular which of them carries a coprimality guard.","That this is a closed statement with no hypotheses."],
+ rb:"C = ½ − S/(2ζ₃), an equation between three fixed reals. The summand of S is 1/(a′(a+a′)²) guarded only by 1 ≤ a′ < a — <strong>no coprimality</strong>, which is exactly what the Möbius step removes. ζ₃ = Σ_{d∈ℕ} 1/(d+1)³.",
+ watch:["All three are tsums with junk value 0. If ζ₃ were 0, total real division would make the right-hand side ½.","No convergence hypothesis for any of the three series appears in the statement."]},
+
+{p:33,n:"BlockCycleRotation.dConst_enclosure",k:"m",ms:20,conf:false,t:"Theorem A / Theorem 14 — 1.84 ≤ D ≤ 1.85",
+ claim:"A certified two-sided enclosure of the constant of Theorem 14, so that the value D ≈ 1.85 quoted in the paper is bounded rather than asserted.",
+ check:["Both bounds non-strict; the endpoints are exact rationals, not floating point.","That it is genuinely two-sided."],
+ rb:"1.84 ≤ D ≤ 1.85, with 1.84 = 46/25 and 1.85 = 37/20 as exact reals. Equivalently 0.21 ≤ C ≤ 0.2125.",
+ watch:["<strong>This is the item that is not junk-safe, and that is a good thing.</strong> If the family defining C were not summable then C = 0, D = 1, and the lower bound would be <em>false</em>. So this theorem's truth carries summability with it — which is why it, and not item 34, is the one that certifies the constant."]},
+
+{p:34,n:"BlockCycleRotation.dConst_lt_two",k:"m",ms:21,conf:false,t:"Remark after Theorem 14 — D < 2",
+ claim:"On average the block cycle scheme uses fewer than two moves per element, hence fewer than reversal rotation, which uses essentially 2n.",
+ check:["Strict <, and an upper bound only.","Read this one together with item 33."],
+ rb:"D < 2, i.e. C < ¼. No lower bound, no positivity, nothing about finiteness.",
+ watch:["<strong>Unlike item 33, this one is satisfied vacuously in the divergent case</strong> — if C were the junk 0 then D = 1 < 2 and the statement would hold while telling you nothing about the series. On its own it certifies less than it appears to; item 33 is what rules that out."]},
+
+{p:35,n:"BlockCycleRotation.remark_all_shifts",k:"m",ms:22,conf:false,t:"Remark — the average over all shifts 1 ≤ k ≤ n",
+ claim:"Averaging over every shift rather than those with 2k ≤ n gives (3/8 + 2C)n + O(n^{1/2+ε}), the extra 3/8 coming from the reflected range.",
+ check:["The index range: 1 ≤ k ≤ n with both endpoints included, and 0 excluded.","The main term is linear in n, and the error exponent is ½ + ε here, not 3/2 + ε."],
+ rb:"|(Σ_{k=1}^{n} remSum(n,k))/n − (3/8 + 2C)·n| ≤ K·n^{1/2+ε}. The inner sum is formed in ℕ and cast; the division by n is real, and 0 < n keeps it from being 0/0.",
+ watch:["k = n <em>is</em> summed, and remSum(n,n) = n.","Compare the exponent against item 31 — this statement divides by n first, so the error term drops by one power."]},
+
+{p:36,n:"BlockCycleRotation.costB_le_muCost",k:"m",ms:23,conf:false,t:"Corollary 6(3) — m(n,k,b) ≤ μ(n,k,b)",
+ claim:"The buffered algorithm never uses more moves than the continuous upper bound μ of equation (integral).",
+ check:["Three hypotheses: 0 < n, 0 < b, 2k ≤ n.","Both sides take (n, k, b) in that order — size, shift, buffer.","The description uses b, not β — the paper's item (3) does too."],
+ rb:"costB(n,k,b) ≤ μ(n,k,b) as reals, with the discrete quantity cast from ℕ on the smaller side. costB is computed entirely in ℕ; μ's arguments are cast individually before any arithmetic.",
+ watch:["<strong>There is no hypothesis 0 &lt; k</strong> — k = 0 is included, where both sides come to n.","b may exceed n and need not relate to k at all.","2k ≤ n constrains only the top-level arguments, not the recursive calls or the iterates of In."]},
+
+{p:37,n:"BlockCycleRotation.buffer_helps",k:"m",ms:24,conf:false,t:"Remark — a buffer helps even when no segment fits in it",
+ claim:"With β = 1/4 and x = 2/5 neither segment fits in the buffer, yet the buffered cost 2 is strictly below the unbuffered 11/5.",
+ check:["Four conjuncts, all about explicit numerals.","f_β takes (β, x) in that order.","That the two inequalities are conjuncts, not hypotheses."],
+ rb:"A closed conjunction: 1/4 &lt; 2/5; 1/4 &lt; 1 − 2/5; f_buf(1/4, 2/5) = 2; f(2/5) = 11/5. All exact real equalities and strict inequalities — no bounds, no limits.",
+ watch:["<strong>The two inequalities do not gate the two evaluations</strong> — they are simply four assertions joined by ∧. That is weaker than the prose reading “neither fits, yet…”, and worth deciding you are content with.","f applies the reflection min(x, 1−x); f_buf does not. At x = 2/5 they agree, so it does not bite here.","The segments are 2/5, 1/5, then 0 forever, since 1/In(2/5) = 3 is an integer."]},
+
+{p:38,n:"BlockCycleRotation.theorem13",k:"goal",conf:false,t:"Theorem 14 — the goal theorem",
+ claim:"The mission's goal: avgCost(n) = D·n + O(n^{1/2+ε}), with D = 1 + 4C. The paper's Theorem 14.",
+ check:["The quantifier order: ∀ε>0, ∃K>0, ∀n>0.","The main term D·n and the error exponent ½ + ε.","That this is the item the whole proposal is pointed at."],
+ rb:"For every ε > 0 there is K > 0 with |avgCost(n) − D·n| ≤ K·n^{1/2+ε} for all n > 0. avgCost(n) = (1/n)·Σ_{k<n} algCost(n,k); D = 1 + 4C.",
+ watch:["ε is only assumed positive, not small — ε = 10⁶ is an admissible instantiation, giving a very weak bound.","No lower bound on avgCost(n) − D·n beyond what the two-sided absolute value gives.","Same tsum caveat on D; item 33 is what pins it down numerically."]}
+];
+
+const KIND = {def:["Definition","def"], m:["Milestone","m"], goal:["Goal","goal"]};
+const mount = document.getElementById("mount");
+const state = {};            // name -> {reviewed, note}
+let put = () => {};          // persistence writer
+let filter = "all";
+
+function el(tag, cls, html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
+
+function buildRow(it){
+  const row = el("div","row"); row.dataset.name = it.n;
+  const head = el("div","head");
+
+  const tick = el("input"); tick.type="checkbox"; tick.className="tick";
+  tick.setAttribute("aria-label","Mark "+it.n+" reviewed");
+  head.appendChild(tick);
+
+  head.appendChild(el("div","pos",String(it.p).padStart(2,"0")));
+
+  const mid = el("div","mid");
+  mid.appendChild(el("div","name",it.n));
+  mid.appendChild(el("div","sub",it.t));
+  mid.setAttribute("role","button"); mid.tabIndex=0;
+  mid.setAttribute("aria-expanded","false");
+  head.appendChild(mid);
+
+  const tags = el("div","tags");
+  const kindLabel = it.k==="m" ? "Milestone "+it.ms : KIND[it.k][0];
+  tags.appendChild(el("span","tag "+KIND[it.k][1], kindLabel));
+  if(it.conf) tags.appendChild(el("span","tag conf","confirmed"));
+  const noteTag = el("span","tag note","note"); noteTag.hidden = true;
+  tags.appendChild(noteTag);
+  head.appendChild(tags);
+  row.appendChild(head);
+
+  const body = el("div","body");
+  const b1 = el("div","blk"); b1.appendChild(el("h3",null,"What the description claims"));
+  b1.appendChild(el("p",null,it.claim)); body.appendChild(b1);
+
+  const b2 = el("div","blk"); b2.appendChild(el("h3",null,"Check"));
+  const ul = el("ul"); it.check.forEach(c=>ul.appendChild(el("li",null,c))); b2.appendChild(ul); body.appendChild(b2);
+
+  const b3 = el("div","blk rb"); b3.appendChild(el("h3",null,"Blind read-back"));
+  b3.appendChild(el("p","rbtext",it.rb)); body.appendChild(b3);
+
+  if(it.watch && it.watch.length){
+    const b4 = el("div","blk wf"); b4.appendChild(el("h3",null,"Watch for"));
+    const ul2 = el("ul"); it.watch.forEach(w=>ul2.appendChild(el("li",null,w))); b4.appendChild(ul2); body.appendChild(b4);
+  }
+
+  const nw = el("div","notewrap");
+  const lab = el("label",null,"Your note"); lab.htmlFor = "note-"+it.p;
+  const ta = el("textarea"); ta.id = "note-"+it.p; ta.rows = 2;
+  ta.placeholder = "Anything that did not line up…";
+  nw.appendChild(lab); nw.appendChild(ta); body.appendChild(nw);
+  row.appendChild(body);
+
+  const toggle = () => {
+    const open = row.classList.toggle("open");
+    mid.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  mid.addEventListener("click", toggle);
+  mid.addEventListener("keydown", e => {
+    if(e.key==="Enter" || e.key===" "){ e.preventDefault(); toggle(); }
+  });
+
+  tick.addEventListener("change", () => {
+    const s = state[it.n] || (state[it.n] = {});
+    s.reviewed = tick.checked;
+    row.classList.toggle("done", tick.checked);
+    put(); refresh();
+  });
+
+  let timer=null;
+  ta.addEventListener("input", () => {
+    const s = state[it.n] || (state[it.n] = {});
+    s.note = ta.value;
+    noteTag.hidden = !ta.value.trim();
+    clearTimeout(timer); timer = setTimeout(put, 700);
+  });
+
+  row._apply = () => {
+    const s = state[it.n] || {};
+    tick.checked = !!s.reviewed;
+    row.classList.toggle("done", !!s.reviewed);
+    if(document.activeElement !== ta) ta.value = s.note || "";
+    noteTag.hidden = !(s.note && s.note.trim());
+  };
+  return row;
+}
+
+function section(title, range, items){
+  const h = el("div","sect");
+  h.appendChild(el("h2",null,title));
+  h.appendChild(el("span","rng",range));
+  h.appendChild(el("div","hr"));
+  mount.appendChild(h);
+  const list = el("div","list");
+  items.forEach(it => list.appendChild(buildRow(it)));
+  mount.appendChild(list);
+}
+
+section("Definition bundles","items 01–13", ITEMS.filter(i=>i.k==="def"));
+section("Milestones and the goal","items 14–38", ITEMS.filter(i=>i.k!=="def"));
+
+function refresh(){
+  let done = 0;
+  document.querySelectorAll(".row").forEach(row => {
+    row._apply();
+    const isDone = row.classList.contains("done");
+    if(isDone) done++;
+    row.classList.toggle("hidden",
+      (filter==="todo" && isDone) || (filter==="done" && !isDone));
+  });
+  document.getElementById("ndone").textContent = done;
+  document.getElementById("bar").style.width = (done/ITEMS.length*100).toFixed(1)+"%";
+}
+
+document.querySelectorAll(".seg button").forEach(b => {
+  b.addEventListener("click", () => {
+    filter = b.dataset.filter;
+    document.querySelectorAll(".seg button").forEach(x =>
+      x.setAttribute("aria-pressed", String(x===b)));
+    refresh();
+  });
+});
+document.getElementById("expandall").addEventListener("click", () =>
+  document.querySelectorAll(".row").forEach(r => {
+    r.classList.add("open"); r.querySelector(".mid").setAttribute("aria-expanded","true"); }));
+document.getElementById("collapseall").addEventListener("click", () =>
+  document.querySelectorAll(".row").forEach(r => {
+    r.classList.remove("open"); r.querySelector(".mid").setAttribute("aria-expanded","false"); }));
+
+/* ---- persistence: this browser's localStorage ---- */
+const LS = "bcr-confirmations-v1";
+const sync = document.getElementById("sync");
+function loadLocal(){
+  try{ Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); }catch(e){}
+}
+function saveLocal(){
+  try{
+    localStorage.setItem(LS, JSON.stringify(state));
+    sync.textContent = "saved in this browser";
+  }catch(e){ sync.textContent = "could not save - private window?"; }
+}
+put = saveLocal;
+loadLocal();
+refresh();
+</script>
+</body>
+</html>
