@@ -183,7 +183,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Corollary 6(2): `μ(λN,λℓ,λβ) = λμ(N,ℓ,β)` | Corollary 6(2) | `muCost_homogeneous` | ✅ proved |
 | `f_β(ℓ) = μ(1,ℓ,β)` | Remark 13 | `muCost_one` | ✅ proved |
 | **Eq. (integral): buffered move count** | Eq. (integral) | `costB` | ✅ **defined** |
-| **Corollary 6(3): `Cost(n,k,β) ≤ μ(n,k,β)`** | Corollary 6(3) | `costB_le_muCost` | ✅ **proved** |
+| **Corollary 6(3): `m(n,k,β) ≤ μ(n,k,β)`** | Corollary 6(3) | `costB_le_muCost` | ✅ **proved** |
 | Eq. (integral) at `β = 0` is Lemma 11 | §2–3 | `costB_eq_moveCount` | ✅ proved |
 | Corollary 6(3), unbuffered limit | Corollary 6(3) | `cost_le_muCost` | ✅ proved |
 | **Segments halve every two steps** | §3 | `seg_add_two_le` | ✅ **proved** |
@@ -364,7 +364,7 @@ bound `d(n) = O(n^ε)` (cited as standard, absent from Mathlib), Bernoulli's
 inequality, and the correctness of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
-**Equation (1) is taken as a definition, not proved.** The paper introduces `Cost(n,k,b)` as *the number of moves the block cycle method needs* to rotate an array of length `n` by `k` using a buffer of size `b`, and then states equation (1) — the three-branch recursion — as something it *finds* to hold for `k ≤ n/2`. Here that recursion is the definition of `costB` (and `cost`), so the step from the operational move count to the recursion is assumed rather than established.
+**Equation (1) is taken as a definition, not proved.** The paper introduces `m(n,k,b)` as *the number of moves the block cycle method needs* to rotate an array of length `n` by `k` using a buffer of size `b`, and then states equation (1) — the three-branch recursion — as something it *finds* to hold for `k ≤ n/2`. Here that recursion is the definition of `costB` (and `cost`), so the step from the operational move count to the recursion is assumed rather than established.
 
 `bcRotate` is proved to compute the rotation, and the cost recursion is proved to satisfy the paper's bounds, but no theorem connects them: nothing states that `cost n k` counts the moves `bcRotate` performs. Closing the gap means formalising equation (1) itself — modelling the in-place algorithm as a sequence of element moves and proving that count satisfies the recursion. Two constraints on any such statement: the paper's own hypothesis `k ≤ n/2`, and the fact that `bcRotate` handles `k > n/2` by reversing the list, a step with no counterpart in the paper.
 
