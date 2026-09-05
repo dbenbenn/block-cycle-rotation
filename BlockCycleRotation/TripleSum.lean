@@ -113,7 +113,7 @@ theorem mem_triples {n x y y' : ℕ} :
         ∧ (x + y) * y' < n ∧ x ∣ (n - y * y') := by
   simp [triples, Finset.mem_filter, Finset.mem_product, and_assoc]
 
-/-- **The `b`-elimination.**  `Q(n)` as a sum over triples. -/
+/-- **The `x'`-elimination.**  `Q(n)` as a sum over triples. -/
 theorem sum_snd_quadruplesQ_eq_triples {n : ℕ} (hn : 0 < n) :
     ∑ q ∈ quadruplesQ n, q.2.1 = ∑ t ∈ triples n, (n - t.2.1 * t.2.2) / t.1 := by
   refine Finset.sum_bij'
@@ -170,7 +170,7 @@ theorem mem_coprimeTriples {n x y y' : ℕ} :
         ∧ (x + y) * y' < n ∧ x ∣ (n - y * y')) ∧ Nat.gcd x y = 1 := by
   simp [coprimeTriples, Finset.mem_filter, mem_triples]
 
-/-- The `b`-elimination for the coprime quadruples. -/
+/-- The `x'`-elimination for the coprime quadruples. -/
 theorem sum_snd_quadruplesAll_eq {n : ℕ} (hn : 0 < n) :
     ∑ q ∈ quadruplesAll n, q.2.1
       = ∑ t ∈ coprimeTriples n, (n - t.2.1 * t.2.2) / t.1 := by
@@ -373,14 +373,14 @@ theorem Q_eq_tripleSum_decomposed {n : ℕ} (hn : 0 < n) :
 
 /-! ## Symmetrisation
 
-Following the paper: `Q(n) = ½ ∑ (b + a)`, and the involution swapping the two
-halves pairs the quadruples with `b > a` against those with `b < a`, leaving the
-diagonal `a = b`.  So
+Following the paper: `Q(n) = ½ ∑ (x' + x)`, and the involution swapping the two
+halves pairs the quadruples with `x' > x` against those with `x' < x`, leaving the
+diagonal `x = x'`.  So
 
-  `Q(n) = ∑_{b > a} (a + b) + ∑_{a = b} a`,
+  `Q(n) = ∑_{x' > x} (x + x') + ∑_{x = x'} x`,
 
 exactly (the diagonal term is what the paper discards as `O(n^{1+ε})`).  The
-restriction `b > a` is what will bound `a` by about `√n` in the estimates. -/
+restriction `x' > x` is what will bound `x` by about `√n` in the estimates. -/
 
 /-- `quadruplesQ` is symmetric under swapping the two halves. -/
 theorem mem_quadruplesQ_swap {n x x' y y' : ℕ} (h : (x, x', y, y') ∈ quadruplesQ n) :
@@ -389,7 +389,7 @@ theorem mem_quadruplesQ_swap {n x x' y y' : ℕ} (h : (x, x', y, y') ∈ quadrup
   obtain ⟨⟨h1, h2, h3, h4⟩, h5, h6, h7, h8, h9⟩ := h
   exact ⟨⟨h2, h1, h4, h3⟩, h7, h8, h5, h6, by rw [h9]; ring⟩
 
-/-- Summing `a` over `quadruplesQ` equals summing `b`. -/
+/-- Summing `x` over `quadruplesQ` equals summing `x'`. -/
 theorem sum_fst_eq_sum_snd_Q (n : ℕ) :
     ∑ q ∈ quadruplesQ n, q.1 = ∑ q ∈ quadruplesQ n, q.2.1 := by
   refine Finset.sum_bij'
@@ -402,7 +402,7 @@ theorem sum_fst_eq_sum_snd_Q (n : ℕ) :
   · rfl
   · rfl
 
-/-- The involution matches the quadruples with `b < a` against those with `b > a`. -/
+/-- The involution matches the quadruples with `x' < x` against those with `x' > x`. -/
 theorem sum_gt_eq_sum_lt (n : ℕ) :
     ∑ q ∈ (quadruplesQ n).filter (fun q => q.2.1 < q.1), (q.1 + q.2.1)
       = ∑ q ∈ (quadruplesQ n).filter (fun q => q.1 < q.2.1), (q.1 + q.2.1) := by
@@ -422,7 +422,7 @@ theorem sum_gt_eq_sum_lt (n : ℕ) :
   · rintro ⟨x, x', y, y'⟩ _
     exact Nat.add_comm _ _
 
-/-- **The symmetrisation.**  `Q(n)` splits into the part with `b > a` and the
+/-- **The symmetrisation.**  `Q(n)` splits into the part with `x' > x` and the
 diagonal. -/
 theorem Q_symmetrise (n : ℕ) :
     ∑ q ∈ quadruplesQ n, q.2.1
@@ -545,24 +545,24 @@ theorem sum_diag_isBigO {ε : ℝ} (hε : 0 < ε) :
   have hn' : (0 : ℝ) < n := by exact_mod_cast hn
   have hnε : (0 : ℝ) ≤ (n : ℝ) ^ ε := by positivity
   -- each divisor count is at most `C₀ n^ε`
-  have hterm : ∀ a ∈ Finset.range (Nat.sqrt n + 1),
-      (((n - a * a).divisors.card : ℕ) : ℝ) ≤ C0 * (n : ℝ) ^ ε := by
-    intro a _
-    rcases Nat.eq_zero_or_pos (n - a * a) with h0 | h0
+  have hterm : ∀ x ∈ Finset.range (Nat.sqrt n + 1),
+      (((n - x * x).divisors.card : ℕ) : ℝ) ≤ C0 * (n : ℝ) ^ ε := by
+    intro x _
+    rcases Nat.eq_zero_or_pos (n - x * x) with h0 | h0
     · rw [h0]
       simp
       positivity
     · refine (hCd _ h0.ne').trans ?_
-      have hle : ((n - a * a : ℕ) : ℝ) ≤ (n : ℝ) := by
-        have : (n - a * a : ℕ) ≤ n := Nat.sub_le _ _
+      have hle : ((n - x * x : ℕ) : ℝ) ≤ (n : ℝ) := by
+        have : (n - x * x : ℕ) ≤ n := Nat.sub_le _ _
         exact_mod_cast this
       have := Real.rpow_le_rpow (by positivity) hle hε.le
       nlinarith
-  have hS : ((∑ a ∈ Finset.range (Nat.sqrt n + 1), (n - a * a).divisors.card : ℕ) : ℝ)
+  have hS : ((∑ x ∈ Finset.range (Nat.sqrt n + 1), (n - x * x).divisors.card : ℕ) : ℝ)
       ≤ ((Nat.sqrt n : ℝ) + 1) * (C0 * (n : ℝ) ^ ε) := by
     push_cast
-    calc ∑ a ∈ Finset.range (Nat.sqrt n + 1), (((n - a * a).divisors.card : ℕ) : ℝ)
-        ≤ ∑ _a ∈ Finset.range (Nat.sqrt n + 1), C0 * (n : ℝ) ^ ε :=
+    calc ∑ x ∈ Finset.range (Nat.sqrt n + 1), (((n - x * x).divisors.card : ℕ) : ℝ)
+        ≤ ∑ _x ∈ Finset.range (Nat.sqrt n + 1), C0 * (n : ℝ) ^ ε :=
           Finset.sum_le_sum hterm
       _ = ((Nat.sqrt n : ℝ) + 1) * (C0 * (n : ℝ) ^ ε) := by
           rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
@@ -572,7 +572,7 @@ theorem sum_diag_isBigO {ε : ℝ} (hε : 0 < ε) :
   have hnat := sum_diag_le hn
   have hcast : ((∑ q ∈ (quadruplesQ n).filter (fun q => q.1 = q.2.1), q.1 : ℕ) : ℝ)
       ≤ (Nat.sqrt n : ℝ)
-        * ((∑ a ∈ Finset.range (Nat.sqrt n + 1), (n - a * a).divisors.card : ℕ) : ℝ) := by
+        * ((∑ x ∈ Finset.range (Nat.sqrt n + 1), (n - x * x).divisors.card : ℕ) : ℝ) := by
     exact_mod_cast hnat
   -- `√n · (√n + 1) ≤ 2n`
   have hsq1 : (Nat.sqrt n : ℝ) * (Nat.sqrt n : ℝ) ≤ (n : ℝ) := by
@@ -587,7 +587,7 @@ theorem sum_diag_isBigO {ε : ℝ} (hε : 0 < ε) :
     rw [Real.rpow_add hn', Real.rpow_one]
   rw [hrpow]
   have hmid : (Nat.sqrt n : ℝ)
-      * ((∑ a ∈ Finset.range (Nat.sqrt n + 1), (n - a * a).divisors.card : ℕ) : ℝ)
+      * ((∑ x ∈ Finset.range (Nat.sqrt n + 1), (n - x * x).divisors.card : ℕ) : ℝ)
       ≤ (Nat.sqrt n : ℝ) * (((Nat.sqrt n : ℝ) + 1) * (C0 * (n : ℝ) ^ ε)) :=
     mul_le_mul_of_nonneg_left hS hsqnn
   nlinarith [hcast, hmid, hsq1, hsq2, hnε, hC0.le]
@@ -597,7 +597,7 @@ theorem sum_diag_isBigO {ε : ℝ} (hε : 0 < ε) :
 Classifying the symmetrised sum by `d = gcd(x,y)` turns the restriction
 `x' > x` into the paper's `x' > d·x`, since `x = d·x₁`. -/
 
-/-- The coprime quadruples of `m` with `b > d·a`. -/
+/-- The coprime quadruples of `m` with `x' > d·x`. -/
 def quadGT (m d : ℕ) : Finset (ℕ × ℕ × ℕ × ℕ) :=
   (quadruplesAll m).filter (fun q => d * q.1 < q.2.1)
 
@@ -695,7 +695,7 @@ theorem mem_gtTriples {m d x y y' : ℕ} :
         ∧ d * x * x < m - y * y' := by
   simp [gtTriples, Finset.mem_filter, mem_coprimeTriples]
 
-/-- **The `b`-elimination on the restricted set.** -/
+/-- **The `x'`-elimination on the restricted set.** -/
 theorem sum_quadGT_eq {m d : ℕ} (hm : 0 < m) :
     ∑ q ∈ quadGT m d, (d * q.1 + q.2.1)
       = ∑ t ∈ gtTriples m d, (d * t.1 + (m - t.2.1 * t.2.2) / t.1) := by
@@ -757,8 +757,8 @@ theorem Q_gt_tripleSum {n : ℕ} (hn : 0 < n) :
   have hd0 : 0 < d := Nat.pos_of_dvd_of_pos hdn hn
   exact sum_quadGT_eq (Nat.div_pos (Nat.le_of_dvd hn hdn) hd0)
 
-/-- **The key restriction.**  On `gtTriples m d` we have `d·a² < m`, so
-`a ≤ √(m/d)`.  This is what makes the error sum converge. -/
+/-- **The key restriction.**  On `gtTriples m d` we have `d·x² < m`, so
+`x ≤ √(m/d)`.  This is what makes the error sum converge. -/
 theorem gtTriples_sq_lt {m d x y y' : ℕ} (h : (x, y, y') ∈ gtTriples m d) :
     d * x * x < m := by
   obtain ⟨⟨⟨-, -, -, hx'1, hlt, -⟩, -⟩, hgt⟩ := mem_gtTriples.1 h
@@ -865,18 +865,18 @@ theorem gtTriples_decompose {m d : ℕ} (hm : 0 < m) (f : ℕ → ℕ → ℕ �
 real, so we record the real form. -/
 
 /-- The progression estimate, over `ℝ`. -/
-theorem sum_ap_sub_main_le_log_real {a : ℕ} (ha : 0 < a) (c : ℤ) (A B : ℝ) (T : ℕ) :
-    |(∑ b ∈ Finset.Ico 1 T, if (a : ℤ) ∣ ((b : ℤ) - c) then (A + B * b) else 0)
-        - (1 / (a : ℝ)) * ∑ b ∈ Finset.Ico 1 T, (A + B * b)|
-      ≤ (|A| + |B| * (T - 1 : ℕ)) * (1 + Real.log a) := by
-  have h := sum_ap_sub_main_le_log ha c (A : ℂ) (B : ℂ) T
-  have key : ((((∑ b ∈ Finset.Ico 1 T, if (a : ℤ) ∣ ((b : ℤ) - c) then (A + B * b) else 0)
-        - (1 / (a : ℝ)) * ∑ b ∈ Finset.Ico 1 T, (A + B * b) : ℝ)) : ℂ)
-      = (∑ b ∈ Finset.Ico 1 T, if (a : ℤ) ∣ ((b : ℤ) - c) then ((A : ℂ) + B * b) else 0)
-        - (1 / (a : ℂ)) * ∑ b ∈ Finset.Ico 1 T, ((A : ℂ) + B * b) := by
+theorem sum_ap_sub_main_le_log_real {x : ℕ} (hx : 0 < x) (c : ℤ) (A B : ℝ) (T : ℕ) :
+    |(∑ x' ∈ Finset.Ico 1 T, if (x : ℤ) ∣ ((x' : ℤ) - c) then (A + B * x') else 0)
+        - (1 / (x : ℝ)) * ∑ x' ∈ Finset.Ico 1 T, (A + B * x')|
+      ≤ (|A| + |B| * (T - 1 : ℕ)) * (1 + Real.log x) := by
+  have h := sum_ap_sub_main_le_log hx c (A : ℂ) (B : ℂ) T
+  have key : ((((∑ x' ∈ Finset.Ico 1 T, if (x : ℤ) ∣ ((x' : ℤ) - c) then (A + B * x') else 0)
+        - (1 / (x : ℝ)) * ∑ x' ∈ Finset.Ico 1 T, (A + B * x') : ℝ)) : ℂ)
+      = (∑ x' ∈ Finset.Ico 1 T, if (x : ℤ) ∣ ((x' : ℤ) - c) then ((A : ℂ) + B * x') else 0)
+        - (1 / (x : ℂ)) * ∑ x' ∈ Finset.Ico 1 T, ((A : ℂ) + B * x') := by
     push_cast
     congr 1
-    refine Finset.sum_congr rfl fun b _ => ?_
+    refine Finset.sum_congr rfl fun x' _ => ?_
     split <;> push_cast <;> ring
   rw [← key, Complex.norm_real] at h
   simpa using h
@@ -969,77 +969,77 @@ theorem sum_coprimePairs_filter {M : Type*} [AddCommMonoid M] {m d : ℕ} (g : �
     rfl
 
 /-- For each `x`, the number of admissible `y` is less than `x`. -/
-theorem card_coprimeSecond_lt {a : ℕ} (ha : 0 < a) :
-    (((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card : ℝ) ≤ (a : ℝ) := by
-  have h : ((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card ≤ a := by
-    calc ((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card
-        ≤ (Finset.Ico 1 a).card := Finset.card_filter_le _ _
-      _ = a - 1 := by simp
-      _ ≤ a := Nat.sub_le _ _
+theorem card_coprimeSecond_lt {x : ℕ} (hx : 0 < x) :
+    (((Finset.Ico 1 x).filter (fun y => Nat.gcd x y = 1)).card : ℝ) ≤ (x : ℝ) := by
+  have h : ((Finset.Ico 1 x).filter (fun y => Nat.gcd x y = 1)).card ≤ x := by
+    calc ((Finset.Ico 1 x).filter (fun y => Nat.gcd x y = 1)).card
+        ≤ (Finset.Ico 1 x).card := Finset.card_filter_le _ _
+      _ = x - 1 := by simp
+      _ ≤ x := Nat.sub_le _ _
   exact_mod_cast h
 
-/-- The admissible `a` are at most `√((m-1)/d)`. -/
+/-- The admissible `x` are at most `√((m-1)/d)`. -/
 theorem card_a_le {m d : ℕ} (hd : 0 < d) :
-    ((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card
+    ((Finset.range (m + 1)).filter (fun x => d * x * x < m)).card
       ≤ Nat.sqrt ((m - 1) / d) + 1 := by
-  have hsub : (Finset.range (m + 1)).filter (fun a => d * a * a < m)
+  have hsub : (Finset.range (m + 1)).filter (fun x => d * x * x < m)
       ⊆ Finset.range (Nat.sqrt ((m - 1) / d) + 1) := by
-    intro a ha
-    simp only [Finset.mem_filter, Finset.mem_range] at ha ⊢
-    obtain ⟨-, hda⟩ := ha
-    have h1 : a * a * d ≤ m - 1 := by
-      have heq : d * a * a = a * a * d := by ring
+    intro x hx
+    simp only [Finset.mem_filter, Finset.mem_range] at hx ⊢
+    obtain ⟨-, hda⟩ := hx
+    have h1 : x * x * d ≤ m - 1 := by
+      have heq : d * x * x = x * x * d := by ring
       omega
     exact Nat.lt_succ_of_le (Nat.le_sqrt.2 ((Nat.le_div_iff_mul_le hd).2 h1))
-  calc ((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card
+  calc ((Finset.range (m + 1)).filter (fun x => d * x * x < m)).card
       ≤ (Finset.range (Nat.sqrt ((m - 1) / d) + 1)).card := Finset.card_le_card hsub
     _ = Nat.sqrt ((m - 1) / d) + 1 := Finset.card_range _
 
 /-- **The middle layer.**  Summing the per-pair error bound over the coprime
-pairs gives `3m(1 + log m)` for each admissible `a`. -/
+pairs gives `3m(1 + log m)` for each admissible `x`. -/
 theorem middle_layer_bound {m d : ℕ} (hm : 0 < m) :
     ∑ p ∈ (coprimePairs m).filter (fun p => d * p.1 * p.1 < m),
         (((d * p.1 : ℕ) : ℝ) + 2 * (m : ℝ) / p.1) * (1 + Real.log m)
-      ≤ (((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card : ℝ)
+      ≤ (((Finset.range (m + 1)).filter (fun x => d * x * x < m)).card : ℝ)
           * (3 * (m : ℝ) * (1 + Real.log m)) := by
   have hm' : (1 : ℝ) ≤ (m : ℝ) := by exact_mod_cast hm
   have hlog : (0 : ℝ) ≤ 1 + Real.log m := by
     have := Real.log_nonneg hm'
     linarith
   rw [sum_coprimePairs_filter (m := m) (d := d)
-    (g := fun a _ => (((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a) * (1 + Real.log m))]
-  calc ∑ a ∈ (Finset.range (m + 1)).filter (fun a => d * a * a < m),
-        ∑ _y ∈ (Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1),
-          (((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a) * (1 + Real.log m)
-      ≤ ∑ _a ∈ (Finset.range (m + 1)).filter (fun a => d * a * a < m),
+    (g := fun x _ => (((d * x : ℕ) : ℝ) + 2 * (m : ℝ) / x) * (1 + Real.log m))]
+  calc ∑ x ∈ (Finset.range (m + 1)).filter (fun x => d * x * x < m),
+        ∑ _y ∈ (Finset.Ico 1 x).filter (fun y => Nat.gcd x y = 1),
+          (((d * x : ℕ) : ℝ) + 2 * (m : ℝ) / x) * (1 + Real.log m)
+      ≤ ∑ _x ∈ (Finset.range (m + 1)).filter (fun x => d * x * x < m),
           3 * (m : ℝ) * (1 + Real.log m) := by
-        refine Finset.sum_le_sum fun a ha => ?_
-        simp only [Finset.mem_filter, Finset.mem_range] at ha
-        obtain ⟨ham, hda⟩ := ha
-        rcases Nat.eq_zero_or_pos a with h0 | h0
+        refine Finset.sum_le_sum fun x hx => ?_
+        simp only [Finset.mem_filter, Finset.mem_range] at hx
+        obtain ⟨ham, hda⟩ := hx
+        rcases Nat.eq_zero_or_pos x with h0 | h0
         · subst h0
           simp
           positivity
         · have hcard := card_coprimeSecond_lt h0
-          have ha1 : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast h0
-          have hane : (a : ℝ) ≠ 0 := by linarith
-          have hdle : (d : ℝ) * a * a ≤ (m : ℝ) := by
-            have h2 : d * a * a ≤ m := hda.le
+          have hx1 : (1 : ℝ) ≤ (x : ℝ) := by exact_mod_cast h0
+          have hane : (x : ℝ) ≠ 0 := by linarith
+          have hdle : (d : ℝ) * x * x ≤ (m : ℝ) := by
+            have h2 : d * x * x ≤ m := hda.le
             exact_mod_cast h2
-          calc ∑ _y ∈ (Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1),
-                (((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a) * (1 + Real.log m)
-              = ((((Finset.Ico 1 a).filter (fun x => Nat.gcd a x = 1)).card : ℝ))
-                  * ((((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a) * (1 + Real.log m)) := by
+          calc ∑ _y ∈ (Finset.Ico 1 x).filter (fun y => Nat.gcd x y = 1),
+                (((d * x : ℕ) : ℝ) + 2 * (m : ℝ) / x) * (1 + Real.log m)
+              = ((((Finset.Ico 1 x).filter (fun y => Nat.gcd x y = 1)).card : ℝ))
+                  * ((((d * x : ℕ) : ℝ) + 2 * (m : ℝ) / x) * (1 + Real.log m)) := by
                 rw [Finset.sum_const, nsmul_eq_mul]
-            _ ≤ (a : ℝ) * ((((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a) * (1 + Real.log m)) := by
+            _ ≤ (x : ℝ) * ((((d * x : ℕ) : ℝ) + 2 * (m : ℝ) / x) * (1 + Real.log m)) := by
                 refine mul_le_mul_of_nonneg_right hcard ?_
-                have hnn : (0 : ℝ) ≤ ((d * a : ℕ) : ℝ) + 2 * (m : ℝ) / a := by positivity
+                have hnn : (0 : ℝ) ≤ ((d * x : ℕ) : ℝ) + 2 * (m : ℝ) / x := by positivity
                 exact mul_nonneg hnn hlog
-            _ = ((d : ℝ) * a * a + 2 * (m : ℝ)) * (1 + Real.log m) := by
+            _ = ((d : ℝ) * x * x + 2 * (m : ℝ)) * (1 + Real.log m) := by
                 push_cast
                 field_simp
             _ ≤ 3 * (m : ℝ) * (1 + Real.log m) := by nlinarith
-    _ = (((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card : ℝ)
+    _ = (((Finset.range (m + 1)).filter (fun x => d * x * x < m)).card : ℝ)
           * (3 * (m : ℝ) * (1 + Real.log m)) := by
         rw [Finset.sum_const, nsmul_eq_mul]
 
@@ -1056,7 +1056,7 @@ theorem middle_layer {m d : ℕ} (hm : 0 < m) (hd : 0 < d) :
   refine (middle_layer_bound hm).trans ?_
   refine mul_le_mul_of_nonneg_right ?_ (by positivity)
   have h := card_a_le (m := m) hd
-  have : (((Finset.range (m + 1)).filter (fun a => d * a * a < m)).card : ℝ)
+  have : (((Finset.range (m + 1)).filter (fun x => d * x * x < m)).card : ℝ)
       ≤ ((Nat.sqrt ((m - 1) / d) + 1 : ℕ) : ℝ) := by exact_mod_cast h
   push_cast at this
   linarith
@@ -1220,8 +1220,8 @@ theorem gtTriples_bulk_small (m d : ℕ) (f : ℕ → ℕ → ℕ → ℕ) :
             f t.1 t.2.1 t.2.2 :=
   (Finset.sum_filter_add_sum_filter_not _ _ _).symm
 
-/-- **On the small branch, `2·d·a² > m`.**  This is the paper's observation that
-`2a²` is bounded below by `m/d`, which is what makes the small part small. -/
+/-- **On the small branch, `2·d·x² > m`.**  This is the paper's observation that
+`2x²` is bounded below by `m/d`, which is what makes the small part small. -/
 theorem small_two_mul_gt {m d x y y' : ℕ} (h : (x, y, y') ∈ gtTriples m d)
     (hsmall : m < d * x * (x + y)) : m < 2 * (d * x * x) := by
   obtain ⟨⟨⟨-, -, hx2, -, -, -⟩, -⟩, -⟩ := mem_gtTriples.1 h
@@ -1235,28 +1235,28 @@ them.  This factor of `1/x` is what makes the small part `O(m^{3/2})`: without
 it a crude count would be too large by exactly that factor. -/
 
 /-- **Counting a residue class in an interval.** -/
-theorem card_mod_filter_le {a U c : ℕ} (ha : 0 < a) :
-    (((Finset.Ico 1 U).filter (fun b => b % a = c)).card) ≤ U / a + 1 := by
+theorem card_mod_filter_le {x U c : ℕ} (hx : 0 < x) :
+    (((Finset.Ico 1 U).filter (fun x' => x' % x = c)).card) ≤ U / x + 1 := by
   classical
-  have hmap : ∀ b ∈ (Finset.Ico 1 U).filter (fun b => b % a = c),
-      b / a ∈ Finset.range (U / a + 1) := by
-    intro b hb
-    simp only [Finset.mem_filter, Finset.mem_Ico] at hb
+  have hmap : ∀ x' ∈ (Finset.Ico 1 U).filter (fun x' => x' % x = c),
+      x' / x ∈ Finset.range (U / x + 1) := by
+    intro x' hx'
+    simp only [Finset.mem_filter, Finset.mem_Ico] at hx'
     simp only [Finset.mem_range, Nat.lt_succ_iff]
     exact Nat.div_le_div_right (by omega)
-  have hinj : ∀ b₁ ∈ (Finset.Ico 1 U).filter (fun b => b % a = c),
-      ∀ b₂ ∈ (Finset.Ico 1 U).filter (fun b => b % a = c), b₁ / a = b₂ / a → b₁ = b₂ := by
-    intro b₁ h₁ b₂ h₂ heq
+  have hinj : ∀ x'₁ ∈ (Finset.Ico 1 U).filter (fun x' => x' % x = c),
+      ∀ x'₂ ∈ (Finset.Ico 1 U).filter (fun x' => x' % x = c), x'₁ / x = x'₂ / x → x'₁ = x'₂ := by
+    intro x'₁ h₁ x'₂ h₂ heq
     simp only [Finset.mem_filter] at h₁ h₂
-    have e₁ := Nat.div_add_mod b₁ a
-    have e₂ := Nat.div_add_mod b₂ a
+    have e₁ := Nat.div_add_mod x'₁ x
+    have e₂ := Nat.div_add_mod x'₂ x
     rw [h₁.2] at e₁
     rw [h₂.2] at e₂
     rw [heq] at e₁
     omega
-  calc (((Finset.Ico 1 U).filter (fun b => b % a = c)).card)
-      ≤ (Finset.range (U / a + 1)).card := Finset.card_le_card_of_injOn _ hmap hinj
-    _ = U / a + 1 := Finset.card_range _
+  calc (((Finset.Ico 1 U).filter (fun x' => x' % x = c)).card)
+      ≤ (Finset.range (U / x + 1)).card := Finset.card_le_card_of_injOn _ hmap hinj
+    _ = U / x + 1 := Finset.card_range _
 
 /-- **The divisibility condition confines `y'` to one residue class.** -/
 theorem card_dvd_filter_le {m x y U : ℕ} (hx : 0 < x) (hgcd : Nat.gcd x y = 1)
@@ -1417,9 +1417,9 @@ d·m/(x+y)  +  m²·[ 1/(x²(x+y)) - y/(2x²(x+y)²) ]  =  d·m/(x+y)  +  m²·c
 by `cTerm_summand_eq`.  Summing over all coprime pairs gives `m²·C`, and over
 `d ∣ n` with `m = n/d` gives `C·n²·∑_{d∣n} 1/d²` — Lemma 19. -/
 
-/-- **The closed form of the main term.**  `∑_{1 ≤ b < U} (A + B·b)`. -/
+/-- **The closed form of the main term.**  `∑_{1 ≤ x' < U} (A + B·x')`. -/
 theorem sum_linear_Ico (A B : ℝ) : ∀ U : ℕ, 1 ≤ U →
-    ∑ b ∈ Finset.Ico 1 U, (A + B * (b : ℝ))
+    ∑ x' ∈ Finset.Ico 1 U, (A + B * (x' : ℝ))
       = A * ((U : ℝ) - 1) + B * (((U : ℝ) - 1) * (U : ℝ) / 2) := by
   intro U hU
   induction U, hU using Nat.le_induction with
@@ -1436,13 +1436,13 @@ theorem excluded_pair_large {m d x y : ℕ} (hy : 1 ≤ y) (haa : y < x)
     (h : m < d * x * (x + y)) : m < 2 * d * (x * x) := by
   nlinarith
 
-/-- **Pairs with small `a` lie in the bulk.**  The contrapositive of
+/-- **Pairs with small `x` lie in the bulk.**  The contrapositive of
 `excluded_pair_large`. -/
 theorem bulk_of_small_a {m d x y : ℕ} (hy : 1 ≤ y) (haa : y < x)
     (h : 2 * d * (x * x) ≤ m) : d * x * (x + y) ≤ m := by
   nlinarith
 
-/-- The cut-off `N = √(m/(2d))` puts every pair with `a ≤ N` in the bulk. -/
+/-- The cut-off `N = √(m/(2d))` puts every pair with `x ≤ N` in the bulk. -/
 theorem bulk_of_le_sqrt {m d x y : ℕ} (hy : 1 ≤ y) (haa : y < x)
     (hx : x ≤ Nat.sqrt (m / (2 * d))) (hd : 0 < d) : d * x * (x + y) ≤ m := by
   refine bulk_of_small_a hy haa ?_
@@ -1520,8 +1520,8 @@ theorem main_term_vs_sum (A B V : ℝ) (K : ℕ) (hK : (K : ℝ) ≤ V) (hK1 : V
     _ = |A| * |V - (K : ℝ)| + |B| / 2 * |V ^ 2 - (K : ℝ) ^ 2 - (K : ℝ)| := by
         rw [abs_mul, abs_mul, abs_div, abs_two]
     _ ≤ |A| * 1 + |B| / 2 * (2 * V) := by
-        have ha := abs_nonneg A
-        have hb : (0 : ℝ) ≤ |B| / 2 := by positivity
+        have hx := abs_nonneg A
+        have hx' : (0 : ℝ) ≤ |B| / 2 := by positivity
         nlinarith
     _ = |A| + |B| * V := by ring
 

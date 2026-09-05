@@ -35,7 +35,7 @@ theorem cTerm_nonneg (p : ℕ × ℕ) : 0 ≤ cTerm p := by
   · positivity
   · exact le_refl 0
 
-/-- **Termwise bound.**  Each term is at most `3 / (2a³)`. -/
+/-- **Termwise bound.**  Each term is at most `3 / (2x³)`. -/
 theorem cTerm_le (p : ℕ × ℕ) : cTerm p ≤ 3 / (2 * (p.1 : ℝ) ^ 3) := by
   unfold cTerm
   split
@@ -105,7 +105,7 @@ theorem cConst_nonneg : 0 ≤ cConst :=
 
 /-- **The constant `D = 1 + 4C`** of Theorem A and Theorem 14.
 
-Numerically, truncating the series for `C` at `a ≤ 20000` gives
+Numerically, truncating the series for `C` at `x ≤ 20000` gives
 `C ≈ 0.21138` and `D ≈ 1.8455`, consistent with the paper's `D ≈ 1.85`.
 (The tail is `O(1/N)`, so the truncation converges slowly.) -/
 noncomputable def dConst : ℝ := 1 + 4 * cConst
@@ -157,12 +157,12 @@ theorem cConst_eq_tsum_finRows : cConst = ∑' x : ℕ, ∑ y ∈ Finset.range x
 
 /-! ## The tail bound
 
-`∑_{a > N} 1/a² ≤ 1/N`, by telescoping against `1/(a-1) - 1/a`.  Mathlib has the
+`∑_{x > N} 1/x² ≤ 1/N`, by telescoping against `1/(x-1) - 1/x`.  Mathlib has the
 summability of the `p`-series but no tail estimate, so this is proved here. -/
 
-/-- Telescoping: `∑_{N < a ≤ M} 1/a² ≤ 1/N - 1/M`. -/
+/-- Telescoping: `∑_{N < x ≤ M} 1/x² ≤ 1/N - 1/M`. -/
 theorem sum_inv_sq_Ioc_le {N : ℕ} (hN : 0 < N) :
-    ∀ M, N ≤ M → ∑ a ∈ Finset.Ioc N M, 1 / ((a : ℝ) ^ 2) ≤ 1 / (N : ℝ) - 1 / (M : ℝ) := by
+    ∀ M, N ≤ M → ∑ x ∈ Finset.Ioc N M, 1 / ((x : ℝ) ^ 2) ≤ 1 / (N : ℝ) - 1 / (M : ℝ) := by
   intro M hNM
   induction M, hNM using Nat.le_induction with
   | base => simp
@@ -180,18 +180,18 @@ theorem sum_inv_sq_Ioc_le {N : ℕ} (hN : 0 < N) :
       nlinarith
     linarith
 
-/-- For any finite set of integers beyond `N`, the sum of `1/a²` is at most `1/N`. -/
-theorem sum_inv_sq_tail_le {N : ℕ} (hN : 0 < N) (s : Finset ℕ) (hs : ∀ a ∈ s, N < a) :
-    ∑ a ∈ s, 1 / ((a : ℝ) ^ 2) ≤ 1 / (N : ℝ) := by
+/-- For any finite set of integers beyond `N`, the sum of `1/x²` is at most `1/N`. -/
+theorem sum_inv_sq_tail_le {N : ℕ} (hN : 0 < N) (s : Finset ℕ) (hs : ∀ x ∈ s, N < x) :
+    ∑ x ∈ s, 1 / ((x : ℝ) ^ 2) ≤ 1 / (N : ℝ) := by
   rcases s.eq_empty_or_nonempty with rfl | hne
   · simp
   · have hM : N ≤ s.max' hne := le_of_lt (hs _ (s.max'_mem hne))
     have hsub : s ⊆ Finset.Ioc N (s.max' hne) := by
-      intro a ha
+      intro x hx
       simp only [Finset.mem_Ioc]
-      exact ⟨hs a ha, Finset.le_max' s a ha⟩
-    calc ∑ a ∈ s, 1 / ((a : ℝ) ^ 2)
-        ≤ ∑ a ∈ Finset.Ioc N (s.max' hne), 1 / ((a : ℝ) ^ 2) :=
+      exact ⟨hs x hx, Finset.le_max' s x hx⟩
+    calc ∑ x ∈ s, 1 / ((x : ℝ) ^ 2)
+        ≤ ∑ x ∈ Finset.Ioc N (s.max' hne), 1 / ((x : ℝ) ^ 2) :=
           Finset.sum_le_sum_of_subset_of_nonneg hsub (fun _ _ _ => by positivity)
       _ ≤ 1 / (N : ℝ) - 1 / ((s.max' hne : ℕ) : ℝ) := sum_inv_sq_Ioc_le hN _ hM
       _ ≤ 1 / (N : ℝ) := by
@@ -210,7 +210,7 @@ theorem cRow_summable : Summable (fun x : ℕ => ∑ y ∈ Finset.range x, cTerm
   refine Summable.of_nonneg_of_le (fun x => ?_) cTerm_row_le hg
   exact Finset.sum_nonneg fun y _ => cTerm_nonneg _
 
-/-- **The tail bound for `C`.**  Truncating the series at `a ≤ N` loses at most
+/-- **The tail bound for `C`.**  Truncating the series at `x ≤ N` loses at most
 `3/(2N)`. -/
 theorem cConst_le_partial_add {N : ℕ} (hN : 0 < N) :
     cConst ≤ (∑ x ∈ Finset.range (N + 1), ∑ y ∈ Finset.range x, cTerm (x, y))
@@ -253,7 +253,7 @@ theorem cConst_le_partial_add {N : ℕ} (hN : 0 < N) :
   linarith
 
 /-- **The truncation bound.**  Restricting the series for `C` to the bulk pairs
-loses at most `3/(2N)`, provided every pair with `a ≤ N` lies in the bulk. -/
+loses at most `3/(2N)`, provided every pair with `x ≤ N` lies in the bulk. -/
 theorem cConst_le_bulk_add {m d N : ℕ} (hN : 0 < N)
     (hbulk : ∀ x y, x ≤ N → 1 ≤ y → y < x → d * x * (x + y) ≤ m) :
     cConst ≤ (∑ x ∈ Finset.range (N + 1), ∑ y ∈ Finset.range x,
@@ -362,7 +362,7 @@ theorem double_sum_eq_pairs {N : ℕ} (f : ℕ → ℕ → ℝ) :
   · rintro ⟨x, y⟩ _; rfl
   · rintro ⟨x, y⟩ _; rfl
 
-/-- **The reconciliation.**  The double sum over `a ≤ N` is at most the sum over
+/-- **The reconciliation.**  The double sum over `x ≤ N` is at most the sum over
 the bulk pairs. -/
 theorem bulk_double_le_pairs {m d N : ℕ} (hd : 0 < d) :
     ∑ x ∈ Finset.range (N + 1), ∑ y ∈ Finset.range x,

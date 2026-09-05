@@ -67,8 +67,8 @@ theorem sum_inv_sq_shift_le {x : ℕ} (hx : 0 < x) :
     nlinarith
   linarith
 
-/-- **The reflection bound.**  `∑_{j=1}^{a-1} 1/(a+j) ≤ 3/4`, from
-`1/(a+j) + 1/(2a-j) ≤ 3a/((a+1)(2a-1))`. -/
+/-- **The reflection bound.**  `∑_{j=1}^{x-1} 1/(x+j) ≤ 3/4`, from
+`1/(x+j) + 1/(2x-j) ≤ 3x/((x+1)(2x-1))`. -/
 theorem sum_inv_shift_le (x : ℕ) :
     ∑ y ∈ Finset.Ico 1 x, 1 / ((x : ℝ) + (y : ℝ)) ≤ 3 / 4 := by
   rcases Nat.lt_or_ge x 2 with hx | hx
@@ -191,7 +191,7 @@ theorem gTerm_eq_tsum_finRows :
   rw [gTerm_summable.tsum_prod]
   exact tsum_congr fun x => tsum_eq_sum (gTerm_row_support x)
 
-/-- **Truncating the all-pairs sum at `a ≤ N` loses at most `5/(8N)`.** -/
+/-- **Truncating the all-pairs sum at `x ≤ N` loses at most `5/(8N)`.** -/
 theorem tsum_gTerm_le_partial {N : ℕ} (hN : 0 < N) :
     ∑' p, gTerm p
       ≤ (∑ x ∈ Finset.range (N + 1), ∑ y ∈ Finset.range x, gTerm (x, y))
@@ -237,7 +237,7 @@ theorem tsum_gTerm_le_partial {N : ℕ} (hN : 0 < N) :
 
 set_option maxHeartbeats 10000000 in
 -- 1770 rational terms; about 40 seconds.
-/-- The all-pairs sum truncated at `a ≤ 60`. -/
+/-- The all-pairs sum truncated at `x ≤ 60`. -/
 theorem gTerm_partial_le :
     (∑ x ∈ Finset.range 61, ∑ y ∈ Finset.range x, gTerm (x, y)) ≤ 2447 / 10000 := by
   norm_num [gTerm, Finset.sum_range_succ]
@@ -275,108 +275,108 @@ theorem dConst_le_185 : dConst ≤ 1.85 := by
 
 /-! ## Lower bounds for the row sums
 
-The same reflection `j ↦ a-j`, now bounding the products from *above*:
-`(a+j)(2a-j) ≤ (9/4)a²`, because the difference is `(j - a/2)²`.  That gives
-`1/(a+j) + 1/(2a-j) ≥ 4/(3a)` and, with `1/x² + 1/y² ≥ 2/(xy)`,
-`1/(a+j)² + 1/(2a-j)² ≥ 8/(9a²)`. -/
+The same reflection `j ↦ x-j`, now bounding the products from *above*:
+`(x+j)(2x-j) ≤ (9/4)x²`, because the difference is `(j - x/2)²`.  That gives
+`1/(x+j) + 1/(2x-j) ≥ 4/(3x)` and, with `1/x² + 1/y² ≥ 2/(xy)`,
+`1/(x+j)² + 1/(2x-j)² ≥ 8/(9x²)`. -/
 
-theorem sum_shift_reflect (a : ℕ) (f : ℝ → ℝ) :
-    ∑ j ∈ Finset.Ico 1 a, f ((a : ℝ) + (j : ℝ))
-      = ∑ j ∈ Finset.Ico 1 a, f (2 * (a : ℝ) - (j : ℝ)) := by
-  refine Finset.sum_bij' (i := fun j _ => a - j) (j := fun j _ => a - j) ?_ ?_ ?_ ?_ ?_
+theorem sum_shift_reflect (x : ℕ) (f : ℝ → ℝ) :
+    ∑ j ∈ Finset.Ico 1 x, f ((x : ℝ) + (j : ℝ))
+      = ∑ j ∈ Finset.Ico 1 x, f (2 * (x : ℝ) - (j : ℝ)) := by
+  refine Finset.sum_bij' (i := fun j _ => x - j) (j := fun j _ => x - j) ?_ ?_ ?_ ?_ ?_
   · intro j h; rw [Finset.mem_Ico] at h ⊢; omega
   · intro j h; rw [Finset.mem_Ico] at h ⊢; omega
   · intro j h; rw [Finset.mem_Ico] at h; omega
   · intro j h; rw [Finset.mem_Ico] at h; omega
   · intro j h
     rw [Finset.mem_Ico] at h
-    have hcast : ((a - j : ℕ) : ℝ) = (a : ℝ) - (j : ℝ) := by
-      push_cast [Nat.cast_sub (by omega : j ≤ a)]
+    have hcast : ((x - j : ℕ) : ℝ) = (x : ℝ) - (j : ℝ) := by
+      push_cast [Nat.cast_sub (by omega : j ≤ x)]
       ring
     rw [hcast]
     congr 1
     ring
 
-theorem prod_shift_le {a : ℕ} {j : ℕ} :
-    ((a : ℝ) + (j : ℝ)) * (2 * (a : ℝ) - (j : ℝ)) ≤ 9 / 4 * (a : ℝ) ^ 2 := by
-  nlinarith [sq_nonneg ((j : ℝ) - (a : ℝ) / 2)]
+theorem prod_shift_le {x : ℕ} {j : ℕ} :
+    ((x : ℝ) + (j : ℝ)) * (2 * (x : ℝ) - (j : ℝ)) ≤ 9 / 4 * (x : ℝ) ^ 2 := by
+  nlinarith [sq_nonneg ((j : ℝ) - (x : ℝ) / 2)]
 
-theorem sum_inv_shift_ge {a : ℕ} (ha : 1 ≤ a) :
-    2 * ((a : ℝ) - 1) / (3 * (a : ℝ)) ≤ ∑ j ∈ Finset.Ico 1 a, 1 / ((a : ℝ) + (j : ℝ)) := by
-  have haR : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast ha
-  have hpair : ∀ j ∈ Finset.Ico 1 a,
-      4 / (3 * (a : ℝ)) ≤ 1 / ((a : ℝ) + (j : ℝ)) + 1 / (2 * (a : ℝ) - (j : ℝ)) := by
+theorem sum_inv_shift_ge {x : ℕ} (hx : 1 ≤ x) :
+    2 * ((x : ℝ) - 1) / (3 * (x : ℝ)) ≤ ∑ j ∈ Finset.Ico 1 x, 1 / ((x : ℝ) + (j : ℝ)) := by
+  have haR : (1 : ℝ) ≤ (x : ℝ) := by exact_mod_cast hx
+  have hpair : ∀ j ∈ Finset.Ico 1 x,
+      4 / (3 * (x : ℝ)) ≤ 1 / ((x : ℝ) + (j : ℝ)) + 1 / (2 * (x : ℝ) - (j : ℝ)) := by
     intro j h
     rw [Finset.mem_Ico] at h
     have hj1 : (1 : ℝ) ≤ (j : ℝ) := by exact_mod_cast h.1
-    have hja : (j : ℝ) < (a : ℝ) := by exact_mod_cast h.2
-    have hd1 : (0 : ℝ) < (a : ℝ) + (j : ℝ) := by linarith
-    have hd2 : (0 : ℝ) < 2 * (a : ℝ) - (j : ℝ) := by linarith
+    have hja : (j : ℝ) < (x : ℝ) := by exact_mod_cast h.2
+    have hd1 : (0 : ℝ) < (x : ℝ) + (j : ℝ) := by linarith
+    have hd2 : (0 : ℝ) < 2 * (x : ℝ) - (j : ℝ) := by linarith
     rw [div_add_div _ _ (ne_of_gt hd1) (ne_of_gt hd2), div_le_div_iff₀ (by positivity)
       (by positivity)]
-    nlinarith [prod_shift_le (a := a) (j := j), hd1, hd2]
-  have hdouble : (∑ j ∈ Finset.Ico 1 a, 1 / ((a : ℝ) + (j : ℝ)))
-      + ∑ j ∈ Finset.Ico 1 a, 1 / (2 * (a : ℝ) - (j : ℝ))
-      ≥ ((a : ℝ) - 1) * (4 / (3 * (a : ℝ))) := by
+    nlinarith [prod_shift_le (x := x) (j := j), hd1, hd2]
+  have hdouble : (∑ j ∈ Finset.Ico 1 x, 1 / ((x : ℝ) + (j : ℝ)))
+      + ∑ j ∈ Finset.Ico 1 x, 1 / (2 * (x : ℝ) - (j : ℝ))
+      ≥ ((x : ℝ) - 1) * (4 / (3 * (x : ℝ))) := by
     rw [← Finset.sum_add_distrib]
-    have hcard : ((a - 1 : ℕ) : ℝ) = (a : ℝ) - 1 := by
-      push_cast [Nat.cast_sub ha]
+    have hcard : ((x - 1 : ℕ) : ℝ) = (x : ℝ) - 1 := by
+      push_cast [Nat.cast_sub hx]
       ring
-    calc ((a : ℝ) - 1) * (4 / (3 * (a : ℝ)))
-        = ∑ _j ∈ Finset.Ico 1 a, 4 / (3 * (a : ℝ)) := by
+    calc ((x : ℝ) - 1) * (4 / (3 * (x : ℝ)))
+        = ∑ _j ∈ Finset.Ico 1 x, 4 / (3 * (x : ℝ)) := by
           rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul, hcard]
-      _ ≤ ∑ j ∈ Finset.Ico 1 a, (1 / ((a : ℝ) + (j : ℝ)) + 1 / (2 * (a : ℝ) - (j : ℝ))) :=
+      _ ≤ ∑ j ∈ Finset.Ico 1 x, (1 / ((x : ℝ) + (j : ℝ)) + 1 / (2 * (x : ℝ) - (j : ℝ))) :=
           Finset.sum_le_sum hpair
-  rw [← sum_shift_reflect a (fun x => 1 / x)] at hdouble
-  have ha0 : (0 : ℝ) < (a : ℝ) := by linarith
-  have hrw : ((a : ℝ) - 1) * (4 / (3 * (a : ℝ))) = 2 * (2 * ((a : ℝ) - 1) / (3 * (a : ℝ))) := by
+  rw [← sum_shift_reflect x (fun t => 1 / t)] at hdouble
+  have hx0 : (0 : ℝ) < (x : ℝ) := by linarith
+  have hrw : ((x : ℝ) - 1) * (4 / (3 * (x : ℝ))) = 2 * (2 * ((x : ℝ) - 1) / (3 * (x : ℝ))) := by
     field_simp
     ring
   rw [hrw] at hdouble
   linarith
 
-theorem sum_inv_sq_shift_ge {a : ℕ} (ha : 1 ≤ a) :
-    4 * ((a : ℝ) - 1) / (9 * (a : ℝ) ^ 2)
-      ≤ ∑ j ∈ Finset.Ico 1 a, 1 / ((a : ℝ) + (j : ℝ)) ^ 2 := by
-  have haR : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast ha
-  have hpair : ∀ j ∈ Finset.Ico 1 a,
-      8 / (9 * (a : ℝ) ^ 2)
-        ≤ 1 / ((a : ℝ) + (j : ℝ)) ^ 2 + 1 / (2 * (a : ℝ) - (j : ℝ)) ^ 2 := by
+theorem sum_inv_sq_shift_ge {x : ℕ} (hx : 1 ≤ x) :
+    4 * ((x : ℝ) - 1) / (9 * (x : ℝ) ^ 2)
+      ≤ ∑ j ∈ Finset.Ico 1 x, 1 / ((x : ℝ) + (j : ℝ)) ^ 2 := by
+  have haR : (1 : ℝ) ≤ (x : ℝ) := by exact_mod_cast hx
+  have hpair : ∀ j ∈ Finset.Ico 1 x,
+      8 / (9 * (x : ℝ) ^ 2)
+        ≤ 1 / ((x : ℝ) + (j : ℝ)) ^ 2 + 1 / (2 * (x : ℝ) - (j : ℝ)) ^ 2 := by
     intro j h
     rw [Finset.mem_Ico] at h
     have hj1 : (1 : ℝ) ≤ (j : ℝ) := by exact_mod_cast h.1
-    have hja : (j : ℝ) < (a : ℝ) := by exact_mod_cast h.2
-    have hd1 : (0 : ℝ) < (a : ℝ) + (j : ℝ) := by linarith
-    have hd2 : (0 : ℝ) < 2 * (a : ℝ) - (j : ℝ) := by linarith
-    have hprod := prod_shift_le (a := a) (j := j)
-    have hamgm : 2 / (((a : ℝ) + (j : ℝ)) * (2 * (a : ℝ) - (j : ℝ)))
-        ≤ 1 / ((a : ℝ) + (j : ℝ)) ^ 2 + 1 / (2 * (a : ℝ) - (j : ℝ)) ^ 2 := by
+    have hja : (j : ℝ) < (x : ℝ) := by exact_mod_cast h.2
+    have hd1 : (0 : ℝ) < (x : ℝ) + (j : ℝ) := by linarith
+    have hd2 : (0 : ℝ) < 2 * (x : ℝ) - (j : ℝ) := by linarith
+    have hprod := prod_shift_le (x := x) (j := j)
+    have hamgm : 2 / (((x : ℝ) + (j : ℝ)) * (2 * (x : ℝ) - (j : ℝ)))
+        ≤ 1 / ((x : ℝ) + (j : ℝ)) ^ 2 + 1 / (2 * (x : ℝ) - (j : ℝ)) ^ 2 := by
       rw [div_add_div _ _ (by positivity) (by positivity), div_le_div_iff₀ (by positivity)
         (by positivity)]
       nlinarith [mul_nonneg (mul_pos hd1 hd2).le
-        (sq_nonneg (((a : ℝ) + (j : ℝ)) - (2 * (a : ℝ) - (j : ℝ))))]
-    have hstep : 8 / (9 * (a : ℝ) ^ 2)
-        ≤ 2 / (((a : ℝ) + (j : ℝ)) * (2 * (a : ℝ) - (j : ℝ))) := by
+        (sq_nonneg (((x : ℝ) + (j : ℝ)) - (2 * (x : ℝ) - (j : ℝ))))]
+    have hstep : 8 / (9 * (x : ℝ) ^ 2)
+        ≤ 2 / (((x : ℝ) + (j : ℝ)) * (2 * (x : ℝ) - (j : ℝ))) := by
       rw [div_le_div_iff₀ (by positivity) (by positivity)]
       nlinarith [hprod]
     linarith
-  have hdouble : (∑ j ∈ Finset.Ico 1 a, 1 / ((a : ℝ) + (j : ℝ)) ^ 2)
-      + ∑ j ∈ Finset.Ico 1 a, 1 / (2 * (a : ℝ) - (j : ℝ)) ^ 2
-      ≥ ((a : ℝ) - 1) * (8 / (9 * (a : ℝ) ^ 2)) := by
+  have hdouble : (∑ j ∈ Finset.Ico 1 x, 1 / ((x : ℝ) + (j : ℝ)) ^ 2)
+      + ∑ j ∈ Finset.Ico 1 x, 1 / (2 * (x : ℝ) - (j : ℝ)) ^ 2
+      ≥ ((x : ℝ) - 1) * (8 / (9 * (x : ℝ) ^ 2)) := by
     rw [← Finset.sum_add_distrib]
-    have hcard : ((a - 1 : ℕ) : ℝ) = (a : ℝ) - 1 := by
-      push_cast [Nat.cast_sub ha]
+    have hcard : ((x - 1 : ℕ) : ℝ) = (x : ℝ) - 1 := by
+      push_cast [Nat.cast_sub hx]
       ring
-    calc ((a : ℝ) - 1) * (8 / (9 * (a : ℝ) ^ 2))
-        = ∑ _j ∈ Finset.Ico 1 a, 8 / (9 * (a : ℝ) ^ 2) := by
+    calc ((x : ℝ) - 1) * (8 / (9 * (x : ℝ) ^ 2))
+        = ∑ _j ∈ Finset.Ico 1 x, 8 / (9 * (x : ℝ) ^ 2) := by
           rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul, hcard]
-      _ ≤ ∑ j ∈ Finset.Ico 1 a,
-            (1 / ((a : ℝ) + (j : ℝ)) ^ 2 + 1 / (2 * (a : ℝ) - (j : ℝ)) ^ 2) :=
+      _ ≤ ∑ j ∈ Finset.Ico 1 x,
+            (1 / ((x : ℝ) + (j : ℝ)) ^ 2 + 1 / (2 * (x : ℝ) - (j : ℝ)) ^ 2) :=
           Finset.sum_le_sum hpair
-  rw [← sum_shift_reflect a (fun x => 1 / x ^ 2)] at hdouble
-  have ha0 : (0 : ℝ) < (a : ℝ) := by linarith
-  have hrw : ((a : ℝ) - 1) * (8 / (9 * (a : ℝ) ^ 2))
-      = 2 * (4 * ((a : ℝ) - 1) / (9 * (a : ℝ) ^ 2)) := by
+  rw [← sum_shift_reflect x (fun t => 1 / t ^ 2)] at hdouble
+  have hx0 : (0 : ℝ) < (x : ℝ) := by linarith
+  have hrw : ((x : ℝ) - 1) * (8 / (9 * (x : ℝ) ^ 2))
+      = 2 * (4 * ((x : ℝ) - 1) / (9 * (x : ℝ) ^ 2)) := by
     field_simp
     ring
   rw [hrw] at hdouble
@@ -502,7 +502,7 @@ theorem gTerm_row_ge {x : ℕ} (hx : 61 ≤ x) :
     linarith
   linarith
 
-/-! ### The telescoping tail of `∑ 1/a²` -/
+/-! ### The telescoping tail of `∑ 1/x²` -/
 
 theorem tsum_telescope_inv {K : ℕ} (hK : 0 < K) :
     ∑' j : ℕ, (1 / ((j : ℝ) + (K : ℝ)) - 1 / ((j : ℝ) + (K : ℝ) + 1)) = 1 / (K : ℝ) := by

@@ -16,7 +16,7 @@ import BlockCycleRotation.Constant
 
 namespace BlockCycleRotation
 
-/-- **Sharper termwise bound.**  `cTerm ≤ 1/a³`. -/
+/-- **Sharper termwise bound.**  `cTerm ≤ 1/x³`. -/
 theorem cTerm_le_cube (p : ℕ × ℕ) : cTerm p ≤ 1 / (p.1 : ℝ) ^ 3 := by
   unfold cTerm
   split
@@ -31,7 +31,7 @@ theorem cTerm_le_cube (p : ℕ × ℕ) : cTerm p ≤ 1 / (p.1 : ℝ) ^ 3 := by
       mul_nonneg (mul_nonneg hp1.le hp1.le) hp2]
   · positivity
 
-/-- Each row is at most `1/a²`. -/
+/-- Each row is at most `1/x²`. -/
 theorem cTerm_row_le_sq (x : ℕ) :
     ∑ y ∈ Finset.range x, cTerm (x, y) ≤ 1 / (x : ℝ) ^ 2 := by
   rcases Nat.eq_zero_or_pos x with h0 | h0
@@ -46,7 +46,7 @@ theorem cTerm_row_le_sq (x : ℕ) :
       _ = 1 / (x : ℝ) ^ 2 := by
           field_simp
 
-/-- **The sharper tail bound.**  Truncating at `a ≤ N` loses at most `1/N`. -/
+/-- **The sharper tail bound.**  Truncating at `x ≤ N` loses at most `1/N`. -/
 theorem cConst_le_partial_add_sharp {N : ℕ} (hN : 0 < N) :
     cConst ≤ (∑ x ∈ Finset.range (N + 1), ∑ y ∈ Finset.range x, cTerm (x, y))
       + 1 / (N : ℝ) := by
@@ -81,7 +81,7 @@ Truncating at `N = 20` leaves `127` nonzero terms; their exact rational sum is
 
 set_option maxHeartbeats 4000000 in
 -- 127 nonzero rational terms with a 32-digit common denominator.
-/-- The truncated series for `C` at `a ≤ 20`. -/
+/-- The truncated series for `C` at `x ≤ 20`. -/
 theorem cConst_partial_le :
     (∑ x ∈ Finset.range 21, ∑ y ∈ Finset.range x, cTerm (x, y)) ≤ 39 / 200 := by
   norm_num [cTerm, Finset.sum_range_succ]

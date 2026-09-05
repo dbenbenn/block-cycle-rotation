@@ -149,7 +149,7 @@ mirror image of `K_dropLast_lt`, via `K_reverse`. -/
 theorem K_tail_lt (l : List ℕ) (hlen : 2 ≤ l.length) (hpos : ∀ c ∈ l, 1 ≤ c) :
     K l.tail < K l := by
   have hrev : (l.reverse).dropLast = (l.tail).reverse := by
-    rcases l with _ | ⟨a, t⟩
+    rcases l with _ | ⟨x, t⟩
     · simp
     · simp
   have hlen' : 2 ≤ l.reverse.length := by simpa using hlen
@@ -162,7 +162,7 @@ theorem K_tail_lt (l : List ℕ) (hlen : 2 ≤ l.length) (hpos : ∀ c ∈ l, 1 
 /-- The prefix continuants are coprime, mirrored to suffixes. -/
 theorem K_coprime_tail (l : List ℕ) : Nat.gcd (K l) (K l.tail) = 1 := by
   have hrev : (l.reverse).dropLast = (l.tail).reverse := by
-    rcases l with _ | ⟨a, t⟩ <;> simp
+    rcases l with _ | ⟨x, t⟩ <;> simp
   have h := K_coprime l.reverse
   rwa [hrev, K_reverse, K_reverse] at h
 
@@ -237,7 +237,7 @@ def cf (x y : ℕ) : List ℕ :=
 termination_by y
 decreasing_by exact Nat.mod_lt _ (Nat.pos_of_ne_zero h)
 
-@[simp] theorem cf_zero (a : ℕ) : cf a 0 = [] := by rw [cf]; simp
+@[simp] theorem cf_zero (x : ℕ) : cf x 0 = [] := by rw [cf]; simp
 
 theorem cf_of_pos {x y : ℕ} (h : y ≠ 0) :
     cf x y = cf y (x % y) ++ [x / y] := by rw [cf]; simp [h]
@@ -395,12 +395,12 @@ theorem heilbronn_bijection :
 
 /-- Dropping the last entry of a reversed list drops the first entry. -/
 theorem reverse_dropLast_eq (l : List ℕ) : (l.reverse).dropLast = (l.tail).reverse := by
-  rcases l with _ | ⟨a, t⟩ <;> simp
+  rcases l with _ | ⟨x, t⟩ <;> simp
 
 /-- Mirror of the earlier reversal identity. -/
 theorem reverse_tail_eq (l : List ℕ) : (l.reverse).tail = (l.dropLast).reverse := by
   have h : ((l.reverse).reverse).dropLast = ((l.reverse).tail).reverse := by
-    rcases hl : l.reverse with _ | ⟨a, t⟩ <;> simp
+    rcases hl : l.reverse with _ | ⟨x, t⟩ <;> simp
   rw [List.reverse_reverse] at h
   rw [h, List.reverse_reverse]
 
@@ -599,14 +599,14 @@ theorem two_le_K_of_length_one' {l : List ℕ} (h : l.length = 1)
 
 /-- A prefix inherits the head condition. -/
 theorem head?_take_of_head? {L : List ℕ} {j : ℕ} (hj : 1 ≤ j)
-    (hhead : ∀ x ∈ L.head?, 2 ≤ x) : ∀ x ∈ (L.take j).head?, 2 ≤ x := by
-  intro x hx
+    (hhead : ∀ c ∈ L.head?, 2 ≤ c) : ∀ c ∈ (L.take j).head?, 2 ≤ c := by
+  intro c hc
   apply hhead
-  rcases L with _ | ⟨a, t⟩
-  · simp at hx
+  rcases L with _ | ⟨x, t⟩
+  · simp at hc
   · rcases j with _ | j'
     · omega
-    · simp at hx ⊢
+    · simp at hc ⊢
       omega
 
 /-- A suffix inherits the last-entry condition. -/
@@ -827,7 +827,7 @@ theorem quadExpansion_shift {n x x' y y' : ℕ} (hq : (x, x', y, y') ∈ quadrup
 /-! ## Equation (eq. heilbron)
 
 The reindexing: the double sum of continuants over interior splits equals the
-sum of `a` over Heilbronn's quadruples. -/
+sum of `x` over Heilbronn's quadruples. -/
 
 /-- **The reindexing of (eq. heilbron).** -/
 theorem sum_split_eq_sum_quadruples (n : ℕ) :
@@ -892,7 +892,7 @@ theorem mem_quadruples_swap {n x x' y y' : ℕ} (h : (x, x', y, y') ∈ quadrupl
   obtain ⟨⟨h1, h2, h3, h4⟩, h5, h6, h7, h8, h9, h10, h11⟩ := h
   exact ⟨⟨h2, h1, h4, h3⟩, h7, h8, h5, h6, h10, h9, by rw [h11]; ring⟩
 
-/-- **Summing `a` over the quadruples is the same as summing `b`.**
+/-- **Summing `x` over the quadruples is the same as summing `x'`.**
 
 The paper uses this to symmetrise; it is the involution swapping the two
 halves of the quadruple. -/

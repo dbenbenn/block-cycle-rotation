@@ -3,22 +3,22 @@
 
 The sums §4 has to estimate are of the shape
 
-  `∑_{1 ≤ b < T, b ≡ c mod a} (A + B·b)`.
+  `∑_{1 ≤ y' < Y, y' ≡ a mod x} (A + B·y')`.
 
 Expanding the congruence in additive characters (`Orthogonality.lean`) turns the
-error into a weighted sum, over the nontrivial characters `m`, of
+error into a weighted sum, over the nontrivial characters `b`, of
 
-  `∑_{1 ≤ b < T} (A + B·b) · e(2πmb/a)`,
+  `∑_{1 ≤ y' < Y} (A + B·y') · e(2πmb/x)`,
 
-each weighted by a phase `e(-2πmc/a)` of modulus one.  This file bounds that
+each weighted by a phase `e(-2πmc/x)` of modulus one.  This file bounds that
 inner sum (`norm_linear_geom_sum_root_le`) and then the whole weighted sum
 (`norm_sum_twisted_le`), the weights being any family of modulus at most one.
 
 The resulting bound
 
-  `‖∑_m w_m ∑_b (A + B·b) e(2πmb/a)‖ ≤ (‖A‖ + ‖B‖(T-1)) · a · ∑_{0<m<a} 1/m`
+  `‖∑_b w_m ∑_y' (A + B·y') e(2πmb/x)‖ ≤ (‖A‖ + ‖B‖(Y-1)) · x · ∑_{0<b<x} 1/b`
 
-carries the `log a` of Lemma 16 in its harmonic sum.
+carries the `log x` of Lemma 16 in its harmonic sum.
 -/
 
 import BlockCycleRotation.Orthogonality
@@ -36,84 +36,84 @@ theorem e_add (x y : ℝ) : e (x + y) = e x * e y := by
 
 /-- **The inner sum.**  A linear function twisted by a character, bounded by the
 chord length. -/
-theorem norm_linear_geom_sum_le {θ : ℝ} (hne : e θ ≠ 1) (A B : ℂ) (T : ℕ) :
-    ‖∑ b ∈ Finset.Ico 1 T, (A + B * b) * e θ ^ b‖
-      ≤ (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * (2 / ‖e θ - 1‖) := by
-  have hsplit : ∑ b ∈ Finset.Ico 1 T, (A + B * b) * e θ ^ b
-      = A * (∑ b ∈ Finset.Ico 1 T, e θ ^ b)
-        + B * (∑ b ∈ Finset.Ico 1 T, (b : ℂ) * e θ ^ b) := by
+theorem norm_linear_geom_sum_le {θ : ℝ} (hne : e θ ≠ 1) (A B : ℂ) (Y : ℕ) :
+    ‖∑ y' ∈ Finset.Ico 1 Y, (A + B * y') * e θ ^ y'‖
+      ≤ (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * (2 / ‖e θ - 1‖) := by
+  have hsplit : ∑ y' ∈ Finset.Ico 1 Y, (A + B * y') * e θ ^ y'
+      = A * (∑ y' ∈ Finset.Ico 1 Y, e θ ^ y')
+        + B * (∑ y' ∈ Finset.Ico 1 Y, (y' : ℂ) * e θ ^ y') := by
     rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib]
-    exact Finset.sum_congr rfl fun b _ => by ring
+    exact Finset.sum_congr rfl fun y' _ => by ring
   rw [hsplit]
-  have h1 := norm_geom_sum_le' hne 1 T
-  have h2 := norm_weighted_geom_sum_le' hne T
-  calc ‖A * (∑ b ∈ Finset.Ico 1 T, e θ ^ b)
-        + B * (∑ b ∈ Finset.Ico 1 T, (b : ℂ) * e θ ^ b)‖
-      ≤ ‖A * (∑ b ∈ Finset.Ico 1 T, e θ ^ b)‖
-        + ‖B * (∑ b ∈ Finset.Ico 1 T, (b : ℂ) * e θ ^ b)‖ := norm_add_le _ _
-    _ = ‖A‖ * ‖∑ b ∈ Finset.Ico 1 T, e θ ^ b‖
-        + ‖B‖ * ‖∑ b ∈ Finset.Ico 1 T, (b : ℂ) * e θ ^ b‖ := by rw [norm_mul, norm_mul]
-    _ ≤ ‖A‖ * (2 / ‖e θ - 1‖) + ‖B‖ * ((T - 1 : ℕ) * (2 / ‖e θ - 1‖)) := by gcongr
-    _ = (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * (2 / ‖e θ - 1‖) := by ring
+  have h1 := norm_geom_sum_le' hne 1 Y
+  have h2 := norm_weighted_geom_sum_le' hne Y
+  calc ‖A * (∑ y' ∈ Finset.Ico 1 Y, e θ ^ y')
+        + B * (∑ y' ∈ Finset.Ico 1 Y, (y' : ℂ) * e θ ^ y')‖
+      ≤ ‖A * (∑ y' ∈ Finset.Ico 1 Y, e θ ^ y')‖
+        + ‖B * (∑ y' ∈ Finset.Ico 1 Y, (y' : ℂ) * e θ ^ y')‖ := norm_add_le _ _
+    _ = ‖A‖ * ‖∑ y' ∈ Finset.Ico 1 Y, e θ ^ y'‖
+        + ‖B‖ * ‖∑ y' ∈ Finset.Ico 1 Y, (y' : ℂ) * e θ ^ y'‖ := by rw [norm_mul, norm_mul]
+    _ ≤ ‖A‖ * (2 / ‖e θ - 1‖) + ‖B‖ * ((Y - 1 : ℕ) * (2 / ‖e θ - 1‖)) := by gcongr
+    _ = (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * (2 / ‖e θ - 1‖) := by ring
 
-/-- The inner sum at a nontrivial `a`-th root of unity. -/
-theorem norm_linear_geom_sum_root_le {a m : ℕ} (h0 : 0 < m) (hma : m < a) (A B : ℂ) (T : ℕ) :
-    ‖∑ b ∈ Finset.Ico 1 T, (A + B * b) * e (2 * π * (m : ℝ) / a) ^ b‖
-      ≤ (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * ((a : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ))) := by
-  refine (norm_linear_geom_sum_le (e_root_ne_one h0 hma) A B T).trans ?_
-  have hK : (0 : ℝ) ≤ ‖A‖ + ‖B‖ * (T - 1 : ℕ) := by positivity
+/-- The inner sum at a nontrivial `x`-th root of unity. -/
+theorem norm_linear_geom_sum_root_le {x b : ℕ} (h0 : 0 < b) (hma : b < x) (A B : ℂ) (Y : ℕ) :
+    ‖∑ y' ∈ Finset.Ico 1 Y, (A + B * y') * e (2 * π * (b : ℝ) / x) ^ y'‖
+      ≤ (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * ((x : ℝ) / (2 * ((min b (x - b) : ℕ) : ℝ))) := by
+  refine (norm_linear_geom_sum_le (e_root_ne_one h0 hma) A B Y).trans ?_
+  have hK : (0 : ℝ) ≤ ‖A‖ + ‖B‖ * (Y - 1 : ℕ) := by positivity
   exact mul_le_mul_of_nonneg_left (two_div_norm_le h0 hma) hK
 
 /-- **The error term of §4.**  Summing the inner sums over the nontrivial
 characters, against arbitrary weights of modulus at most one, costs a harmonic
-sum — this is where the `log a` of Lemma 16 comes from. -/
-theorem norm_sum_twisted_le {a : ℕ} (A B : ℂ) (T : ℕ) (w : ℕ → ℂ) (hw : ∀ m, ‖w m‖ ≤ 1) :
-    ‖∑ m ∈ Finset.Ico 1 a, w m * ∑ b ∈ Finset.Ico 1 T,
-        (A + B * b) * e (2 * π * (m : ℝ) / a) ^ b‖
-      ≤ (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * (a : ℝ) * ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ) := by
-  have hK : (0 : ℝ) ≤ ‖A‖ + ‖B‖ * (T - 1 : ℕ) := by positivity
+sum — this is where the `log x` of Lemma 16 comes from. -/
+theorem norm_sum_twisted_le {x : ℕ} (A B : ℂ) (Y : ℕ) (w : ℕ → ℂ) (hw : ∀ b, ‖w b‖ ≤ 1) :
+    ‖∑ b ∈ Finset.Ico 1 x, w b * ∑ y' ∈ Finset.Ico 1 Y,
+        (A + B * y') * e (2 * π * (b : ℝ) / x) ^ y'‖
+      ≤ (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * (x : ℝ) * ∑ b ∈ Finset.Ico 1 x, (1 : ℝ) / (b : ℝ) := by
+  have hK : (0 : ℝ) ≤ ‖A‖ + ‖B‖ * (Y - 1 : ℕ) := by positivity
   -- bound each term
-  have hterm : ∀ m ∈ Finset.Ico 1 a,
-      ‖w m * ∑ b ∈ Finset.Ico 1 T, (A + B * b) * e (2 * π * (m : ℝ) / a) ^ b‖
-        ≤ (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * ((a : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ))) := by
-    intro m hm
-    obtain ⟨h1, h2⟩ := Finset.mem_Ico.1 hm
+  have hterm : ∀ b ∈ Finset.Ico 1 x,
+      ‖w b * ∑ y' ∈ Finset.Ico 1 Y, (A + B * y') * e (2 * π * (b : ℝ) / x) ^ y'‖
+        ≤ (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * ((x : ℝ) / (2 * ((min b (x - b) : ℕ) : ℝ))) := by
+    intro b hb
+    obtain ⟨h1, h2⟩ := Finset.mem_Ico.1 hb
     rw [norm_mul]
-    calc ‖w m‖ * ‖∑ b ∈ Finset.Ico 1 T, (A + B * b) * e (2 * π * (m : ℝ) / a) ^ b‖
-        ≤ 1 * ‖∑ b ∈ Finset.Ico 1 T, (A + B * b) * e (2 * π * (m : ℝ) / a) ^ b‖ := by
+    calc ‖w b‖ * ‖∑ y' ∈ Finset.Ico 1 Y, (A + B * y') * e (2 * π * (b : ℝ) / x) ^ y'‖
+        ≤ 1 * ‖∑ y' ∈ Finset.Ico 1 Y, (A + B * y') * e (2 * π * (b : ℝ) / x) ^ y'‖ := by
           gcongr
-          exact hw m
-      _ = ‖∑ b ∈ Finset.Ico 1 T, (A + B * b) * e (2 * π * (m : ℝ) / a) ^ b‖ := one_mul _
-      _ ≤ _ := norm_linear_geom_sum_root_le h1 h2 A B T
+          exact hw b
+      _ = ‖∑ y' ∈ Finset.Ico 1 Y, (A + B * y') * e (2 * π * (b : ℝ) / x) ^ y'‖ := one_mul _
+      _ ≤ _ := norm_linear_geom_sum_root_le h1 h2 A B Y
   -- pull the constants out of the sum
-  have hpull : ∑ m ∈ Finset.Ico 1 a,
-        (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * ((a : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ)))
-      = (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * (a : ℝ)
-          * ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ)) := by
+  have hpull : ∑ b ∈ Finset.Ico 1 x,
+        (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * ((x : ℝ) / (2 * ((min b (x - b) : ℕ) : ℝ)))
+      = (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * (x : ℝ)
+          * ∑ b ∈ Finset.Ico 1 x, (1 : ℝ) / (2 * ((min b (x - b) : ℕ) : ℝ)) := by
     rw [Finset.mul_sum]
-    exact Finset.sum_congr rfl fun m _ => by ring
+    exact Finset.sum_congr rfl fun b _ => by ring
   -- the harmonic bound
-  have hhalf : ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ))
-      ≤ ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ) := by
-    have h1 : ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ))
-        = (1 / 2) * ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / ((min m (a - m) : ℕ) : ℝ) := by
+  have hhalf : ∑ b ∈ Finset.Ico 1 x, (1 : ℝ) / (2 * ((min b (x - b) : ℕ) : ℝ))
+      ≤ ∑ b ∈ Finset.Ico 1 x, (1 : ℝ) / (b : ℝ) := by
+    have h1 : ∑ b ∈ Finset.Ico 1 x, (1 : ℝ) / (2 * ((min b (x - b) : ℕ) : ℝ))
+        = (1 / 2) * ∑ b ∈ Finset.Ico 1 x, (1 : ℝ) / ((min b (x - b) : ℕ) : ℝ) := by
       rw [Finset.mul_sum]
-      exact Finset.sum_congr rfl fun m _ => by ring
-    have h2 := sum_inv_min_le a
+      exact Finset.sum_congr rfl fun b _ => by ring
+    have h2 := sum_inv_min_le x
     rw [h1]
     linarith
-  calc ‖∑ m ∈ Finset.Ico 1 a, w m * ∑ b ∈ Finset.Ico 1 T,
-          (A + B * b) * e (2 * π * (m : ℝ) / a) ^ b‖
-      ≤ ∑ m ∈ Finset.Ico 1 a,
-          ‖w m * ∑ b ∈ Finset.Ico 1 T, (A + B * b) * e (2 * π * (m : ℝ) / a) ^ b‖ :=
+  calc ‖∑ b ∈ Finset.Ico 1 x, w b * ∑ y' ∈ Finset.Ico 1 Y,
+          (A + B * y') * e (2 * π * (b : ℝ) / x) ^ y'‖
+      ≤ ∑ b ∈ Finset.Ico 1 x,
+          ‖w b * ∑ y' ∈ Finset.Ico 1 Y, (A + B * y') * e (2 * π * (b : ℝ) / x) ^ y'‖ :=
         norm_sum_le _ _
-    _ ≤ ∑ m ∈ Finset.Ico 1 a,
-          (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * ((a : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ))) :=
+    _ ≤ ∑ b ∈ Finset.Ico 1 x,
+          (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * ((x : ℝ) / (2 * ((min b (x - b) : ℕ) : ℝ))) :=
         Finset.sum_le_sum hterm
-    _ = (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * (a : ℝ)
-          * ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (2 * ((min m (a - m) : ℕ) : ℝ)) := hpull
-    _ ≤ (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * (a : ℝ) * ∑ m ∈ Finset.Ico 1 a, (1 : ℝ) / (m : ℝ) := by
-        have hpos : (0 : ℝ) ≤ (‖A‖ + ‖B‖ * (T - 1 : ℕ)) * (a : ℝ) := by positivity
+    _ = (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * (x : ℝ)
+          * ∑ b ∈ Finset.Ico 1 x, (1 : ℝ) / (2 * ((min b (x - b) : ℕ) : ℝ)) := hpull
+    _ ≤ (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * (x : ℝ) * ∑ b ∈ Finset.Ico 1 x, (1 : ℝ) / (b : ℝ) := by
+        have hpos : (0 : ℝ) ≤ (‖A‖ + ‖B‖ * (Y - 1 : ℕ)) * (x : ℝ) := by positivity
         exact mul_le_mul_of_nonneg_left hhalf hpos
 
 end BlockCycleRotation

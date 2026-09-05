@@ -171,14 +171,14 @@ theorem bulk_pair_estimate {m d x y : ℕ} (hm : 0 < m) (hd : 0 < d)
 /-! ## The paper's `G₁ + G₂ + G₃`
 
 The paper splits the inner sum at a coprime pair into three named pieces:
-`G₁` is the closed form `(1/a)(A·Y + B·Y²/2)` at the *real* cut-off `Y`, `G₂`
+`G₁` is the closed form `(1/x)(A·Y + B·Y²/2)` at the *real* cut-off `Y`, `G₂`
 is the rounding error against the discrete sum, and `G₃` is what the
 non-trivial characters contribute.  `bulk_pair_estimate` bounds `G₂ + G₃`
 together; the three are named here so that Lemmas 18 and 19 can be stated
 individually. -/
 
-/-- The paper's `A = d·a + m/a`. -/
-noncomputable def aCoeff (m d a : ℕ) : ℝ := ((d * a : ℕ) : ℝ) + (m : ℝ) / (a : ℝ)
+/-- The paper's `A = d·x + m/x`. -/
+noncomputable def aCoeff (m d x : ℕ) : ℝ := ((d * x : ℕ) : ℝ) + (m : ℝ) / (x : ℝ)
 
 /-- The paper's `B = -y/x`. -/
 noncomputable def bCoeff (x y : ℕ) : ℝ := -(y : ℝ) / (x : ℝ)
@@ -289,7 +289,7 @@ theorem abs_G2term_le {m d x y : ℕ} (hm : 0 < m) (hd : 0 < d)
           (by positivity)
     _ = |aCoeff m d x| + |bCoeff x y| * yCut m x y := one_mul _
 
-/-- **The bound of Lemma 18 at one pair:** `|G₃| ≤ (|A| + |B|(Y-1))(1 + log a)`,
+/-- **The bound of Lemma 18 at one pair:** `|G₃| ≤ (|A| + |B|(Y-1))(1 + log x)`,
 from the character estimate. -/
 theorem abs_G3term_le {m d x y : ℕ} (hm : 0 < m) (hd : 0 < d)
     (hy : 1 ≤ y) (haa : y < x) (hgcd : Nat.gcd x y = 1) (hbulk : d * x * (x + y) ≤ m) :

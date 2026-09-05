@@ -64,7 +64,7 @@ theorem gTerm_eq (p : ℕ × ℕ) : gTerm p = (zTerm p - eTerm p) / 2 := by
   unfold gTerm zTerm eTerm
   split_ifs with h
   · obtain ⟨h1, h2⟩ := h
-    have ha : (0 : ℝ) < (p.1 : ℝ) := by
+    have hx : (0 : ℝ) < (p.1 : ℝ) := by
       have : 0 < p.1 := by omega
       exact_mod_cast this
     have hy : (0 : ℝ) < (p.2 : ℝ) := by
@@ -138,11 +138,11 @@ theorem eTerm_le_zTerm (p : ℕ × ℕ) : eTerm p ≤ zTerm p := by
     have hy : (0 : ℝ) < (p.2 : ℝ) := by
       have : 0 < p.2 := by omega
       exact_mod_cast this
-    have ha : (0 : ℝ) < (p.1 : ℝ) := by
+    have hx : (0 : ℝ) < (p.1 : ℝ) := by
       have : 0 < p.1 := by omega
       exact_mod_cast this
     refine one_div_le_one_div_of_le (by positivity) ?_
-    nlinarith [mul_nonneg hy.le (mul_nonneg ha.le hy.le),
+    nlinarith [mul_nonneg hy.le (mul_nonneg hx.le hy.le),
       mul_nonneg hy.le (mul_nonneg hy.le hy.le)]
   · exact le_refl 0
 
@@ -326,8 +326,8 @@ only the telescoping `∑_k 1/(k(n+k)) = H_n/n`, giving `∑_n H_n/n² = ζ(2,1)
 
 open Filter Topology
 
-/-- `harm a = ∑_{i=1}^{a-1} 1/i`. -/
-noncomputable def harm (a : ℕ) : ℝ := ∑ i ∈ Finset.Ico 1 a, (1 : ℝ) / (i : ℝ)
+/-- `harm x = ∑_{i=1}^{x-1} 1/i`. -/
+noncomputable def harm (x : ℕ) : ℝ := ∑ i ∈ Finset.Ico 1 x, (1 : ℝ) / (i : ℝ)
 
 theorem harm_eq_range (n : ℕ) : harm (n + 1) = ∑ j ∈ Finset.range n, 1 / ((j : ℝ) + 1) := by
   unfold harm
@@ -337,11 +337,11 @@ theorem harm_eq_range (n : ℕ) : harm (n + 1) = ∑ j ∈ Finset.range n, 1 / (
   push_cast
   ring_nf
 
-theorem harm_succ {a : ℕ} (ha : 1 ≤ a) : harm (a + 1) = harm a + 1 / (a : ℝ) := by
+theorem harm_succ {x : ℕ} (hx : 1 ≤ x) : harm (x + 1) = harm x + 1 / (x : ℝ) := by
   unfold harm
-  rw [Finset.sum_Ico_succ_top ha]
+  rw [Finset.sum_Ico_succ_top hx]
 
-theorem harm_nonneg (a : ℕ) : 0 ≤ harm a :=
+theorem harm_nonneg (x : ℕ) : 0 ≤ harm x :=
   Finset.sum_nonneg fun i _ => by positivity
 
 /-- The partial sums of the telescoping series. -/
@@ -439,17 +439,17 @@ theorem tsum_tail_inv_sq {n : ℕ} (hn : 0 < n) :
   have hcast : ∀ j : ℕ, 1 / ((n : ℝ) + (j : ℝ) + 1) ^ 2 = 1 / (((n + j + 1 : ℕ) : ℝ)) ^ 2 := by
     intro j; push_cast; ring
   simp only [hcast]
-  have himg : ∑ x ∈ s.image (fun j => n + j + 1), 1 / ((x : ℝ)) ^ 2
-      = ∑ x ∈ s, 1 / (((n + x + 1 : ℕ) : ℝ)) ^ 2 :=
+  have himg : ∑ t ∈ s.image (fun j => n + j + 1), 1 / ((t : ℝ)) ^ 2
+      = ∑ t ∈ s, 1 / (((n + t + 1 : ℕ) : ℝ)) ^ 2 :=
     Finset.sum_image (by
-      intro x _ y _ h
-      have h' : n + x + 1 = n + y + 1 := h
+      intro t _ y _ h
+      have h' : n + t + 1 = n + y + 1 := h
       omega)
   rw [← himg]
   refine sum_inv_sq_tail_le hn _ ?_
-  intro a ha
-  simp only [Finset.mem_image] at ha
-  obtain ⟨x, -, rfl⟩ := ha
+  intro x hx
+  simp only [Finset.mem_image] at hx
+  obtain ⟨t, -, rfl⟩ := hx
   omega
 
 /-- `1/(n(n+k)²)` at `n = i+1`, `k = j+1`. -/
@@ -618,22 +618,22 @@ theorem zTerm_row (x : ℕ) : ∑' y : ℕ, zTerm (x, y) = harm x / (x : ℝ) ^ 
     rw [if_pos ⟨by omega, by omega⟩]
     field_simp
 
-theorem harmRow_summable : Summable (fun a : ℕ => harm a / (a : ℝ) ^ 2) := by
+theorem harmRow_summable : Summable (fun x : ℕ => harm x / (x : ℝ) ^ 2) := by
   have hnn : (0 : ℕ × ℕ → ℝ) ≤ zTerm := fun p => zTerm_nonneg p
   have h := (summable_prod_of_nonneg hnn).1 zTerm_summable
-  exact h.2.congr fun a => zTerm_row a
+  exact h.2.congr fun x => zTerm_row x
 
-theorem zeta21_eq : zeta21 = ∑' a : ℕ, harm a / (a : ℝ) ^ 2 := by
+theorem zeta21_eq : zeta21 = ∑' x : ℕ, harm x / (x : ℝ) ^ 2 := by
   rw [zeta21, zTerm_summable.tsum_prod]
   exact tsum_congr zTerm_row
 
-theorem inv_cube_summable : Summable (fun a : ℕ => 1 / (a : ℝ) ^ 3) := by
+theorem inv_cube_summable : Summable (fun x : ℕ => 1 / (x : ℝ) ^ 3) := by
   rw [Real.summable_one_div_nat_pow]; norm_num
 
-theorem zeta3_eq : zeta3 = ∑' a : ℕ, 1 / (a : ℝ) ^ 3 := by
+theorem zeta3_eq : zeta3 = ∑' x : ℕ, 1 / (x : ℝ) ^ 3 := by
   have hshift : Summable (fun n : ℕ => 1 / (((n + 1 : ℕ)) : ℝ) ^ 3) :=
     (summable_nat_add_iff 1).2 inv_cube_summable
-  have h1 : ∑' a : ℕ, 1 / (a : ℝ) ^ 3
+  have h1 : ∑' x : ℕ, 1 / (x : ℝ) ^ 3
       = 1 / (((0 : ℕ)) : ℝ) ^ 3 + ∑' n : ℕ, 1 / (((n + 1 : ℕ)) : ℝ) ^ 3 :=
     tsum_eq_zero_add' hshift
   have h2 : (1 : ℝ) / (((0 : ℕ)) : ℝ) ^ 3 = 0 := by norm_num
@@ -646,7 +646,7 @@ theorem zeta3_eq : zeta3 = ∑' a : ℕ, 1 / (a : ℝ) ^ 3 := by
 
 /-- **Euler's `ζ(2,1) = ζ(3)`.** -/
 theorem euler_zeta21 : zeta21 = zeta3 := by
-  have hsum : Summable (fun a : ℕ => harm a / (a : ℝ) ^ 2 + 1 / (a : ℝ) ^ 3) :=
+  have hsum : Summable (fun x : ℕ => harm x / (x : ℝ) ^ 2 + 1 / (x : ℝ) ^ 3) :=
     harmRow_summable.add inv_cube_summable
   have hrow : ∑' q : ℕ × ℕ, qTerm q = zeta21 + zeta3 := by
     rw [tsum_qTerm_rows, zeta21_eq, zeta3_eq,
