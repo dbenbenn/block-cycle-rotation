@@ -19,3 +19,4 @@ import BlockCycleRotation.Buffer
 import BlockCycleRotation.AllShifts
 import BlockCycleRotation.Bound
 import BlockCycleRotation.Numeric
+import BlockCycleRotation.Moves
