@@ -1,7 +1,7 @@
 /-
 # Averaging over all shifts
 
-The remark after Theorem 13.  A run of the Euclidean algorithm on `(n,k)` with
+The remark after Theorem 14.  A run of the Euclidean algorithm on `(n,k)` with
 `k` in the upper half first produces the remainder `k` and then repeats the run
 of `(n, n-k)`, so
 

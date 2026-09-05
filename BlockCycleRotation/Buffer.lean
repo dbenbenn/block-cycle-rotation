@@ -667,7 +667,7 @@ theorem costB_le_muCost : ∀ k n b : ℕ, 0 < n → 0 < b → 2 * k ≤ n →
       linarith
 
 /-- **Consistency of the two cost models.**  With no buffer, equation (integral)
-computes exactly the move count `n - gcd(n,k) + 2·remSum(n,k)` of Lemma 12. -/
+computes exactly the move count `n - gcd(n,k) + 2·remSum(n,k)` of Lemma 11. -/
 theorem costB_eq_moveCount : ∀ k n : ℕ, 2 * k ≤ n → costB n k 0 = moveCount n k := by
   intro k
   induction k using Nat.strong_induction_on with

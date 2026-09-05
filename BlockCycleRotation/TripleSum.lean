@@ -19,7 +19,7 @@ general estimate applies to the paper's summand verbatim, with
 
   `A = n/(d·a) + d·a`  and  `B = −a'/a`.
 
-What remains for Theorem 13 is the two outer layers — the sum over `a > a' ≥ 1`
+What remains for Theorem 14 is the two outer layers — the sum over `a > a' ≥ 1`
 coprime, and the Möbius-inverted sum over `d ∣ n` — together with collecting the
 resulting pieces `G₁ + G₂ + G₃` into `O(n^{3/2+ε})`.  Every ingredient those need
 is proved: this estimate, `exists_card_divisors_le`, and Mathlib's Möbius
@@ -1175,7 +1175,7 @@ theorem error_isBigO {ε : ℝ} (hε : 0 < ε) :
 
 /-! ## The bulk / small split
 
-Lemma 17 splits `G₁` according to which of the two bounds defining `U` is
+Lemma 19 splits `G₁` according to which of the two bounds defining `U` is
 active.  Comparing `m/(a+a')` with `(m - d·a²)/a'`, the first is the smaller
 exactly when `d·a·(a+a') ≤ m`.  On that branch — the *bulk* — the constraint
 `(a+a')·b' < m` implies the other one, so the range of `b'` is a single initial
@@ -1413,7 +1413,7 @@ d·m/(a+a')  +  m²·[ 1/(a²(a+a')) - a'/(2a²(a+a')²) ]  =  d·m/(a+a')  +  m
 ```
 
 by `cTerm_summand_eq`.  Summing over all coprime pairs gives `m²·C`, and over
-`d ∣ n` with `m = n/d` gives `C·n²·∑_{d∣n} 1/d²` — Lemma 17. -/
+`d ∣ n` with `m = n/d` gives `C·n²·∑_{d∣n} 1/d²` — Lemma 19. -/
 
 /-- **The closed form of the main term.**  `∑_{1 ≤ b < U} (A + B·b)`. -/
 theorem sum_linear_Ico (A B : ℝ) : ∀ U : ℕ, 1 ≤ U →
