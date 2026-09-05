@@ -173,57 +173,129 @@ theorem bufStep_length {n k : ℕ} (hkn : k ≤ n) : moves (bufStep n k) = n + k
   simp only [bufStep, moves, List.length_append, List.length_map, List.length_range]
   omega
 
+/-! ## Relabelling
+
+Two ways to move a program to a different part of the array, both of which
+preserve its length and its buffer use.  `shift` slides it along; `mirror`
+reflects it inside a window.
+
+`mirror` is what lets the method work with the smaller segment.  §2 always
+swaps "the smaller segment ... with the adjacent block of the same length", so
+when the shift exceeds half the length the method works from the other end.
+That is a relabelling of positions, not a reversal of data, so it is free --
+which is exactly why `algCost` is `cost` composed with `min k (n - k)`. -/
+
+/-- Relabel the array positions a program touches, leaving buffer cells alone. -/
+def Loc.relabel (f : ℕ → ℕ) : Loc → Loc
+  | .arr i => .arr (f i)
+  | .buf j => .buf j
+
+/-- Relabel every array position in a program. -/
+def relabel (f : ℕ → ℕ) (p : Prog) : Prog :=
+  p.map (fun m => ⟨m.src.relabel f, m.dst.relabel f⟩)
+
+@[simp] theorem moves_relabel (f : ℕ → ℕ) (p : Prog) : moves (relabel f p) = moves p := by
+  simp [relabel, moves]
+
+theorem usesBuffer_relabel {b : ℕ} {p : Prog} (f : ℕ → ℕ) (h : UsesBuffer b p) :
+    UsesBuffer b (relabel f p) := by
+  intro m hm
+  simp only [relabel, List.mem_map] at hm
+  obtain ⟨m', hm', rfl⟩ := hm
+  obtain ⟨hs, hd⟩ := h m' hm'
+  constructor <;> intro j hj <;>
+    [ (cases hsrc : m'.src with
+       | arr i => simp [Loc.relabel, hsrc] at hj
+       | buf i => simp [Loc.relabel, hsrc] at hj; exact hj ▸ hs i hsrc) ;
+      (cases hdst : m'.dst with
+       | arr i => simp [Loc.relabel, hdst] at hj
+       | buf i => simp [Loc.relabel, hdst] at hj; exact hj ▸ hd i hdst) ]
+
+/-- Slide a program along the array by `d`. -/
+abbrev shift (d : ℕ) : Prog → Prog := relabel (· + d)
+
+/-- Reflect a program inside the window `[0, n)`. -/
+abbrev mirror (n : ℕ) : Prog → Prog := relabel (fun i => n - 1 - i)
+
 /-! ## The algorithm -/
 
-/-- The block cycle method as a program: nothing to do when the shift is zero,
-one buffered step when the shift fits in the buffer, otherwise a block step
-followed by the same method on the shorter remaining segment. -/
-def bcProg (n k b : ℕ) : Prog :=
-  if h : k = 0 then []
-  else if k ≤ b then bufStep n k
-  else blockStep n k ++ bcProg (k + n % k) (n % k) b
-termination_by k
-decreasing_by exact Nat.mod_lt _ (Nat.pos_of_ne_zero h)
+/-- The block cycle method as a program: rotate the window `[0, n)` left by `k`.
 
-@[simp] theorem bcProg_zero (n b : ℕ) : bcProg n 0 b = [] := by rw [bcProg]; simp
+Nothing to do when the shift is zero; one buffered step when the shift fits in
+the buffer; otherwise the block step, followed by the same method on the segment
+it leaves behind -- which starts at offset `(q-1)k`, hence the `shift`.  When the
+shift exceeds half the length the method works from the other end, which is the
+`mirror` branch and costs nothing. -/
+def rotProg (n k b : ℕ) : Prog :=
+  if hk : k = 0 then []
+  else if h2 : 2 * k ≤ n then
+    (if k ≤ b then bufStep n k
+      else blockStep n k ++ shift ((n / k - 1) * k) (rotProg (k + n % k) k b))
+  else
+    mirror n (rotProg n (n - k) b)
+termination_by n + k
+decreasing_by
+  · have := Nat.mod_lt n (Nat.pos_of_ne_zero hk); omega
+  · omega
 
-theorem bcProg_of_le {n k b : ℕ} (hk : k ≠ 0) (h : k ≤ b) : bcProg n k b = bufStep n k := by
-  rw [bcProg]; simp [hk, h]
+@[simp] theorem rotProg_zero (n b : ℕ) : rotProg n 0 b = [] := by rw [rotProg]; simp
 
-theorem bcProg_of_gt {n k b : ℕ} (hk : k ≠ 0) (h : b < k) :
-    bcProg n k b = blockStep n k ++ bcProg (k + n % k) (n % k) b := by
-  rw [bcProg]; simp [hk, Nat.not_le.2 h]
+theorem rotProg_of_le {n k b : ℕ} (hk : k ≠ 0) (h2 : 2 * k ≤ n) (h : k ≤ b) :
+    rotProg n k b = bufStep n k := by
+  rw [rotProg]; simp [hk, h, h2]
 
-end BlockCycleRotation
+theorem rotProg_block {n k b : ℕ} (hk : k ≠ 0) (hb : b < k) (h2 : 2 * k ≤ n) :
+    rotProg n k b = blockStep n k ++ shift ((n / k - 1) * k) (rotProg (k + n % k) k b) := by
+  rw [rotProg]; simp [hk, Nat.not_le.2 hb, h2]
 
-namespace BlockCycleRotation
+theorem rotProg_mirror {n k b : ℕ} (hk : k ≠ 0) (h2 : ¬ 2 * k ≤ n) :
+    rotProg n k b = mirror n (rotProg n (n - k) b) := by
+  rw [rotProg]; simp [hk, h2]
 
 /-! ## Equation (1), counted
 
-`bcProg_length` is the half of equation (1) this file exists to supply: the
-length of the emitted program -- an operational quantity -- satisfies the
+The length of the emitted program -- an operational quantity -- satisfies the
 paper's recursion. -/
 
-/-- **Equation (1).**  The block cycle method makes exactly `costB n k b` moves. -/
-theorem bcProg_length : ∀ k n b : ℕ, k ≤ n → moves (bcProg n k b) = costB n k b := by
-  intro k
-  induction k using Nat.strong_induction_on with
-  | _ k ih =>
-    intro n b hkn
+/-- **Equation (1).**  On the paper's range `2k ≤ n`, the block cycle method
+makes exactly `costB n k b` moves. -/
+theorem rotProg_length : ∀ N n k b : ℕ, n + k ≤ N → 2 * k ≤ n →
+    moves (rotProg n k b) = costB n k b := by
+  intro N
+  induction N using Nat.strong_induction_on with
+  | _ N ih =>
+    intro n k b hN h2
     rcases Nat.eq_zero_or_pos k with rfl | hk
     · simp
     · by_cases hb : k ≤ b
-      · rw [bcProg_of_le hk.ne' hb, costB_of_le hk.ne' hb, bufStep_length hkn]
+      · rw [rotProg_of_le hk.ne' h2 hb, costB_of_le hk.ne' hb, bufStep_length (by omega)]
       · push_neg at hb
         have hmod : n % k < k := Nat.mod_lt _ hk
-        rw [bcProg_of_gt hk.ne' hb, costB_of_gt hk.ne' hb, moves_append,
-          blockStep_length hk hkn, ih (n % k) hmod (k + n % k) b (by omega)]
+        have hinner : ¬ 2 * k ≤ k + n % k := by omega
+        rw [rotProg_block hk.ne' hb h2, moves_append, blockStep_length hk (by omega),
+          rotProg_mirror hk.ne' hinner, moves_relabel, moves_relabel,
+          show k + n % k - k = n % k by omega,
+          ih (k + n % k + n % k) (by omega) (k + n % k) (n % k) b le_rfl (by omega),
+          costB_of_gt hk.ne' hb]
+
+/-- **Equation (1), stated without the range hypothesis.**  Off the paper's
+range the method works from the other end, so the count is `costB` at the
+reflected shift -- which is exactly how `algCost` packages it. -/
+theorem rotProg_length_min {n k b : ℕ} (hkn : k ≤ n) :
+    moves (rotProg n k b) = costB n (min k (n - k)) b := by
+  by_cases h2 : 2 * k ≤ n
+  · rw [min_eq_left (by omega), rotProg_length (n + k) n k b le_rfl h2]
+  · push_neg at h2
+    rcases Nat.eq_zero_or_pos k with rfl | hk
+    · simp
+    · rw [rotProg_mirror hk.ne' (by omega), moves_relabel, min_eq_right (by omega),
+        rotProg_length (n + (n - k)) n (n - k) b le_rfl (by omega)]
 
 /-! ## The buffer discipline
 
 Without a bound on which auxiliary cells the program may touch, "with a buffer
-of `b` cells" would carry no content.  The block step needs the paper's one
-additional cell; the buffered step needs `k ≤ b` of them. -/
+of `b` cells" would carry no content: unbounded scratch space makes any rotation
+cheap.  The block step needs the paper's one additional cell. -/
 
 theorem cycleProg_usesBuffer {b : ℕ} (hb : 1 ≤ b) (k q i : ℕ) :
     UsesBuffer b (cycleProg k q i) := by
@@ -249,19 +321,24 @@ theorem bufStep_usesBuffer {n k b : ℕ} (h : k ≤ b) : UsesBuffer b (bufStep n
 /-- **The program respects its buffer.**  One auxiliary cell is required -- the
 paper's own hypothesis for the unbuffered scheme -- and no cell numbered `b` or
 higher is ever named. -/
-theorem bcProg_usesBuffer : ∀ k n b : ℕ, 1 ≤ b → UsesBuffer b (bcProg n k b) := by
-  intro k
-  induction k using Nat.strong_induction_on with
-  | _ k ih =>
-    intro n b hb
+theorem rotProg_usesBuffer : ∀ N n k b : ℕ, n + k ≤ N → 1 ≤ b →
+    UsesBuffer b (rotProg n k b) := by
+  intro N
+  induction N using Nat.strong_induction_on with
+  | _ N ih =>
+    intro n k b hN hb
     rcases Nat.eq_zero_or_pos k with rfl | hk
     · simpa using usesBuffer_nil b
-    · by_cases hle : k ≤ b
-      · rw [bcProg_of_le hk.ne' hle]; exact bufStep_usesBuffer hle
-      · push_neg at hle
-        rw [bcProg_of_gt hk.ne' hle]
-        exact usesBuffer_append (blockStep_usesBuffer hb n k)
-          (ih (n % k) (Nat.mod_lt _ hk) (k + n % k) b hb)
+    · have hmod : n % k < k := Nat.mod_lt _ hk
+      by_cases h2 : 2 * k ≤ n
+      · by_cases hle : k ≤ b
+        · rw [rotProg_of_le hk.ne' h2 hle]; exact bufStep_usesBuffer hle
+        · push_neg at hle
+          rw [rotProg_block hk.ne' hle h2]
+          exact usesBuffer_append (blockStep_usesBuffer hb n k)
+            (usesBuffer_relabel _ (ih (k + n % k + k) (by omega) (k + n % k) k b le_rfl hb))
+      · rw [rotProg_mirror hk.ne' h2]
+        exact usesBuffer_relabel _ (ih (n + (n - k)) (by omega) n (n - k) b le_rfl hb)
 
 end BlockCycleRotation
 
@@ -269,63 +346,26 @@ namespace BlockCycleRotation
 
 /-! ## Sanity checks
 
-Spot checks on the model before anything is proved about it.  The move count
-agrees with `costB` and with the unbuffered `cost`, and the buffered branch
-does perform the rotation. -/
+Executable checks on the model, run at compile time.  These are evidence, not
+proof: `rotProg_correct` below is what remains. -/
 
 private def toArr (l : List ℕ) : ℕ → ℕ := fun i => l.getD i 0
 private def readBack (n : ℕ) (s : State ℕ) : List ℕ := (List.range n).map s.arr
 private def sim (l : List ℕ) (k b : ℕ) : List ℕ :=
-  readBack l.length (run (bcProg l.length k b) ⟨toArr l, fun _ => 0⟩)
+  readBack l.length (run (rotProg l.length k b) ⟨toArr l, fun _ => 0⟩)
+private def rotOk (n k b : ℕ) : Bool :=
+  sim (List.range n) k b == (List.range n).rotate k
 
--- the counted cost agrees with the recursion, and with the unbuffered `cost`
-#guard (bcProg 21 8 0).length = costB 21 8 0
-#guard (bcProg 21 8 0).length = cost 21 8
-#guard (bcProg 100 37 0).length = costB 100 37 0
-#guard (bcProg 100 37 5).length = costB 100 37 5
+-- the program rotates, for every shift of every length up to 11, with and
+-- without a buffer
+#guard (List.range 12).all fun n => (List.range (n + 1)).all fun k => rotOk n k 0
+#guard (List.range 12).all fun n => (List.range (n + 1)).all fun k => rotOk n k 3
 
--- the buffered branch rotates
-#guard sim [0,1,2,3,4,5,6,7,8,9] 3 5 = ([0,1,2,3,4,5,6,7,8,9] : List ℕ).rotate 3
-#guard sim [0,1,2,3,4] 2 4 = ([0,1,2,3,4] : List ℕ).rotate 2
-
-/-! ## What remains open
-
-`bcProg` is **not** yet correct in the unbuffered branch, and the reason is
-worth recording precisely, because it is the same subtlety that makes equation
-(1) more than bookkeeping.  Two obstacles, both visible by evaluation:
-
-**1. The subproblem is not at the origin.**  After the block step the paper
-reduces to a rotation "within the segment `a_{(q-1)k+1}, …, a_n`" -- an interval
-starting at offset `(q-1)k`, not at `0`.  `bcProg` recurses without tracking
-that offset, so the recursive moves address the wrong cells.  This is a
-bookkeeping fix: carry an offset and shift every `Loc.arr` index by it.
-`blockStep_length` and `bufStep_length` are offset-independent, so the cost
-theorem survives unchanged.
-
-**2. The recursion reflects the shift, and the reflection is not free.**  After
-the block step the remaining segment has length `k + n % k` and holds `[A ∣ B]`
-with `|A| = k`, `|B| = n % k`; finishing the rotation means sending it to
-`[B ∣ A]`, a *left rotation by `k`*.  Equation (1), however, recurses at shift
-`n % k`, not `k`.  The two agree because a left rotation by `k` of a segment of
-length `k + n % k` is a right rotation by `n % k`, and the block cycle cost is
-invariant under that reflection -- which is exactly the step `algCost` builds in
-with `min k (n - k)`, and which the paper leaves implicit by stating equation (1)
-only for `k ≤ n/2`.
-
-At the level of move sequences that invariance is a theorem, not a definition:
-it says the two permutations are realised by programs of equal length.  Closing
-equation (1) means proving it.  Note `bcRotate` takes the other route -- it
-recurses at the *same* `k` and repairs the orientation with an explicit
-`reverse` (its fourth branch), a step with no counterpart in the paper, and
-reversals are not free at the move level either.
-
-So the open goal is:
-
-```
-theorem bcProg_correct {α} [DecidableEq α] (n k b : ℕ) (h : 2 * k ≤ n) (s : State α) :
-    ∀ i < n, (run (bcProg n k b) s).arr i = s.arr ((i + k) % n)
-```
-
-with `bcProg` amended per (1), and (2) supplied as a reflection lemma. -/
+-- and the counted cost agrees with the recursion and with `algCost`
+#guard (rotProg 21 8 0).length = costB 21 8 0
+#guard (rotProg 21 8 0).length = algCost 21 8
+#guard (rotProg 100 37 0).length = algCost 100 37
+#guard (rotProg 100 37 5).length = costB 100 37 5
+#guard (rotProg 12 8 0).length = algCost 12 8
 
 end BlockCycleRotation
