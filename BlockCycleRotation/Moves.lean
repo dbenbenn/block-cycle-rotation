@@ -27,16 +27,33 @@ memory are counted like any other.  That is what `Move` below is.
 
 A program could be made cheap by doing less work.  The content is that *one*
 program is simultaneously
-* correct -- running it rotates the array (`bcProg_correct`, still open), and
-* buffer-respecting -- it touches no auxiliary cell numbered `≥ b`
-  (`bcProg_usesBuffer`),
-and *that* program has exactly `costB n k b` moves (`bcProg_length`).  The
+* buffer-respecting -- it names no auxiliary cell numbered `≥ b`
+  (`rotProg_usesBuffer`), and
+* correct -- running it rotates the array (`rotProg_correct`, still open, but
+  checked at compile time for every shift of every length below 12),
+
+and *that* program has exactly `costB n k b` moves (`rotProg_length`).  The
 recursion is then a theorem about a concrete artifact rather than a definition.
 
 In particular the buffered branch needs no axiom.  "A segment of length `k ≤ b`
 goes into the buffer at a cost of `k`" is not assumed here: `bufStep` emits `k`
 copies in, `n - k` shifts, and `k` copies out, and its cost `n + k` is the
 length of that list.
+
+## The reflection
+
+Equation (1) recurses at shift `n % k`, while the geometry after a block step
+leaves a segment `[A ∣ B]` with `|A| = k` that must become `[B ∣ A]` -- a left
+rotation by `k`, not by `n % k`.  The two agree because §2's method always works
+with "the smaller segment", so past the halfway point it works from the other
+end.  That is a relabelling of positions, not a reversal of data, and so it is
+free: it is the `mirror` branch of `rotProg`, and it is why `algCost` is `cost`
+composed with `min k (n - k)`.  It has to be applied *before* the buffer test,
+or `rotProg n n b` would cost `2n` rather than `0`.
+
+`bcRotate` takes the other route, recursing at the same `k` and repairing the
+orientation with an explicit `reverse`.  That computes the right list, but would
+not do here: reversals are not free at the move level.
 -/
 
 namespace BlockCycleRotation
