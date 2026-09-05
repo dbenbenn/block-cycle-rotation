@@ -155,41 +155,41 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | **`n·ψ(k/n) = 2·remSum(n,k)`** | Lemma 11(2) | `psi_rat` | ✅ **proved** |
 | **Equation (relation)** | §3 | `relation`, `fCost` | ✅ **proved** |
 | **Theorem 7: continuity at irrationals** | Thm 7 | `continuousAt_psi`, `continuousAt_fCost` | ✅ **proved** |
-| `μ(N,ℓ,β) ≤ 3N`, i.e. `f ≤ 3` | Obs. (§3) | `psi_le_two`, `fCost_le_three` | ✅ proved |
+| `μ(N,ℓ,β) ≤ 3N`, i.e. `f ≤ 3` | Observation 5 | `psi_le_two`, `fCost_le_three` | ✅ proved |
 | **Theorem 7: Riemann integrability** | Thm 7 | `fBar_hasBoxIntegral` | ✅ **proved** |
 | Evenly spaced Riemann sums | Thm 9 | `integralSum_prepartition`, `tendsto_riemann_fBar` | ✅ proved |
 | `∑_{k<n} gcd(n,k) = o(n²)` | Thm 9 | `sum_gcd_range_le` | ✅ proved |
 | `f(1−x) = f(x)`, `∫₀¹ = 2∫₀^{1/2}` | Thm 9 | `fCost_symm`, `integral_fCost_split` | ✅ proved |
 | **Theorem 9** | Thm 9 | `theorem10` | ✅ **proved** |
-| `f^j` Riemann integrable | Cor. to Thm 7 | `fBar_pow_hasBoxIntegral` | ✅ proved |
-| Uniform distribution on `[0,1/2]` | Cor. to Thm 7 | `unifHalf` | ✅ defined |
-| Moments of all orders exist | Cor. to Thm 7 | `integrable_fCost_pow` | ✅ proved |
-| **`E[f(X)^j] = (∫₀^{1/2} f^j)/(1/2)`** | Cor. to Thm 7 | `moment_fCost` | ✅ **proved** |
-| Segments `segᵢ`, buffered cost `f_β` | Rem. (buffer) | `seg`, `psiBuf`, `fCostBuf` | ✅ defined |
-| **Recursion, eq. (def-mu-nu)** | Rem. (buffer) | `psiBuf_rec` | ✅ **proved** |
-| The buffer never hurts, `f_β ≤ f` | Cor. item 1 | `fCostBuf_le_fCost` | ✅ proved |
-| Monotone in the buffer size | Cor. item 1 | `psiBuf_antitone` | ✅ proved |
-| **Buffer helps though no segment fits** | Rem. (buffer) | `buffer_helps` | ✅ **proved** |
+| `f^j` Riemann integrable | Corollary 8 | `fBar_pow_hasBoxIntegral` | ✅ proved |
+| Uniform distribution on `[0,1/2]` | Corollary 8 | `unifHalf` | ✅ defined |
+| Moments of all orders exist | Corollary 8 | `integrable_fCost_pow` | ✅ proved |
+| **`E[f(X)^j] = (∫₀^{1/2} f^j)/(1/2)`** | Corollary 8 | `moment_fCost` | ✅ **proved** |
+| Segments `segᵢ`, buffered cost `f_β` | Remark 13 | `seg`, `psiBuf`, `fCostBuf` | ✅ defined |
+| **Recursion, eq. (def-mu-nu)** | Remark 13 | `psiBuf_rec` | ✅ **proved** |
+| The buffer never hurts, `f_β ≤ f` | Corollary 6(1) | `fCostBuf_le_fCost` | ✅ proved |
+| Monotone in the buffer size | Corollary 6(1) | `psiBuf_antitone` | ✅ proved |
+| **Buffer helps though no segment fits** | Remark 13 | `buffer_helps` | ✅ **proved** |
 | Figure's `1.25` at a 50% buffer | Fig. 6 caption | `expected_cost_half_buffer` | ✅ proved |
 | **Buffered cost `μ(N,ℓ,β)`** | Eq. (continuous) | `muCost` | ✅ **defined** |
 | Eq. (def-mu-nu), both branches | Eq. (def-mu-nu) | `muCost_rec_of_le`, `muCost_rec_of_gt` | ✅ proved |
-| Observation `μ(N,ℓ,β) ≤ 3N` | Obs. (§3) | `muCost_le_three_mul` | ✅ proved |
-| Cor. item 1: `μ` decreases in `β` | Cor. item 1 | `muCost_antitone` | ✅ proved |
-| Cor. item 2: `μ(λN,λℓ,λβ) = λμ(N,ℓ,β)` | Cor. item 2 | `muCost_homogeneous` | ✅ proved |
-| `f_β(ℓ) = μ(1,ℓ,β)` | Rem. (buffer) | `muCost_one` | ✅ proved |
+| Observation `μ(N,ℓ,β) ≤ 3N` | Observation 5 | `muCost_le_three_mul` | ✅ proved |
+| Corollary 6(1): `μ` decreases in `β` | Corollary 6(1) | `muCost_antitone` | ✅ proved |
+| Corollary 6(2): `μ(λN,λℓ,λβ) = λμ(N,ℓ,β)` | Corollary 6(2) | `muCost_homogeneous` | ✅ proved |
+| `f_β(ℓ) = μ(1,ℓ,β)` | Remark 13 | `muCost_one` | ✅ proved |
 | **Eq. (integral): buffered move count** | Eq. (integral) | `costB` | ✅ **defined** |
-| **Cor. item 3: `Cost(n,k,β) ≤ μ(n,k,β)`** | Cor. item 3 | `costB_le_muCost` | ✅ **proved** |
+| **Corollary 6(3): `Cost(n,k,β) ≤ μ(n,k,β)`** | Corollary 6(3) | `costB_le_muCost` | ✅ **proved** |
 | Eq. (integral) at `β = 0` is Lemma 11 | §2–3 | `costB_eq_moveCount` | ✅ proved |
-| Cor. item 3, unbuffered limit | Cor. item 3 | `cost_le_muCost` | ✅ proved |
+| Corollary 6(3), unbuffered limit | Corollary 6(3) | `cost_le_muCost` | ✅ proved |
 | **Segments halve every two steps** | §3 | `seg_add_two_le` | ✅ **proved** |
 | **`ψ = lim_{β→0⁺} ψ_β`, with `ψ − ψ_β ≤ 8β`** | §3 | `tendsto_psiBuf` | ✅ **proved** |
-| **Reflection `remSum n k = k + remSum n (n−k)`** | Rem. (all shifts) | `remSum_reflect` | ✅ **proved** |
-| `∑_{k>n/2} k = 3n²/8 + O(n)` | Rem. (all shifts) | `sum_bigShifts_id_close` | ✅ proved |
-| **Average over `1 ≤ k ≤ n` is `(3/8+2C)n + O(n^{1/2+ε})`** | Rem. (all shifts) | `remark_all_shifts` | ✅ **proved** |
+| **Reflection `remSum n k = k + remSum n (n−k)`** | Remark 20 | `remSum_reflect` | ✅ **proved** |
+| `∑_{k>n/2} k = 3n²/8 + O(n)` | Remark 20 | `sum_bigShifts_id_close` | ✅ proved |
+| **Average over `1 ≤ k ≤ n` is `(3/8+2C)n + O(n^{1/2+ε})`** | Remark 20 | `remark_all_shifts` | ✅ **proved** |
 | Sharper `cTerm ≤ 1/a³`, tail `≤ 1/N` | §4 | `cTerm_le_cube`, `cConst_le_partial_add_sharp` | ✅ proved |
 | Certified `partial(20) ≤ 39/200` | §4 | `cConst_partial_le` | ✅ proved |
-| **`D < 2`** (beats trinity rotation on average) | Rem. after Thm 14 | `dConst_lt_two` | ✅ **proved** |
-| `1 < D` | Rem. after Thm 14 | `one_lt_dConst` | ✅ proved |
+| **`D < 2`** (beats trinity rotation on average) | Remark 15 | `dConst_lt_two` | ✅ **proved** |
+| `1 < D` | Remark 15 | `one_lt_dConst` | ✅ proved |
 | Row bound `∑_{a'<a} gTerm ≤ 5/(8a²)` | §4 | `gTerm_row_le` | ✅ proved |
 | `ζ(3) ∈ [1.2018, 1.2023]` | Remark 21 | `zeta3_ge`, `zeta3_le` | ✅ proved |
 | **`D ≤ 1.85`**, the paper's value | Thm A / Thm 14 | `dConst_le_185` | ✅ **proved** |
@@ -300,7 +300,7 @@ numbered environments share a single counter, running
 > Lemma 19, Rem. 20, Rem. 21.
 
 The published LIPIcs version (17 pages) numbers its results differently — its main
-theorem is Theorem 10, not Theorem 14 — so numbers here will not match it.
+theorem is numbered 10 there, not 14 — so numbers here will not match it.
 Equations are cited by the paper's own labels, `(relation)`, `(RemainderSum)`,
 `(mobius)`, `(const-c)`, `(def-mu-nu)`, `(integral)`, `(continuous)`,
 `(invquant)`, `(const-c-alternative)`, which are stable across both versions.
@@ -329,8 +329,8 @@ correspondence, and the coprime form of the Heilbronn identity follow the
 paper's statements and proof structure.  Equation (eq. heilbron) itself, the
 aggregate of that identity over the gcd, is `heilbron`.
 
-**Deviations, all documented in the sources.** The remark on averaging over all
-shifts states the reflection for `n > k ≥ n/2`; the hypothesis must be strict,
+**Deviations, all documented in the sources.** Remark 20, on averaging over all
+shifts, states the reflection for `n > k ≥ n/2`; the hypothesis must be strict,
 since at `2k = n` it would read `k = k + k` (there `remSum n (n/2) = n/2` while
 `k + remSum n (n−k) = n`). `remSum_reflect` assumes `n < 2k`, and the
 conclusion is unaffected — that one term contributes `O(n)` to a sum of size
@@ -353,7 +353,7 @@ proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
 **Not attempted.** The benchmarks of §5, which are C++ listings and wall-clock
 timings on a named CPU — empirical claims with no mathematical content a proof
-assistant can certify. Also the remark's "standard deviation about 0.50", which
+assistant can certify. Also Remark 15's "standard deviation about 0.50", which
 the paper itself obtains by numerical approximation rather than proof: the
 moment machinery is there (`moment_fCost`, `integrable_fCost_pow`), but no
 certified bound on the variance is proved. The measure-theoretic
