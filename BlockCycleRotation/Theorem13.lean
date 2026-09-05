@@ -1,5 +1,5 @@
 /-
-# Theorem 13
+# Theorem 14
 
 The paper's main theorem: the average cost of the block cycle scheme is
 
@@ -7,7 +7,7 @@ The paper's main theorem: the average cost of the block cycle scheme is
 avgCost n = D·n + O(n^{1/2+ε}),     D = 1 + 4C ≈ 1.85.
 ```
 
-`Constant.lean` proves Lemma 17 — the `G₁` main term is `C·n²·∑_{d∣n} 1/d²` up
+`Constant.lean` proves Lemma 19 — the `G₁` main term is `C·n²·∑_{d∣n} 1/d²` up
 to `O(n^{3/2+ε})` — and `TripleSum.lean` proves the error layers bounding
 `G₂ + G₃`.  What is still missing, and is supplied here, is the link between
 the two: the estimate at a single coprime pair, which says that the actual inner
@@ -221,7 +221,7 @@ theorem G1term_eq {m d a a' : ℕ} (h1 : 1 ≤ a') (h2 : a' < a) (h3 : Nat.gcd a
   unfold G1term aCoeff bCoeff yCut
   exact main_term_substitute h1 h2 h3
 
-/-- **The bound of Lemma 18 at one pair:** `|G₂| ≤ |A| + |B·Y|`. -/
+/-- **The bound of Lemma 16 at one pair:** `|G₂| ≤ |A| + |B·Y|`. -/
 theorem abs_G2term_le {m d a a' : ℕ} (hm : 0 < m) (hd : 0 < d)
     (ha' : 1 ≤ a') (haa : a' < a) (hbulk : d * a * (a + a') ≤ m) :
     |G2term m d a a'| ≤ |aCoeff m d a| + |bCoeff a a'| * yCut m a a' := by
@@ -289,7 +289,7 @@ theorem abs_G2term_le {m d a a' : ℕ} (hm : 0 < m) (hd : 0 < d)
           (by positivity)
     _ = |aCoeff m d a| + |bCoeff a a'| * yCut m a a' := one_mul _
 
-/-- **The bound of Lemma 19 at one pair:** `|G₃| ≤ (|A| + |B|(Y-1))(1 + log a)`,
+/-- **The bound of Lemma 18 at one pair:** `|G₃| ≤ (|A| + |B|(Y-1))(1 + log a)`,
 from the character estimate. -/
 theorem abs_G3term_le {m d a a' : ℕ} (hm : 0 < m) (hd : 0 < d)
     (ha' : 1 ≤ a') (haa : a' < a) (hgcd : Nat.gcd a a' = 1) (hbulk : d * a * (a + a') ≤ m) :
@@ -492,12 +492,12 @@ theorem aggregate_le {n : ℕ} (hn : 0 < n) (F : ℕ → ℕ → ℕ → ℕ →
   rw [Err]
   exact outer_layer hn
 
-/-- **Lemma 18.**  `G₂(n) = O(n^{3/2+ε})`. -/
+/-- **Lemma 16.**  `G₂(n) = O(n^{3/2+ε})`. -/
 noncomputable def G2sum (n : ℕ) : ℝ :=
   ∑ d ∈ n.divisors, ∑ p ∈ (coprimePairs (n / d)).filter
     (fun p => d * p.1 * (p.1 + p.2) ≤ n / d), G2term (n / d) d p.1 p.2
 
-/-- **Lemma 19.**  `G₃(n) = O(n^{3/2+ε})`. -/
+/-- **Lemma 18.**  `G₃(n) = O(n^{3/2+ε})`. -/
 noncomputable def G3sum (n : ℕ) : ℝ :=
   ∑ d ∈ n.divisors, ∑ p ∈ (coprimePairs (n / d)).filter
     (fun p => d * p.1 * (p.1 + p.2) ≤ n / d), G3term (n / d) d p.1 p.2
@@ -613,13 +613,13 @@ theorem abs_G3sum_le {n : ℕ} (hn : 0 < n) : |G3sum n| ≤ Err n := by
       + |bCoeff a a'| * ((gtBound (n / d) d a a' - 1 : ℕ) : ℝ) := by positivity
   nlinarith [h, hW, hWnn, hlogle, hloga, hnn]
 
-/-- **Lemma 18.**  `G₂(n) = O(n^{3/2+ε})`. -/
+/-- **Lemma 16.**  `G₂(n) = O(n^{3/2+ε})`. -/
 theorem lemma_g_two {ε : ℝ} (hε : 0 < ε) :
     ∃ C : ℝ, 0 < C ∧ ∀ n : ℕ, 0 < n → |G2sum n| ≤ C * (n : ℝ) ^ (3 / 2 + ε) := by
   obtain ⟨C, hC, hErr⟩ := error_isBigO hε
   exact ⟨C, hC, fun n hn => le_trans (abs_G2sum_le hn) (hErr n hn)⟩
 
-/-- **Lemma 19.**  `G₃(n) = O(n^{3/2+ε})`. -/
+/-- **Lemma 18.**  `G₃(n) = O(n^{3/2+ε})`. -/
 theorem lemma_g_three {ε : ℝ} (hε : 0 < ε) :
     ∃ C : ℝ, 0 < C ∧ ∀ n : ℕ, 0 < n → |G3sum n| ≤ C * (n : ℝ) ^ (3 / 2 + ε) := by
   obtain ⟨C, hC, hErr⟩ := error_isBigO hε
@@ -690,7 +690,7 @@ theorem Qgt_sub_G1_le {n : ℕ} (hn : 0 < n) :
 
 /-! ## `Q(n)` in closed form
 
-Adding the diagonal (bounded by `sum_diag_isBigO`) and Lemma 17. -/
+Adding the diagonal (bounded by `sum_diag_isBigO`) and Lemma 19. -/
 
 /-- **`Q(n) = C·n²·∑_{d∣n} 1/d² + O(n^{3/2+ε})`.** -/
 theorem Q_isBigO {ε : ℝ} (hε : 0 < ε) :
@@ -972,9 +972,9 @@ theorem sum_cost_allShifts {n : ℕ} (hn : 0 < n) :
   rw [Finset.sum_congr rfl hc, Finset.sum_add_distrib, Finset.sum_const, card_allShifts,
     smul_eq_mul, Finset.mul_sum]
 
-/-! ## Theorem 13 -/
+/-! ## Theorem 14 -/
 
-/-- **Theorem 13.**  `avgCost n = D·n + O(n^{1/2+ε})` with `D = 1 + 4C ≈ 1.85`. -/
+/-- **Theorem 14.**  `avgCost n = D·n + O(n^{1/2+ε})` with `D = 1 + 4C ≈ 1.85`. -/
 theorem theorem13 {ε : ℝ} (hε : 0 < ε) :
     ∃ K : ℝ, 0 < K ∧ ∀ n : ℕ, 0 < n →
       |avgCost n - dConst * (n : ℝ)| ≤ K * (n : ℝ) ^ (1 / 2 + ε) := by

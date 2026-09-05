@@ -383,7 +383,7 @@ theorem tendsto_psiBuf {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) :
   · filter_upwards [self_mem_nhdsWithin] with β hβ
     exact psiBuf_le_psi hβ hx0 hx
 
-/-! ## The remark
+/-! ## Remark 13
 
 "The algorithm takes advantage of the buffer even in cases where neither the
 bottom nor the top segment fits into the buffer.  The algorithm makes use of
@@ -436,7 +436,7 @@ theorem psi_two_fifths : psi (2 / 5 : ℝ) = 6 / 5 := by
   norm_num at h
   linarith
 
-/-- **The remark.**  With `β = 1/4` and a rotation by `x = 2/5`, neither segment
+/-- **Remark 13.**  With `β = 1/4` and a rotation by `x = 2/5`, neither segment
 fits into the buffer, yet the buffered cost is strictly smaller. -/
 theorem buffer_helps :
     (1 / 4 : ℝ) < 2 / 5 ∧ (1 / 4 : ℝ) < 1 - 2 / 5
@@ -667,7 +667,7 @@ theorem costB_le_muCost : ∀ k n b : ℕ, 0 < n → 0 < b → 2 * k ≤ n →
       linarith
 
 /-- **Consistency of the two cost models.**  With no buffer, equation (integral)
-computes exactly the move count `n - gcd(n,k) + 2·remSum(n,k)` of Lemma 12. -/
+computes exactly the move count `n - gcd(n,k) + 2·remSum(n,k)` of Lemma 11. -/
 theorem costB_eq_moveCount : ∀ k n : ℕ, 2 * k ≤ n → costB n k 0 = moveCount n k := by
   intro k
   induction k using Nat.strong_induction_on with

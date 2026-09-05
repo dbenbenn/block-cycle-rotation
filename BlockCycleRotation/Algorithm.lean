@@ -1,7 +1,7 @@
 /-
 # The block cycle recursion and its move count
 
-This file formalises the cost accounting of section 2 and Lemma 12 of
+This file formalises the cost accounting of section 2 and Lemma 11 of
 
   Valentin Blomer and Kai-Uwe Bux,
   *The cost of cyclic permutations and remainder sums in the Euclidean algorithm*,
@@ -17,11 +17,11 @@ one step performs a cyclic permutation of `b` blocks of length `k`, costing
 
 Note this is *not* the Euclidean step `(n, k) ↦ (k, n % k)`: the first components
 differ.  They agree modulo the second component, which is the congruence
-`pᵢ ≡ nᵢ mod 𝔯ᵢ` appearing in the paper's proof of Lemma 12, and it is why the
+`pᵢ ≡ nᵢ mod 𝔯ᵢ` appearing in the paper's proof of Lemma 11, and it is why the
 segment lengths are nevertheless the Euclidean remainders.
 
 The main result is `cost_add_gcd`, an unconditional form of the paper's
-equation (12):
+Lemma 11(2) together with equation (7), labelled (relation):
 
   `cost n k + gcd n k = n + 2 * remSum n k`,
 
@@ -83,7 +83,7 @@ theorem gcd_add_left (k r : ℕ) : Nat.gcd (k + r) r = Nat.gcd k r := by
 
 /-- **`remSum` only sees the first argument modulo the second.**
 
-This is the content of the induction in the paper's proof of Lemma 12: the
+This is the content of the induction in the paper's proof of Lemma 11: the
 algorithm's recursion and the Euclidean algorithm keep different first
 components, but congruent ones, and so produce the same remainders. -/
 theorem remSum_congr_mod {n m k : ℕ} (h : n % k = m % k) : remSum n k = remSum m k := by
@@ -98,9 +98,9 @@ theorem remSum_congr_mod {n m k : ℕ} (h : n % k = m % k) : remSum n k = remSum
 theorem remSum_step {k r : ℕ} : remSum (k + r) r = remSum k r :=
   remSum_congr_mod (by simp [Nat.add_mod_right])
 
-/-! ## Lemma 12(1): where the recursion stops -/
+/-! ## Lemma 11(1): where the recursion stops -/
 
-/-- **Lemma 12(1).**  The block cycle algorithm terminates on a subproblem with
+/-- **Lemma 11(1).**  The block cycle algorithm terminates on a subproblem with
 parameters `(gcd n k, 0)`. -/
 theorem finalSeg_eq_gcd : ∀ k n : ℕ, finalSeg n k = Nat.gcd n k := by
   intro k
@@ -112,9 +112,9 @@ theorem finalSeg_eq_gcd : ∀ k n : ℕ, finalSeg n k = Nat.gcd n k := by
     · rw [finalSeg_of_pos n hk.ne', ih (n % k) (Nat.mod_lt _ hk), gcd_add_left,
         ← gcd_step]
 
-/-! ## Equation (12): the move count -/
+/-! ## The move count: Lemma 11(2) with equation (7) -/
 
-/-- **Equation (12).**  The number of moves performed by the block cycle
+/-- **Lemma 11(2), with equation (7).**  The number of moves performed by the block cycle
 algorithm is `n - gcd n k` moves of type B plus `2 * remSum n k` moves of type A.
 
 Stated additively, so that it holds unconditionally (with no truncated
@@ -162,7 +162,7 @@ theorem cost_le_three_mul {n k : ℕ} (h : 2 * k ≤ n) : cost n k ≤ 3 * n := 
 
 /-! ## Sanity checks
 
-Observation 6: `n = 21`, `k = 8` costs 58 moves.  The recursion visits
+Observation 3: `n = 21`, `k = 8` costs 58 moves.  The recursion visits
 `(21,8), (13,5), (8,3), (5,2), (3,1)` at costs `24, 15, 9, 6, 4`. -/
 
 #guard cost 21 8 = 58
@@ -173,7 +173,7 @@ Observation 6: `n = 21`, `k = 8` costs 58 moves.  The recursion visits
 
 /-! ## The Fibonacci worst case
 
-Observation 6 says the worst case is approached along `k = F_m`, `n = F_{m+2}`,
+Observation 3 says the worst case is approached along `k = F_m`, `n = F_{m+2}`,
 where the algorithm takes `3∑_{j≤m} F_j - 2 = 3n - 3gcd(n,k) - 2` moves.  Since
 `∑_{j≤m} F_j = F_{m+2} - 1` and `gcd(F_{m+2}, F_m) = 1`, that is `3n - 5`. -/
 
@@ -269,7 +269,7 @@ theorem gcd_fib_add_two (m : ℕ) : Nat.gcd (Nat.fib (m + 2)) (Nat.fib m) = 1 :=
   rw [hsplit, gcd_add_left]
   exact (Nat.fib_coprime_fib_succ m).symm
 
-/-- **Observation 6, the Fibonacci family.**  At `n = F_{m+2}`, `k = F_m` (`m ≥ 2`)
+/-- **Observation 3, the Fibonacci family.**  At `n = F_{m+2}`, `k = F_m` (`m ≥ 2`)
 the algorithm uses `3n - 5 = 3n - 3gcd(n,k) - 2` moves, two short of the
 worst-case bound `3n - 3gcd(n,k)` of Theorem A. -/
 theorem moveCount_fib (j : ℕ) :

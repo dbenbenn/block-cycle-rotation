@@ -8,7 +8,7 @@ This file formalises the arithmetic core of
   AofA 2026, LIPIcs vol. 381, 14:1--14:17.  arXiv:2601.00979.
 
 The block cycle rotation algorithm rotates an array of length `n` by `k` places.
-By Lemma 12 of the paper, the sequence of segment lengths arising in its
+By Lemma 11 of the paper, the sequence of segment lengths arising in its
 recursion is exactly the sequence of remainders produced by the Euclidean
 algorithm on `(n, k)`, and the total number of moves is
 
@@ -29,7 +29,7 @@ algorithm started on the pair `(n, k)`.
 
 Concretely, with `r₁ = k`, `p₁ = n` and `rᵢ₊₁ = pᵢ % rᵢ`, `pᵢ₊₁ = rᵢ`, this is
 `r₁ + r₂ + ⋯`, the sum stopping at the last nonzero remainder.  This is the
-quantity denoted `𝔯₁ + 𝔯₂ + ⋯` in Lemma 12 of the paper. -/
+quantity denoted `𝔯₁ + 𝔯₂ + ⋯` in Lemma 11 of the paper. -/
 def remSum (n k : ℕ) : ℕ :=
   if h : k = 0 then 0 else k + remSum k (n % k)
 termination_by k
@@ -126,7 +126,7 @@ theorem remSum_mul : ∀ k n d : ℕ, remSum (d * n) (d * k) = d * remSum n k :=
 /-! ## Move count -/
 
 /-- The number of moves the block cycle algorithm performs when rotating an
-array of length `n` by `k ≤ n / 2` places (equation (12) of the paper):
+array of length `n` by `k ≤ n / 2` places (Lemma 11(2) of the paper, with equation (7)):
 `n - gcd n k` moves of type B, and `2 * remSum n k` moves of type A. -/
 def moveCount (n k : ℕ) : ℕ := n - Nat.gcd n k + 2 * remSum n k
 
@@ -149,7 +149,7 @@ theorem moveCount_le_three_mul {n k : ℕ} (h : 2 * k ≤ n) : moveCount n k ≤
 
 /-! ## Sanity checks against the paper
 
-Observation 6 of the paper works out the example of a left segment of length `8`
+Observation 3 of the paper works out the example of a left segment of length `8`
 and a right segment of length `13`, i.e. `n = 21`, `k = 8`, and reports a cost of
 `58` moves, via the remainder sequence `8, 5, 3, 2, 1`. -/
 

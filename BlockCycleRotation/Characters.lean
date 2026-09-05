@@ -13,7 +13,7 @@ so the geometric sums of `ExpSum.lean` obey
   `‖∑_{B ≤ j < T} e(2πmj/a)‖ ≤ a / (2 · min(m, a-m))`.
 
 Summing `1 / min(m, a-m)` over `0 < m < a` is what produces the `log a` in the
-paper's Lemma 18.
+paper's Lemma 16.
 -/
 
 import BlockCycleRotation.ExpSum
@@ -122,7 +122,7 @@ theorem norm_geom_sum_root_le {a m : ℕ} (h0 : 0 < m) (hma : m < a) (B T : ℕ)
 
 /-! ## Summing the bounds over `m`
 
-The paper's Lemma 18 sums `norm_geom_sum_root_le` over `0 < m < a`, producing a
+The paper's Lemma 16 sums `norm_geom_sum_root_le` over `0 < m < a`, producing a
 factor `∑_{0<m<a} 1/min(m, a-m)`.  Splitting `1/min` as `1/m + 1/(a-m)` and
 reflecting `m ↦ a - m` bounds this by twice a harmonic sum, i.e. by `O(log a)`. -/
 

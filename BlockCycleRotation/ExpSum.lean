@@ -1,13 +1,13 @@
 /-
 # Elementary bounds on exponential sums
 
-This file formalises Observation 15 of
+This file formalises Observation 17 of
 
   Valentin Blomer and Kai-Uwe Bux,
   *The cost of cyclic permutations and remainder sums in the Euclidean algorithm*,
   AofA 2026.  arXiv:2601.00979.
 
-Observation 15 is the *only* analytic input to the error term in Theorem 13.
+Observation 17 is the *only* analytic input to the error term in Theorem 14.
 Notably it needs no Kloosterman or Weil bounds: everything follows from Jordan's
 inequality (`Real.mul_abs_le_abs_sin` in Mathlib) together with the closed form
 of a geometric series, i.e. the trivial bound on an exponential sum, with no
@@ -59,7 +59,7 @@ theorem norm_e_sub_one_eq (θ : ℝ) : ‖e θ - 1‖ = 2 * |Real.sin (θ / 2)| 
   have h := congrArg Real.sqrt hsq
   rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (by positivity)] at h
 
-/-- The easy half of Observation 15: `‖e θ - 1‖ ≤ |θ|`. -/
+/-- The easy half of Observation 17: `‖e θ - 1‖ ≤ |θ|`. -/
 theorem norm_e_sub_one_le (θ : ℝ) : ‖e θ - 1‖ ≤ |θ| := by
   have habs : |θ / 2| = |θ| / 2 := by rw [abs_div, abs_two]
   have hs : |Real.sin (θ / 2)| ≤ |θ| / 2 := by
@@ -71,7 +71,7 @@ theorem norm_e_sub_one_le (θ : ℝ) : ‖e θ - 1‖ ≤ |θ| := by
   have h1 := Real.sqrt_le_sqrt hsq
   rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (abs_nonneg θ)] at h1
 
-/-- **Jordan's inequality for the circle.**  The hard half of Observation 15:
+/-- **Jordan's inequality for the circle.**  The hard half of Observation 17:
 for `|θ| ≤ π` we have `(2/π)|θ| ≤ ‖e θ - 1‖`.
 
 This is the bi-Lipschitz comparison between the arc-length and Euclidean metrics
@@ -106,7 +106,7 @@ theorem e_ne_one {θ : ℝ} (h0 : θ ≠ 0) (h : |θ| ≤ π) : e θ ≠ 1 := by
 
 /-! ## The exponential sum bounds -/
 
-/-- **Observation 15, geometric sum.**  For `0 < |θ| ≤ π`,
+/-- **Observation 17, geometric sum.**  For `0 < |θ| ≤ π`,
 `‖∑_{B ≤ j < T} e(jθ)‖ ≤ π / |θ|`.
 
 This is the trivial bound: the sum telescopes to a quotient whose numerator has
@@ -123,7 +123,7 @@ theorem norm_geom_sum_le' {θ : ℝ} (hne : e θ ≠ 1) (B T : ℕ) :
   · rw [Finset.Ico_eq_empty (by omega), Finset.sum_empty, norm_zero]
     positivity
 
-/-- **Observation 15, geometric sum.**  For `0 < |θ| ≤ π`,
+/-- **Observation 17, geometric sum.**  For `0 < |θ| ≤ π`,
 `‖∑_{B ≤ j < T} e(jθ)‖ ≤ π / |θ|`.
 
 This is the trivial bound: the sum telescopes to a quotient whose numerator has
@@ -164,7 +164,7 @@ theorem norm_weighted_geom_sum_le' {θ : ℝ} (hne : e θ ≠ 1) (T : ℕ) :
     _ = (T - 1 : ℕ) * (2 / ‖e θ - 1‖) := by
         rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul]
 
-/-- **Observation 15, weighted sum.**  For `0 < |θ| ≤ π`,
+/-- **Observation 17, weighted sum.**  For `0 < |θ| ≤ π`,
 `‖∑_{1 ≤ j < T} j · e(jθ)‖ ≤ (T - 1) · π / |θ|`.
 
 Proved by the paper's double-counting argument: write `j` as the number of `B`
@@ -186,7 +186,7 @@ theorem norm_weighted_geom_sum_le {θ : ℝ} (h0 : θ ≠ 0) (h : |θ| ≤ π) (
     _ = (T - 1 : ℕ) * (π / |θ|) := by
         rw [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul]
 
-/-! ### The sharp form of Observation 15
+/-! ### The sharp form of Observation 17
 
 The paper does not stop at the triangle inequality: after the double-counting
 step it evaluates the inner geometric sums in closed form,
@@ -217,7 +217,7 @@ theorem weighted_geom_sum_closed {θ : ℝ} (hne : e θ ≠ 1) (T : ℕ) (hT : 1
   rw [hsplit, Finset.sum_const, Nat.card_Ico, nsmul_eq_mul, geom_sum_Ico hne hT]
   norm_num
 
-/-- **Observation 15, weighted sum, in the paper's sharp form.**
+/-- **Observation 17, weighted sum, in the paper's sharp form.**
 For `0 < |θ| ≤ π`,
 `‖∑_{1 ≤ j < T} j · e(jθ)‖ ≤ π²/(2θ²) + (T-1)·π/(2|θ|)`. -/
 theorem norm_weighted_geom_sum_le_sharp {θ : ℝ} (h0 : θ ≠ 0) (h : |θ| ≤ π) (T : ℕ) :

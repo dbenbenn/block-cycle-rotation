@@ -1,10 +1,10 @@
 /-
 # The average cost
 
-Theorem 13 of Blomer--Bux states that the average number of moves, over shifts
+Theorem 14 of Blomer--Bux states that the average number of moves, over shifts
 `0 ≤ k < n`, is `D * n + O(n^(1/2+ε))` with `D ≈ 1.85`.  This file sets up the
 average and proves the unconditional upper bound `avgCost n ≤ 3 * n`, which is
-what the worst-case analysis gives.  The content of Theorem 13 is the sharp
+what the worst-case analysis gives.  The content of Theorem 14 is the sharp
 constant and the error term; see `ExpSum.lean` for its analytic core.
 
 The algorithm always recurses on the shorter of the two segments, using the
@@ -33,7 +33,7 @@ noncomputable def avgCost (n : ℕ) : ℝ := (∑ k ∈ range n, (algCost n k : 
 
 /-- **The average cost is at most `3 * n`.**
 
-Theorem 13 refines this to `D * n + O(n^(1/2+ε))` with `D ≈ 1.85`; see
+Theorem 14 refines this to `D * n + O(n^(1/2+ε))` with `D ≈ 1.85`; see
 `theorem13` in `Theorem13.lean`. -/
 theorem avgCost_le_three_mul {n : ℕ} (hn : 0 < n) : avgCost n ≤ 3 * n := by
   have hn' : (0 : ℝ) < n := by exact_mod_cast hn
@@ -48,7 +48,7 @@ theorem avgCost_le_three_mul {n : ℕ} (hn : 0 < n) : avgCost n ≤ 3 * n := by
 
 /-! ## Sanity check
 
-For `n = 21`, `k = 8` the shorter segment is `8`, so this is Observation 6. -/
+For `n = 21`, `k = 8` the shorter segment is `8`, so this is Observation 3. -/
 
 #guard algCost 21 8 = 58
 #guard algCost 21 13 = 58

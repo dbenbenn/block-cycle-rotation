@@ -1,7 +1,7 @@
 /-
 # Averaging over all shifts
 
-The remark after Theorem 13.  A run of the Euclidean algorithm on `(n,k)` with
+Remark 20.  A run of the Euclidean algorithm on `(n,k)` with
 `k` in the upper half first produces the remainder `k` and then repeats the run
 of `(n, n-k)`, so
 
@@ -193,7 +193,7 @@ theorem sum_bigShifts_id_close {n : ℕ} (hn : 0 < n) :
   rw [abs_le]
   constructor <;> nlinarith [hkeyR, hmR, hrR, hr0, hn1]
 
-/-! ## The remark -/
+/-! ## Remark 20 -/
 
 /-- Summing over all shifts counts the lower half twice, up to the midpoint
 term and `∑_{k > n/2} k`. -/
@@ -208,7 +208,7 @@ theorem sum_Icc_bounds {n : ℕ} (hn : 0 < n) :
   have h2 := sum_allShifts_le_smallShifts hn
   omega
 
-/-- **The remark.**  The remainder sum averaged over `1 ≤ k ≤ n` is
+/-- **Remark 20.**  The remainder sum averaged over `1 ≤ k ≤ n` is
 `(3/8 + 2C)·n + O(n^{1/2+ε})`. -/
 theorem remark_all_shifts {ε : ℝ} (hε : 0 < ε) :
     ∃ K : ℝ, 0 < K ∧ ∀ n : ℕ, 0 < n →

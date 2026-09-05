@@ -1,7 +1,7 @@
 /-
-# Theorem 10 and Theorem 8
+# Theorem 9 and Theorem 7
 
-Theorem 10 states that `avgCost n / n` converges, and identifies the limit as
+Theorem 9 states that `avgCost n / n` converges, and identifies the limit as
 `2∫₀^{1/2} f` where `f` is the *relative cost*: the number of moves per element
 the algorithm uses to rotate by a fraction `x` of the array.
 
@@ -18,7 +18,7 @@ recursion in relative coordinates: at `x = k/n` one has `Out(x) = n'/n` and
 
 Unravelled, `ψ` is the series `2x + 2∑_{i≥1} Out(x)···Out(Inⁱ⁻¹(x))·Inⁱ(x)`,
 which converges uniformly because `In` maps into `[0,1/2)` and `Out ≤ 2/3`
-there.  That is Theorem 8's convergence; continuity at irrationals follows
+there.  That is Theorem 7's convergence; continuity at irrationals follows
 since `In` and `Out` are continuous away from `1/x ∈ ℤ` and preserve
 irrationality.
 -/
@@ -351,7 +351,7 @@ theorem relation {n k : ℕ} (hn : 0 < n) (hk : k ≤ n) :
   rw [mul_add, mul_one, hpsi]
   linarith [hcostR]
 
-/-! ## Theorem 8: continuity at the irrationals
+/-! ## Theorem 7: continuity at the irrationals
 
 `In` and `Out` are continuous wherever `1/x` is not an integer, and `In`
 preserves irrationality.  So each partial sum of the series is continuous at an
@@ -585,7 +585,7 @@ theorem psi_sub_partial_le {x : ℝ} (hx0 : 0 ≤ x) (hx : x ≤ 1 / 2) (N : ℕ
   rw [abs_le]
   constructor <;> linarith [hval ▸ hub, hnn, hsplit]
 
-/-- **Theorem 8.**  `ψ` is continuous at every irrational point of `(0,1/2)`. -/
+/-- **Theorem 7.**  `ψ` is continuous at every irrational point of `(0,1/2)`. -/
 theorem continuousAt_psi {x : ℝ} (hirr : Irrational x) (hx0 : 0 < x) (hx : x < 1 / 2) :
     ContinuousAt psi x := by
   rw [Metric.continuousAt_iff]
@@ -726,9 +726,9 @@ theorem fBar_aestronglyMeasurable : AEStronglyMeasurable fBar volume := by
     Measure.restrict_eq_self_of_ae_mem ae_continuousAt_fBar
   rwa [h2] at h1
 
-/-! ## Theorem 8, second half: Riemann integrability
+/-! ## Theorem 7, second half: Riemann integrability
 
-The paper's Theorem 8 concludes that `f` is *Riemann integrable*.  In Mathlib
+The paper's Theorem 7 concludes that `f` is *Riemann integrable*.  In Mathlib
 that is `BoxIntegral.HasIntegral I IntegrationParams.Riemann`, i.e. convergence
 of the tagged-partition sums over all subdivisions whose mesh is below a
 constant threshold.  The Riemann–Lebesgue criterion
@@ -781,7 +781,7 @@ theorem ae_continuousAt_FBar :
 
 set_option maxHeartbeats 1000000 in
 -- The Riemann-Lebesgue criterion carries a large elaboration burden.
-/-- **Theorem 8, second half.**  `f` is Riemann integrable on `[0,1]`, with
+/-- **Theorem 7, second half.**  `f` is Riemann integrable on `[0,1]`, with
 Riemann integral equal to its Lebesgue integral. -/
 theorem fBar_hasBoxIntegral :
     HasIntegral unitBox IntegrationParams.Riemann FBar
@@ -963,7 +963,7 @@ theorem tendsto_divisors_div : Tendsto (fun n : ℕ => (n.divisors.card : ℝ) /
   rw [div_le_div_iff₀ hnR hp]
   nlinarith [h1, hp, hpow]
 
-/-! ## Theorem 10 -/
+/-! ## Theorem 9 -/
 
 theorem avgCost_eq_riemann {n : ℕ} (hn : 0 < n) :
     avgCost n / (n : ℝ)
@@ -986,7 +986,7 @@ theorem avgCost_eq_riemann {n : ℕ} (hn : 0 < n) :
     Nat.cast_sum]
   field_simp
 
-/-- **Theorem 10.**  `avgCost n / n → ∫₀¹ f`. -/
+/-- **Theorem 9.**  `avgCost n / n → ∫₀¹ f`. -/
 theorem theorem10_unit :
     Tendsto (fun n : ℕ => avgCost n / (n : ℝ)) atTop (𝓝 (∫ x in (0 : ℝ)..1, fBar x)) := by
   have hgcd : Tendsto
@@ -1075,7 +1075,7 @@ theorem integral_fCost_split :
   rw [← hadd, hrefl]
   ring
 
-/-- **Theorem 10.**  `avgCost n / n → 2∫₀^{1/2} f`. -/
+/-- **Theorem 9.**  `avgCost n / n → 2∫₀^{1/2} f`. -/
 theorem theorem10 :
     Tendsto (fun n : ℕ => avgCost n / (n : ℝ)) atTop
       (𝓝 (2 * ∫ x in (0 : ℝ)..(1 / 2), fCost x)) := by
@@ -1086,10 +1086,10 @@ theorem theorem10 :
 
 /-! ## Higher moments
 
-The corollary after Theorem 8: if `X` is uniform on `[0,1/2]` then the `j`-th
+The corollary after Theorem 7: if `X` is uniform on `[0,1/2]` then the `j`-th
 moment of `f(X)` is `(∫₀^{1/2} f^j)/(1/2)`, and moments of all orders exist.
 
-Existence is Theorem 8 again: `f^j` is bounded by `4^j` and continuous wherever
+Existence is Theorem 7 again: `f^j` is bounded by `4^j` and continuous wherever
 `f` is, so it is Riemann integrable by the same criterion.  The formula is the
 normalisation of the uniform measure, which here is `2 • volume` restricted to
 `(0,1/2]` — the measure with constant density `2` on `[0,1/2]`. -/
@@ -1162,7 +1162,7 @@ theorem moment_fCost (j : ℕ) :
   rw [integral_unifHalf]
   ring
 
-/-- The first moment is the constant of Theorem 10. -/
+/-- The first moment is the constant of Theorem 9. -/
 theorem moment_one : ∫ x, fCost x ^ 1 ∂unifHalf = 2 * ∫ x in (0 : ℝ)..(1 / 2), fCost x := by
   rw [integral_unifHalf]
   simp
