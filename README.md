@@ -183,7 +183,7 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Corollary 6(2): `μ(λN,λℓ,λβ) = λμ(N,ℓ,β)` | Corollary 6(2) | `muCost_homogeneous` | ✅ proved |
 | `f_β(ℓ) = μ(1,ℓ,β)` | Remark 13 | `muCost_one` | ✅ proved |
 | **Eq. (integral): buffered move count** | Eq. (integral) | `costB` | ✅ **defined** |
-| **Corollary 6(3): `Cost(n,k,β) ≤ μ(n,k,β)`** | Corollary 6(3) | `costB_le_muCost` | ✅ **proved** |
+| **Corollary 6(3): `m(n,k,b) ≤ μ(n,k,b)`** | Corollary 6(3) | `costB_le_muCost` | ✅ **proved** |
 | Eq. (integral) at `β = 0` is Lemma 11 | §2–3 | `costB_eq_moveCount` | ✅ proved |
 | Corollary 6(3), unbuffered limit | Corollary 6(3) | `cost_le_muCost` | ✅ proved |
 | **Segments halve every two steps** | §3 | `seg_add_two_le` | ✅ **proved** |
@@ -293,6 +293,11 @@ does not provide, is proved in `DivisorBound.lean`: for each `ε > 0` there is
 With that in hand the three pieces of §4 are complete: `lemma19` (the main term
 and the constant `C`), `lemma_g_two` and `lemma_g_three` (the two error terms),
 and `theorem14` assembles them.
+
+**A note on the buffer arguments.** The paper defines $\mu(\nu,\kappa,\beta)$ with a *relative* buffer
+$\beta$, and Corollary 6 items (1) and (2) are stated in those variables; item (3) applies it at
+$(n,k,b)$ with the absolute buffer $b$, as `costB_le_muCost` does. Rows above write $\mu(N,\ell,\beta)$
+using the Lean argument names of `muCost`, which correspond to the paper's $\nu,\kappa,\beta$.
 
 **A note on the paper's argument order.** The paper writes the move count and the
 remainder sum with their arguments in both orders: equation (8) defines `m̄(n,k)`
@@ -419,6 +424,10 @@ enclosure `ζ(3) ∈ [1.2018, 1.2023]`, and the resulting `1.84 ≤ D ≤ 1.85` 
 above marked `— new` have no counterpart in the paper; rows citing a numbered
 result state what the paper claims, with the proof new. Deleting these two files
 leaves the certification of the paper itself intact.
+
+**Equation (1) is taken as a definition, not proved.** The paper introduces `m(n,k,b)` as *the number of moves the block cycle method needs* to rotate an array of length `n` by `k` using a buffer of size `b`, and then states equation (1) — the three-branch recursion — as something it *finds* to hold for `k ≤ n/2`. Here that recursion is the definition of `costB` (and `cost`), so the step from the operational move count to the recursion is assumed rather than established.
+
+`bcRotate` is proved to compute the rotation, and the cost recursion is proved to satisfy the paper's bounds, but no theorem connects them: nothing states that `cost n k` counts the moves `bcRotate` performs. Closing the gap means formalising equation (1) itself — modelling the in-place algorithm as a sequence of element moves and proving that count satisfies the recursion. Two constraints on any such statement: the paper's own hypothesis `k ≤ n/2`, and the fact that `bcRotate` handles `k > n/2` by reversing the list, a step with no counterpart in the paper.
 
 **Not attempted.** The benchmarks of §5, which are C++ listings and wall-clock
 timings on a named CPU — empirical claims with no mathematical content a proof
