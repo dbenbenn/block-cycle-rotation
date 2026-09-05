@@ -364,6 +364,8 @@ bound `d(n) = O(n^ε)` (cited as standard, absent from Mathlib), Bernoulli's
 inequality, and the correctness of the algorithm itself — the paper describes the block cycle scheme but never
 proves that it computes a rotation, whereas `bcRotate_eq_rotate` does.
 
+**The cost recursion is not linked to the executable algorithm.** `bcRotate` is proved to compute the rotation, and `cost` is proved to satisfy the paper's bounds, but no theorem states that `cost n k` counts the moves `bcRotate` performs — they are independent definitions. The paper does not face this because it defines `m(n,k)` as the move count outright and analyses that one object. Closing the gap needs the in-place algorithm modelled as a sequence of element moves rather than as a list transformation; note also that `bcRotate` handles `k > n/2` by reversing the list, a step with no counterpart in the paper, so any such statement would be restricted to `2k ≤ n`.
+
 **Not attempted.** The benchmarks of §5, which are C++ listings and wall-clock
 timings on a named CPU — empirical claims with no mathematical content a proof
 assistant can certify. Also Remark 15's "standard deviation about 0.50", which
