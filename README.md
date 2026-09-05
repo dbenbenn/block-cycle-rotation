@@ -425,9 +425,11 @@ above marked `— new` have no counterpart in the paper; rows citing a numbered
 result state what the paper claims, with the proof new. Deleting these two files
 leaves the certification of the paper itself intact.
 
-**Equation (1) is taken as a definition, not proved.** The paper introduces `m(n,k,b)` as *the number of moves the block cycle method needs* to rotate an array of length `n` by `k` using a buffer of size `b`, and then states equation (1) — the three-branch recursion — as something it *finds* to hold for `k ≤ n/2`. Here that recursion is the definition of `costB` (and `cost`), so the step from the operational move count to the recursion is assumed rather than established.
+**Equation (1) is now proved, in `Moves.lean`.**  The paper introduces `m(n,k,b)` as *the number of moves the block cycle method needs* to rotate an array of length `n` by `k` using a buffer of size `b`, and then states equation (1) — the three-branch recursion — as something it *finds* to hold for `k <= n/2`.  Elsewhere here that recursion is the definition of `costB`, so the step from the operational move count to the recursion was assumed.
 
-`bcRotate` is proved to compute the rotation, and the cost recursion is proved to satisfy the paper's bounds, but no theorem connects them: nothing states that `cost n k` counts the moves `bcRotate` performs. Closing the gap means formalising equation (1) itself — modelling the in-place algorithm as a sequence of element moves and proving that count satisfies the recursion. Two constraints on any such statement: the paper's own hypothesis `k ≤ n/2`, and the fact that `bcRotate` handles `k > n/2` by reversing the list, a step with no counterpart in the paper.
+`Moves.lean` closes it.  A move is one element copy, the unit §2 fixes when it counts a cyclic permutation of order `q` as `q+1` moves "using just one additional cell of memory".  Programs are lists of moves run against an array and an auxiliary buffer, and `equation_one` says that for `2k <= n` the emitted program rotates the window (`rotProg_correct`), names no auxiliary cell numbered `>= b` (`rotProg_usesBuffer`), and has exactly `costB n k b` moves (`rotProg_length`).  The recursion is a theorem about a program the first two clauses pin down, not a definition.  Off the paper's range the count is `costB` at the reflected shift, which is how `algCost` packages it (`rotProg_length_min`).
+
+This is new mathematics in its own file, cited nowhere in the tables above; deleting it leaves the certification of the paper intact.
 
 **Not attempted.** The benchmarks of §5, which are C++ listings and wall-clock
 timings on a named CPU — empirical claims with no mathematical content a proof
