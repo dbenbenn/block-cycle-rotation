@@ -28,6 +28,21 @@ theorem two_mul_min_le {n k : ℕ} (h : k ≤ n) : 2 * min k (n - k) ≤ n := by
 theorem algCost_le_three_mul {n k : ℕ} (h : k ≤ n) : algCost n k ≤ 3 * n :=
   cost_le_three_mul (two_mul_min_le h)
 
+/-- `gcd` does not see the reflection the algorithm applies to the shift. -/
+theorem gcd_min_eq {n k : ℕ} (h : k ≤ n) : Nat.gcd n (min k (n - k)) = Nat.gcd n k := by
+  rcases le_total k (n - k) with hk | hk
+  · rw [min_eq_left hk]
+  · rw [min_eq_right hk, Nat.gcd_comm n (n - k), Nat.gcd_comm n k]
+    exact Nat.gcd_self_sub_left h
+
+/-- **Observation 2.**  The block cycle algorithm uses at most `3 * (n - gcd n k)`
+moves, for *any* shift `k ≤ n` — the paper states it without restricting to
+`2 * k ≤ n`.  Stated additively so that it holds with no truncated subtraction. -/
+theorem algCost_add_gcd_le {n k : ℕ} (h : k ≤ n) :
+    algCost n k + 3 * Nat.gcd n k ≤ 3 * n := by
+  rw [algCost, ← gcd_min_eq h]
+  exact cost_add_gcd_le (two_mul_min_le h)
+
 /-- The average number of moves, over all shifts `0 ≤ k < n`. -/
 noncomputable def avgCost (n : ℕ) : ℝ := (∑ k ∈ range n, (algCost n k : ℝ)) / n
 

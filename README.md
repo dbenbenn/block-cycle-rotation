@@ -26,7 +26,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | --- | --- | --- | --- |
 | Remainder sum `remSum` | Eq. (def-mbar), Lemma 11 | `BlockCycleRotation.remSum` | ✅ defined |
 | Master inequality | (new, see below) | `remSum_add_gcd_le` | ✅ proved |
-| Worst case `≤ 3(n − gcd)` | Thm A / Obs. 2 | `moveCount_add_gcd_le` | ✅ proved |
+| Worst case `≤ 3(n − gcd)`, for `2k ≤ n` | Thm A | `moveCount_add_gcd_le` | ✅ proved |
+| Worst case `≤ 3(n − gcd)`, for any shift | Observation 2 | `algCost_add_gcd_le` | ✅ proved |
 | Worst case `≤ 3n` | Thm A | `moveCount_le_three_mul` | ✅ proved |
 | Algorithm's cost recursion | §2 | `BlockCycleRotation.cost` | ✅ defined |
 | Lemma 11(1): stops at `gcd` | Lemma 11 | `finalSeg_eq_gcd` | ✅ proved |
@@ -149,7 +150,8 @@ and the average is `D·n + O(n^(1/2+ε))` with `D ≈ 1.85`.
 | Möbius inversion of `∑_{d∣n} d²` | Thm 14 | `moebius_main` | ✅ proved |
 | **`R(n) = C·n² + O(n^{3/2+ε})`** | Thm 14 | `R_isBigO` | ✅ **proved** |
 | **`∑_{2k≤n} remSum = C·n² + O(…)`** | Thm 14 | `sum_remSum_isBigO` | ✅ **proved** |
-| Symmetry `M(n,k) = M(n,n−k)` | Thm 14 | `sum_min_eq`, `sum_algCost_eq` | ✅ proved |
+| Folding all shifts onto `2k ≤ n` | Thm 14 | `sum_min_eq`, `sum_algCost_eq` | ✅ proved |
+| Symmetry `M(n,k) = M(n,n−k)` | Thm 14 (proof) | built into `algCost` | ➖ definitional |
 | Cost over shifts via `cost + gcd` | Thm 14 | `sum_cost_allShifts` | ✅ proved |
 | **Theorem 14, `D = 1 + 4C ≈ 1.85`** | Thm 14 | `theorem13` | ✅ **proved** |
 | Relative recursion `In`, `Out`, and `Out ≤ 2/3` | Observation 4 | `Inn`, `Outt`, `Outt_le` | ✅ proved |
@@ -332,7 +334,7 @@ correspondence, and the coprime form of the Heilbronn identity follow the
 paper's statements and proof structure.  Equation (eq. heilbron) itself, the
 aggregate of that identity over the gcd, is `heilbron`.
 
-**Deviations, all documented in the sources.** The paper counts the moves in two halves — the type A moves of Observation 10 and the type B moves of Observation 12 — and adds them. `cost_add_gcd` instead proves the combined identity by one induction on the algorithm's recursion, because `cost` is modelled as a cost recursion rather than as a sequence of individual moves; neither half is stated on its own. Remark 20, on averaging over all
+**Deviations, all documented in the sources.** The paper observes that `M(n,k) = M(n,n−k)` and uses it to fold the average over all shifts onto those with `2k ≤ n`. Here that symmetry is definitional rather than proved: `algCost n k` is *defined* as `cost n (min k (n−k))`, so it holds by `min` symmetry, and what `sum_min_eq` and `sum_algCost_eq` prove is the folding identity itself. A move-level proof of the symmetry would need the algorithm modelled as a sequence of moves; `cost` is a cost recursion. The paper counts the moves in two halves — the type A moves of Observation 10 and the type B moves of Observation 12 — and adds them. `cost_add_gcd` instead proves the combined identity by one induction on the algorithm's recursion, because `cost` is modelled as a cost recursion rather than as a sequence of individual moves; neither half is stated on its own. Remark 20, on averaging over all
 shifts, states the reflection for `n > k ≥ n/2`; the hypothesis must be strict,
 since at `2k = n` it would read `k = k + k` (there `remSum n (n/2) = n/2` while
 `k + remSum n (n−k) = n`). `remSum_reflect` assumes `n < 2k`, and the
